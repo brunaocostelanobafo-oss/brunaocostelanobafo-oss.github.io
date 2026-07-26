@@ -261,8 +261,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .item__add {
   flex-shrink: 0;
-  width: 42px;
-  height: 42px;
+  /* 44px é o mínimo confortável para o toque do dedo no celular. */
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 10px;
   background: var(--vermelho);
