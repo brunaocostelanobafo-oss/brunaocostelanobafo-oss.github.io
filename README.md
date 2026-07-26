@@ -175,7 +175,7 @@ endereço público, de graça — é esse link que você manda pros clientes.
 Itens, preços, WhatsApp e identidade visual já são os reais. Ainda falta:
 
 - [ ] Confirmar o **valor da taxa de entrega** (hoje em R$ 10,00, chutado).
-- [ ] Fotos da **farofa** e do **creme de alho**.
+- [ ] Comprimir as fotos da costela e da mandioca (2 a 3 MB cada, pesado no 4G).
 - [ ] Trocar o selo em SVG pelo **arquivo original do logo**, se houver versão
       com fundo transparente.
 - [ ] Definir a **chave Pix** em `LOJA.chavePix` (hoje vazia, então não aparece

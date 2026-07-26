@@ -119,9 +119,8 @@ const CARDAPIO = [
     emoji: '🍽️',
     itens: [
       { nome: 'Mandioca', preco: 1490, imagem: 'assets/mandioca.png' },
-      // TODO: trocar por fotos reais quando você me passar.
-      { nome: 'Farofa', preco: 1290 },
-      { nome: 'Creme de Alho', preco: 1290 },
+      { nome: 'Farofa', preco: 1290, imagem: 'assets/farofa.jpg' },
+      { nome: 'Creme de Alho', preco: 1290, imagem: 'assets/creme-de-alho.jpg' },
     ],
   },
 ];
