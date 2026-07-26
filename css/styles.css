@@ -181,6 +181,40 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .aviso--regra { font-size: 12.5px; color: var(--creme-suave); }
 .aviso--regra strong { color: var(--creme-forte); }
 
+/* Destaque da entrega grátis — o argumento de venda mais forte da casa,
+   com o mesmo peso que ele tem no folder impresso. */
+.destaque-frete {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 17px;
+  border-radius: var(--raio);
+  background: linear-gradient(135deg, var(--vermelho) 0%, #8f0d17 100%);
+  border: 1px solid var(--vermelho-claro);
+  box-shadow: 0 4px 18px rgba(193, 18, 31, 0.35);
+}
+
+.destaque-frete__icone { font-size: 30px; line-height: 1; flex-shrink: 0; }
+
+.destaque-frete__texto {
+  margin: 0;
+  color: var(--creme-forte);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.destaque-frete__texto strong {
+  display: block;
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.05;
+  margin-top: 2px;
+}
+
 /* ---------- Cardápio ---------- */
 
 .cardapio { max-width: var(--largura); margin: 0 auto; padding: 8px 16px 32px; }

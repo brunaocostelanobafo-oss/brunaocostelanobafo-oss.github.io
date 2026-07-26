@@ -229,12 +229,23 @@
     }
     alvo.appendChild(aviso);
 
+    // A promoção da entrega grátis é o principal argumento de venda da casa,
+    // então ganha destaque próprio em vez de virar mais uma linha de aviso.
+    if (LOJA.reserva.ativa && LOJA.reserva.freteGratis) {
+      const destaque = document.createElement('div');
+      destaque.className = 'destaque-frete';
+      destaque.innerHTML =
+        '<span class="destaque-frete__icone">🎁</span>' +
+        '<p class="destaque-frete__texto">Reservas confirmadas de segunda a sexta ' +
+        '<strong>ganham entrega grátis</strong></p>';
+      alvo.appendChild(destaque);
+    }
+
     const regra = document.createElement('div');
     regra.className = 'aviso aviso--regra';
     regra.innerHTML =
       '<span class="aviso__icone">🛵</span>' +
-      `<span>Delivery <strong>sábados, domingos e feriados</strong>, das ${abre} às ${fecha}. ` +
-      'Reservas de <strong>segunda a sexta</strong> ganham a entrega.</span>';
+      `<span>Delivery <strong>sábados, domingos e feriados</strong>, das ${abre} às ${fecha}.</span>`;
     alvo.appendChild(regra);
   }
 
