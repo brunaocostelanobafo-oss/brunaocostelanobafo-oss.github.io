@@ -1,0 +1,17 @@
+# Sistema operacional
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Dependências (caso um dia entre build)
+node_modules/
+dist/
+
+# Ambiente
+.env
+.env.local
