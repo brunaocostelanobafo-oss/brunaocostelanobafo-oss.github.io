@@ -84,6 +84,21 @@
 
     <!-- ============================ VENDAS ============================ -->
     <section class="secao" id="secao-vendas">
+      <div class="cartao cartao--colar">
+        <h2 class="cartao__titulo">📋 Colar pedido do WhatsApp</h2>
+        <p class="cartao__texto">
+          Abra a conversa, segure o dedo na mensagem do pedido, toque em <strong>Copiar</strong>
+          e cole aqui. O painel lê tudo e preenche o formulário abaixo — você só confere e confirma.
+        </p>
+        <textarea id="colar-pedido" class="colar__campo" rows="5"
+                  placeholder="Cole aqui a mensagem que chegou no WhatsApp…"></textarea>
+        <div class="botoes-linha">
+          <button type="button" class="botao botao--principal" id="btn-ler-pedido">Ler pedido</button>
+          <button type="button" class="botao botao--secundario" id="btn-limpar-colar">Limpar</button>
+        </div>
+        <div id="resultado-colar"></div>
+      </div>
+
       <form class="cartao form-grade" id="form-venda">
         <h2 class="cartao__titulo">Lançar venda</h2>
 

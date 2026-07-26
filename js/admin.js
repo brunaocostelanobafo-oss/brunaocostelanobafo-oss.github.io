@@ -769,6 +769,190 @@
     });
   }
 
+  // ------------------------------------------------- ler pedido do WhatsApp
+
+  /**
+   * Interpreta a mensagem de pedido que o próprio cardápio gerou.
+   *
+   * Como o formato é escrito por nós (js/app.js), dá para ler com segurança.
+   * Nada é gravado aqui: a função só devolve o que entendeu, e quem lança a
+   * venda continua sendo você, conferindo no formulário.
+   */
+  function lerPedidoWhatsApp(texto) {
+    const linhas = texto.split('\n').map((l) => l.trim()).filter(Boolean);
+    const pedido = { itens: [], avisos: [] };
+
+    // "2x Costela no Bafo — 1,5kg — R$ 269,80"
+    // O nome do produto também tem travessão, então o `.+` guloso garante
+    // que a separação aconteça no último " — R$ " da linha.
+    for (const linha of linhas) {
+      const m = linha.match(/^(\d+)x\s+(.+)\s+—\s+R\$\s*([\d.,]+)$/);
+      if (!m) continue;
+
+      const qtd = parseInt(m[1], 10);
+      const nome = m[2].trim();
+      const totalLinha = paraCentavos(m[3]);
+
+      const doCardapio = CARDAPIO.flatMap((c) => c.itens).find((i) => i.nome === nome);
+      if (doCardapio) {
+        pedido.itens.push({ nome, qtd, preco: doCardapio.preco, encontrado: true });
+      } else {
+        pedido.itens.push({
+          nome, qtd, preco: qtd ? Math.round(totalLinha / qtd) : totalLinha, encontrado: false,
+        });
+        pedido.avisos.push(`"${nome}" não está no cardápio atual — confira o preço.`);
+      }
+    }
+
+    const pegar = (regex) => {
+      const m = texto.match(regex);
+      return m ? m[1].trim() : '';
+    };
+
+    // Entrega grátis vem escrita por extenso; a taxa normal vem com valor.
+    if (/Entrega:\s*\*?GRÁTIS/i.test(texto)) {
+      pedido.taxaEntrega = 0;
+    } else {
+      pedido.taxaEntrega = paraCentavos(pegar(/Taxa de entrega:\s*R\$\s*([\d.,]+)/i));
+    }
+
+    pedido.cliente = pegar(/\*Cliente:\*\s*(.+)/);
+    pedido.endereco = pegar(/\*Endereço:\*\s*(.+)/);
+    pedido.pagamento = pegar(/\*Pagamento:\*\s*(.+)/);
+    pedido.observacoes = pegar(/\*Observações:\*\s*(.+)/);
+    pedido.troco = pegar(/\*Troco para:\*\s*R?\$?\s*(.+)/);
+    pedido.retirada = /\*Retirada no local\*/i.test(texto);
+
+    // "*Entregar em:* Domingo, 26/07 (hoje)" -> 2026-07-26
+    const data = pegar(/\*(?:Entregar|Retirar) em:\*\s*(.+)/);
+    const dm = data.match(/(\d{2})\/(\d{2})/);
+    if (dm) {
+      const hoje = new Date();
+      let ano = hoje.getFullYear();
+      const tentativa = new Date(ano, Number(dm[2]) - 1, Number(dm[1]));
+      // Data muito no passado indica virada de ano na mensagem.
+      if ((hoje - tentativa) / 86400000 > 180) ano++;
+      pedido.data = `${ano}-${dm[2]}-${dm[1]}`;
+    }
+
+    if (!pedido.itens.length) pedido.avisos.push('Não encontrei nenhum item na mensagem.');
+    if (!pedido.data) pedido.avisos.push('Não encontrei a data — vai usar hoje.');
+
+    return pedido;
+  }
+
+  /** Joga o que foi lido dentro do formulário de venda, sem salvar nada. */
+  function aplicarPedido(pedido) {
+    const form = document.getElementById('form-venda');
+
+    form.elements.data.value = pedido.data || Store.hojeISO();
+    form.elements.taxaEntrega.value = pedido.taxaEntrega
+      ? (pedido.taxaEntrega / 100).toFixed(2).replace('.', ',') : '';
+    form.elements.obs.value = [pedido.observacoes, pedido.troco ? `Troco para R$ ${pedido.troco}` : '']
+      .filter(Boolean).join(' · ');
+
+    if (pedido.pagamento) {
+      const opcao = [...form.elements.pagamento.options].find((o) => o.value === pedido.pagamento);
+      if (opcao) form.elements.pagamento.value = pedido.pagamento;
+    }
+
+    document.querySelectorAll('.item-venda__qtd').forEach((i) => { i.value = '0'; });
+    for (const item of pedido.itens) {
+      const campo = document.querySelector(`.item-venda__qtd[data-produto="${CSS.escape(item.nome)}"]`);
+      if (campo) campo.value = String(item.qtd);
+    }
+
+    // Cliente: liga no cadastro se já existir pelo nome.
+    const existente = Store.dados.clientes.find(
+      (c) => c.nome.toLowerCase() === (pedido.cliente || '').toLowerCase()
+    );
+    form.elements.clienteId.value = existente ? existente.id : '';
+
+    atualizarTotalVenda();
+    return existente;
+  }
+
+  function configurarColar() {
+    const campo = document.getElementById('colar-pedido');
+    const alvo = document.getElementById('resultado-colar');
+
+    document.getElementById('btn-limpar-colar').addEventListener('click', () => {
+      campo.value = '';
+      alvo.innerHTML = '';
+    });
+
+    document.getElementById('btn-ler-pedido').addEventListener('click', () => {
+      alvo.innerHTML = '';
+      const texto = campo.value.trim();
+      if (!texto) {
+        alvo.appendChild(el('p', 'erro-adm', 'Cole a mensagem do pedido primeiro.'));
+        return;
+      }
+
+      const pedido = lerPedidoWhatsApp(texto);
+      const existente = aplicarPedido(pedido);
+
+      const caixa = el('div', 'colar__resultado');
+      caixa.appendChild(el('strong', null, '✓ Li o pedido e preenchi o formulário abaixo'));
+
+      const lista = el('ul', 'colar__lista');
+      for (const i of pedido.itens) {
+        lista.appendChild(el('li', null, `${i.qtd}x ${i.nome} — ${reais(i.preco * i.qtd)}`));
+      }
+      if (pedido.taxaEntrega) lista.appendChild(el('li', null, `Taxa de entrega — ${reais(pedido.taxaEntrega)}`));
+      if (pedido.retirada) lista.appendChild(el('li', null, 'Retirada no local'));
+      if (pedido.data) lista.appendChild(el('li', null, `Data: ${dataBR(pedido.data)}`));
+      if (pedido.pagamento) lista.appendChild(el('li', null, `Pagamento: ${pedido.pagamento}`));
+      caixa.appendChild(lista);
+
+      // Cliente novo: oferece cadastrar junto, com o endereço da mensagem.
+      if (pedido.cliente && !existente) {
+        const aviso = el('div', 'colar__cliente');
+        const marca = document.createElement('input');
+        marca.type = 'checkbox';
+        marca.id = 'colar-cadastrar-cliente';
+        marca.checked = true;
+        const rotulo = document.createElement('label');
+        rotulo.htmlFor = marca.id;
+        rotulo.textContent = `Cadastrar "${pedido.cliente}" como cliente novo` +
+          (pedido.endereco ? ` (com o endereço da mensagem)` : '');
+        aviso.appendChild(marca);
+        aviso.appendChild(rotulo);
+        caixa.appendChild(aviso);
+
+        caixa.dataset.clienteNovo = pedido.cliente;
+        caixa.dataset.enderecoNovo = pedido.endereco || '';
+      } else if (existente) {
+        caixa.appendChild(el('p', 'colar__ok', `Cliente "${existente.nome}" já cadastrado — vinculado à venda.`));
+      }
+
+      for (const aviso of pedido.avisos) {
+        caixa.appendChild(el('p', 'colar__aviso', '⚠ ' + aviso));
+      }
+
+      caixa.appendChild(el('p', 'colar__dica',
+        'Confira os valores no formulário abaixo e clique em "Lançar venda" para salvar.'));
+
+      alvo.appendChild(caixa);
+      document.getElementById('form-venda').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  /** Cadastra o cliente lido da mensagem, se você deixou a caixinha marcada. */
+  function cadastrarClienteDaMensagem() {
+    const caixa = document.querySelector('.colar__resultado');
+    const marca = document.getElementById('colar-cadastrar-cliente');
+    if (!caixa || !marca || !marca.checked || !caixa.dataset.clienteNovo) return null;
+
+    const novo = Store.addCliente({
+      nome: caixa.dataset.clienteNovo,
+      whatsapp: '',
+      endereco: caixa.dataset.enderecoNovo || '',
+      obs: '',
+    });
+    return novo;
+  }
+
   // ------------------------------------------------------------ formulários
 
   function erro(idCampo, mensagem) {
@@ -795,7 +979,10 @@
       if (!formVenda.elements.data.value) return erro('erro-venda', 'Informe a data da venda.');
       limparErro('erro-venda');
 
-      const clienteId = formVenda.elements.clienteId.value || null;
+      // Se o pedido veio colado do WhatsApp e trouxe cliente novo, cadastra
+      // antes de gravar a venda para que ela já nasça vinculada a ele.
+      const recemCadastrado = cadastrarClienteDaMensagem();
+      const clienteId = recemCadastrado ? recemCadastrado.id : (formVenda.elements.clienteId.value || null);
       const cliente = clienteId ? Store.dados.clientes.find((c) => c.id === clienteId) : null;
 
       Store.addVenda({
@@ -812,6 +999,8 @@
       formVenda.reset();
       formVenda.elements.data.value = Store.hojeISO();
       document.querySelectorAll('.item-venda__qtd').forEach((i) => { i.value = '0'; });
+      document.getElementById('colar-pedido').value = '';
+      document.getElementById('resultado-colar').innerHTML = '';
       atualizarTotalVenda();
       renderTudo();
     });
@@ -922,6 +1111,7 @@
     renderCategorias();
     configurarAbas();
     configurarFormularios();
+    configurarColar();
     configurarBackup();
 
     document.getElementById('filtro-periodo').addEventListener('change', (ev) => {
