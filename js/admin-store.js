@@ -118,9 +118,23 @@ const Store = (function () {
     return itens + (venda.taxaEntrega || 0) - (venda.desconto || 0);
   }
 
+  /**
+   * Custo do item dentro de uma venda.
+   *
+   * A venda guarda o custo do produto no momento em que foi lançada — é
+   * assim que se preserva o histórico quando o preço do insumo muda depois.
+   *
+   * Mas quem lança a venda antes de cadastrar o custo grava zero, e esse
+   * zero congelaria o CMV daquela venda para sempre. Então, quando não há
+   * custo gravado, vale o custo cadastrado hoje.
+   */
+  function custoDoItem(item) {
+    return item.custo || custoDe(item.nome);
+  }
+
   /** Custo da mercadoria daquela venda. */
   function custoVenda(venda) {
-    return venda.itens.reduce((s, i) => s + (i.custo || 0) * i.qtd, 0);
+    return venda.itens.reduce((s, i) => s + custoDoItem(i) * i.qtd, 0);
   }
 
   function addVenda(venda) {
@@ -352,7 +366,7 @@ const Store = (function () {
         const atual = mapa.get(item.nome) || { nome: item.nome, qtd: 0, receita: 0, custo: 0 };
         atual.qtd += item.qtd;
         atual.receita += item.preco * item.qtd;
-        atual.custo += (item.custo || 0) * item.qtd;
+        atual.custo += custoDoItem(item) * item.qtd;
         mapa.set(item.nome, atual);
       }
     }
