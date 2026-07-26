@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Costela no bafo assada por 12 horas. Peça pelo WhatsApp e receba em casa.">
+  <meta name="theme-color" content="#1a1512">
+  <title>Brunão Costela no Bafo — Cardápio</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="topo">
+    <div class="topo__conteudo">
+      <div class="topo__marca">
+        <span class="topo__fogo" aria-hidden="true">🔥</span>
+        <div>
+          <h1 class="topo__nome" id="loja-nome">Brunão Costela no Bafo</h1>
+          <p class="topo__tagline" id="loja-tagline">Carregando…</p>
+        </div>
+      </div>
+      <div class="topo__status" id="status-loja" hidden>
+        <span class="status__bolinha"></span>
+        <span class="status__texto"></span>
+      </div>
+    </div>
+    <nav class="categorias" id="nav-categorias" aria-label="Categorias do cardápio"></nav>
+  </header>
+
+  <main id="cardapio" class="cardapio">
+    <p class="carregando">Preparando o cardápio…</p>
+  </main>
+
+  <footer class="rodape">
+    <p class="rodape__info" id="rodape-horarios"></p>
+    <p class="rodape__info" id="rodape-endereco"></p>
+    <p class="rodape__credito">Brunão Costela no Bafo · Cardápio digital</p>
+  </footer>
+
+  <!-- Barra flutuante do carrinho -->
+  <button class="barra-carrinho" id="barra-carrinho" hidden>
+    <span class="barra-carrinho__qtd" id="carrinho-qtd">0</span>
+    <span class="barra-carrinho__label">Ver meu pedido</span>
+    <span class="barra-carrinho__total" id="carrinho-total">R$ 0,00</span>
+  </button>
+
+  <!-- Modal do pedido -->
+  <div class="modal" id="modal-pedido" hidden>
+    <div class="modal__fundo" data-fechar-modal></div>
+    <div class="modal__caixa" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+      <header class="modal__topo">
+        <h2 id="modal-titulo">Seu pedido</h2>
+        <button class="modal__fechar" data-fechar-modal aria-label="Fechar">&times;</button>
+      </header>
+
+      <div class="modal__corpo">
+        <ul class="lista-pedido" id="lista-pedido"></ul>
+
+        <form class="form-pedido" id="form-pedido" novalidate>
+          <label class="campo">
+            <span class="campo__label">Seu nome</span>
+            <input type="text" name="nome" required autocomplete="name" placeholder="Como te chamamos?">
+          </label>
+
+          <fieldset class="campo campo--opcoes">
+            <legend class="campo__label">Como quer receber?</legend>
+            <label class="opcao">
+              <input type="radio" name="entrega" value="entrega" checked>
+              <span>Entrega</span>
+            </label>
+            <label class="opcao">
+              <input type="radio" name="entrega" value="retirada">
+              <span>Retirar no local</span>
+            </label>
+          </fieldset>
+
+          <label class="campo" id="campo-endereco">
+            <span class="campo__label">Endereço completo</span>
+            <input type="text" name="endereco" autocomplete="street-address"
+                   placeholder="Rua, número, bairro e ponto de referência">
+          </label>
+
+          <label class="campo">
+            <span class="campo__label">Pagamento</span>
+            <select name="pagamento" id="select-pagamento"></select>
+          </label>
+
+          <label class="campo" id="campo-troco" hidden>
+            <span class="campo__label">Precisa de troco para quanto?</span>
+            <input type="text" name="troco" inputmode="numeric" placeholder="Ex.: 100 (deixe vazio se não precisa)">
+          </label>
+
+          <label class="campo">
+            <span class="campo__label">Observações <span class="campo__opcional">(opcional)</span></span>
+            <textarea name="observacoes" rows="2" placeholder="Sem vinagrete, capricha na farofa…"></textarea>
+          </label>
+        </form>
+
+        <dl class="resumo" id="resumo-valores"></dl>
+        <p class="erro-form" id="erro-form" hidden></p>
+      </div>
+
+      <footer class="modal__rodape">
+        <button type="submit" form="form-pedido" class="botao-enviar" id="botao-enviar">
+          Enviar pedido pelo WhatsApp
+        </button>
+        <p class="modal__aviso">Você confere a mensagem no WhatsApp antes de enviar.</p>
+      </footer>
+    </div>
+  </div>
+
+  <script src="js/menu-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
