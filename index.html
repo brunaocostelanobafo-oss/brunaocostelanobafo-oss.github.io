@@ -3,22 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Costela no bafo assada por 12 horas. Peça pelo WhatsApp e receba em casa.">
-  <meta name="theme-color" content="#1a1512">
+  <meta name="description" content="Costela no bafo assada na lenha. Delivery aos sábados, domingos e feriados. Reserve de segunda a sexta e ganhe a entrega.">
+  <meta name="theme-color" content="#0d0b0a">
   <title>Brunão Costela no Bafo — Cardápio</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
+  <!-- Selo da marca, desenhado em SVG para ficar nítido em qualquer tamanho. -->
+  <svg class="svg-oculto" aria-hidden="true" focusable="false">
+    <symbol id="selo-brunao" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="99" fill="#0d0b0a"/>
+      <circle cx="100" cy="100" r="95" fill="none" stroke="#e2d3bb" stroke-width="6"/>
+      <circle cx="100" cy="100" r="83" fill="none" stroke="#e2d3bb" stroke-width="3.5"
+              stroke-dasharray="0.1 9.4" stroke-linecap="round"/>
+      <path id="arco-topo" d="M100,100 m-64,0 a64,64 0 0 1 128,0" fill="none"/>
+      <path id="arco-base" d="M100,100 m62,0 a62,62 0 0 1 -124,0" fill="none"/>
+
+      <text class="selo__arco" fill="#e2d3bb">
+        <textPath href="#arco-topo" startOffset="50%" text-anchor="middle">DELIVERY &amp; RETIRADA</textPath>
+      </text>
+
+      <!-- Chama -->
+      <path fill="#c1121f" d="M100 44c6 8 3 12 6 16 2-3 2-6 2-6 5 6 6 12 6 16 0 10-7 16-14 16s-14-6-14-16c0-7 5-13 8-18 1 4 3 6 4 7-1-6-2-11 2-15z"/>
+      <!-- Espátula e garfo cruzados -->
+      <g stroke="#c1121f" stroke-width="4.5" stroke-linecap="round">
+        <line x1="76" y1="66" x2="120" y2="106"/>
+        <line x1="124" y1="66" x2="80" y2="106"/>
+      </g>
+      <rect x="66" y="58" width="16" height="13" rx="3" transform="rotate(-42 74 64)" fill="#c1121f"/>
+      <path fill="#c1121f" d="M126 56l3 3-4 6 4-2 2 3-5 5-4-4z"/>
+
+      <text class="selo__nome" x="100" y="133" text-anchor="middle" fill="#e2d3bb">BRUNÃO</text>
+      <rect x="14" y="139" width="172" height="24" rx="12" fill="#c1121f"/>
+      <text class="selo__faixa" x="100" y="156" text-anchor="middle" fill="#e2d3bb">COSTELA NO BAFO</text>
+      <text class="selo__desde" x="100" y="177" text-anchor="middle" fill="#e2d3bb">DESDE 2021</text>
+    </symbol>
+  </svg>
+
   <header class="topo">
     <div class="topo__conteudo">
-      <div class="topo__marca">
-        <span class="topo__fogo" aria-hidden="true">🔥</span>
-        <div>
-          <h1 class="topo__nome" id="loja-nome">Brunão Costela no Bafo</h1>
-          <p class="topo__tagline" id="loja-tagline">Carregando…</p>
-        </div>
+      <svg class="topo__selo" role="img" aria-label="Brunão Costela no Bafo"><use href="#selo-brunao"/></svg>
+      <div class="topo__texto">
+        <p class="topo__lenha" id="loja-selo"></p>
+        <h1 class="topo__nome" id="loja-nome"></h1>
+        <p class="topo__tagline" id="loja-tagline"></p>
       </div>
       <div class="topo__status" id="status-loja" hidden>
         <span class="status__bolinha"></span>
@@ -28,14 +58,22 @@
     <nav class="categorias" id="nav-categorias" aria-label="Categorias do cardápio"></nav>
   </header>
 
+  <div class="avisos" id="avisos"></div>
+
   <main id="cardapio" class="cardapio">
     <p class="carregando">Preparando o cardápio…</p>
   </main>
 
   <footer class="rodape">
+    <svg class="rodape__selo" aria-hidden="true"><use href="#selo-brunao"/></svg>
     <p class="rodape__info" id="rodape-horarios"></p>
-    <p class="rodape__info" id="rodape-endereco"></p>
-    <p class="rodape__credito">Brunão Costela no Bafo · Cardápio digital</p>
+    <p class="rodape__info" id="rodape-endereco" hidden></p>
+    <p class="rodape__links">
+      <a id="rodape-whatsapp" target="_blank" rel="noopener"></a>
+      <span aria-hidden="true">·</span>
+      <a id="rodape-instagram" target="_blank" rel="noopener"></a>
+    </p>
+    <p class="rodape__credito">Brunão Costela no Bafo · <span id="loja-desde"></span></p>
   </footer>
 
   <!-- Barra flutuante do carrinho -->
@@ -75,6 +113,11 @@
             </label>
           </fieldset>
 
+          <label class="campo">
+            <span class="campo__label" id="label-data">Data da entrega</span>
+            <select name="data" id="select-data"></select>
+          </label>
+
           <label class="campo" id="campo-endereco">
             <span class="campo__label">Endereço completo</span>
             <input type="text" name="endereco" autocomplete="street-address"
@@ -93,7 +136,7 @@
 
           <label class="campo">
             <span class="campo__label">Observações <span class="campo__opcional">(opcional)</span></span>
-            <textarea name="observacoes" rows="2" placeholder="Sem vinagrete, capricha na farofa…"></textarea>
+            <textarea name="observacoes" rows="2" placeholder="Capricha na farofa, sem creme de alho…"></textarea>
           </label>
         </form>
 

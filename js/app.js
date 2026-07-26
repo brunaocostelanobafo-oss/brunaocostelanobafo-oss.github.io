@@ -4,26 +4,30 @@
  * Monta a página a partir de `js/menu-data.js`, controla o carrinho
  * e gera a mensagem do pedido para o WhatsApp.
  *
- * Não precisa editar este arquivo para mudar itens ou preços.
+ * Regras de negócio da casa:
+ *   - Delivery aos sábados, domingos e feriados, das 11h às 14h.
+ *   - Reserva confirmada de segunda a sexta ganha a entrega grátis
+ *     (liga/desliga em LOJA.reserva.freteGratis).
+ *
+ * Não precisa editar este arquivo para mudar itens, preços ou horários.
  */
 
 (function () {
   'use strict';
 
   const CHAVE_STORAGE = 'brunao:carrinho';
-  const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
   /** Carrinho: { [nomeDoItem]: quantidade } */
   let carrinho = carregarCarrinho();
 
   // ---------------------------------------------------------------- utilidades
 
-  /** 5990 -> "R$ 59,90" */
+  /** 8990 -> "R$ 89,90" */
   function precoBR(centavos) {
     return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  /** Todos os itens do cardápio numa lista só, para busca por nome. */
   function todosOsItens() {
     return CARDAPIO.flatMap((categoria) => categoria.itens);
   }
@@ -54,35 +58,88 @@
     }
   }
 
-  // ---------------------------------------------------------- horário da loja
+  // -------------------------------------------------------- datas e calendário
 
-  /** Minutos desde a meia-noite. "18:30" -> 1110 */
+  /** Data local no formato AAAA-MM-DD (sem passar por UTC). */
+  function iso(data) {
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${data.getFullYear()}-${mes}-${dia}`;
+  }
+
+  /** "25/07" */
+  function diaMes(data) {
+    return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function ehFeriado(data) {
+    return LOJA.feriados.includes(iso(data));
+  }
+
+  /** Sábado, domingo ou feriado. */
+  function ehDiaDeEntrega(data) {
+    return LOJA.entrega.diasSemana.includes(data.getDay()) || ehFeriado(data);
+  }
+
+  /** Dia em que a reserva antecipada dá direito ao benefício. */
+  function ehDiaDeReserva(data) {
+    return LOJA.reserva.ativa && LOJA.reserva.diasSemana.includes(data.getDay()) && !ehFeriado(data);
+  }
+
+  /** Minutos desde a meia-noite. "11:00" -> 660 */
   function emMinutos(hhmm) {
     const [h, m] = hhmm.split(':').map(Number);
     return h * 60 + m;
   }
 
+  function minutosAgora(data) {
+    return data.getHours() * 60 + data.getMinutes();
+  }
+
+  /** As próximas datas em que a loja entrega, a partir de hoje. */
+  function proximasDatasDeEntrega(quantas = 6, hoje = new Date()) {
+    const datas = [];
+    const { fecha } = LOJA.entrega.horario;
+
+    for (let i = 0; datas.length < quantas && i <= 90; i++) {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
+      if (!ehDiaDeEntrega(data)) continue;
+      // Hoje só entra na lista se ainda dá tempo de entregar.
+      if (i === 0 && minutosAgora(hoje) >= emMinutos(fecha)) continue;
+      datas.push(data);
+    }
+    return datas;
+  }
+
+  function rotuloData(data, hoje = new Date()) {
+    const base = `${DIAS[data.getDay()]}, ${diaMes(data)}`;
+    const partes = [];
+    if (iso(data) === iso(hoje)) partes.push('hoje');
+    if (ehFeriado(data)) partes.push('feriado');
+    return partes.length ? `${base} (${partes.join(' · ')})` : base;
+  }
+
+  // ------------------------------------------------------------ estado da loja
+
+  /**
+   * 'entregando' — é dia de entrega e estamos dentro do horário
+   * 'reserva'    — segunda a sexta: dá para reservar e ganhar a entrega
+   * 'fechado'    — dia de entrega, mas fora do horário
+   */
   function estadoDaLoja(agora = new Date()) {
-    const faixa = LOJA.horarios[agora.getDay()];
-    if (!faixa) return { aberta: false, faixa: null };
+    const { abre, fecha } = LOJA.entrega.horario;
 
-    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
-    const aberta = minutosAgora >= emMinutos(faixa.abre) && minutosAgora < emMinutos(faixa.fecha);
-    return { aberta, faixa };
+    if (ehDiaDeEntrega(agora)) {
+      const dentro = minutosAgora(agora) >= emMinutos(abre) && minutosAgora(agora) < emMinutos(fecha);
+      if (dentro) return { modo: 'entregando', abre, fecha };
+      return { modo: 'fechado', abre, fecha };
+    }
+
+    if (ehDiaDeReserva(agora)) return { modo: 'reserva', abre, fecha };
+    return { modo: 'fechado', abre, fecha };
   }
 
-  /** "Sexta: 18:00 às 23:59" para cada dia que abre. */
-  function horariosEmTexto() {
-    return Object.entries(LOJA.horarios)
-      .filter(([, faixa]) => faixa)
-      .map(([dia, faixa]) => {
-        const nome = DIAS[Number(dia)];
-        return `${nome.charAt(0).toUpperCase()}${nome.slice(1)}: ${faixa.abre} às ${faixa.fecha}`;
-      })
-      .join(' · ');
-  }
-
-  // ------------------------------------------------------------- contas
+  // ------------------------------------------------------------------- contas
 
   function subtotal() {
     return Object.entries(carrinho).reduce((soma, [nome, qtd]) => {
@@ -100,23 +157,35 @@
     return !escolha || escolha.value === 'entrega';
   }
 
-  function taxaAtual() {
-    return ehEntrega() ? LOJA.taxaEntrega : 0;
+  /** A reserva de hoje dá direito à entrega grátis? */
+  function temFreteGratis(hoje = new Date()) {
+    return LOJA.reserva.ativa && LOJA.reserva.freteGratis && ehDiaDeReserva(hoje);
   }
 
-  // ------------------------------------------------------------- renderização
+  function taxaAtual() {
+    if (!ehEntrega()) return 0;
+    if (temFreteGratis()) return 0;
+    return LOJA.taxaEntrega;
+  }
+
+  // -------------------------------------------------------------- renderização
 
   function montarTopo() {
     document.getElementById('loja-nome').textContent = LOJA.nome;
     document.getElementById('loja-tagline').textContent = LOJA.tagline;
+    document.getElementById('loja-selo').textContent = LOJA.selo;
+    document.getElementById('loja-desde').textContent = `Desde ${LOJA.desde}`;
 
-    const { aberta, faixa } = estadoDaLoja();
+    const { modo, fecha } = estadoDaLoja();
     const status = document.getElementById('status-loja');
+    const texto = {
+      entregando: `Entregando até ${fecha}`,
+      reserva: 'Reservas abertas',
+      fechado: 'Fora do horário',
+    };
     status.hidden = false;
-    status.classList.add(aberta ? 'topo__status--aberto' : 'topo__status--fechado');
-    status.querySelector('.status__texto').textContent = aberta
-      ? `Aberto até ${faixa.fecha}`
-      : 'Fechado agora';
+    status.classList.add(`topo__status--${modo}`);
+    status.querySelector('.status__texto').textContent = texto[modo];
 
     const nav = document.getElementById('nav-categorias');
     nav.innerHTML = '';
@@ -129,19 +198,49 @@
     }
   }
 
+  function montarAvisos() {
+    const alvo = document.getElementById('avisos');
+    alvo.innerHTML = '';
+
+    const { modo, abre, fecha } = estadoDaLoja();
+
+    const aviso = document.createElement('div');
+    aviso.className = `aviso aviso--${modo}`;
+
+    if (modo === 'reserva' && temFreteGratis()) {
+      aviso.innerHTML =
+        '<span class="aviso__icone">🎁</span>' +
+        '<span><strong>Reserva confirmada hoje ganha entrega grátis.</strong> ' +
+        `Escolha a data e receba entre ${abre} e ${fecha}.</span>`;
+    } else if (modo === 'reserva') {
+      aviso.innerHTML =
+        '<span class="aviso__icone">📅</span>' +
+        '<span><strong>Reservas abertas.</strong> ' +
+        `A entrega acontece aos sábados, domingos e feriados, das ${abre} às ${fecha}.</span>`;
+    } else if (modo === 'entregando') {
+      aviso.innerHTML =
+        '<span class="aviso__icone">🔥</span>' +
+        `<span><strong>Estamos entregando agora,</strong> até as ${fecha}.</span>`;
+    } else {
+      aviso.innerHTML =
+        '<span class="aviso__icone">🕒</span>' +
+        '<span><strong>Fora do horário de entrega.</strong> ' +
+        'Monte seu pedido e reserve para a próxima data — respondemos assim que abrirmos.</span>';
+    }
+    alvo.appendChild(aviso);
+
+    const regra = document.createElement('div');
+    regra.className = 'aviso aviso--regra';
+    regra.innerHTML =
+      '<span class="aviso__icone">🛵</span>' +
+      `<span>Delivery <strong>sábados, domingos e feriados</strong>, das ${abre} às ${fecha}. ` +
+      'Reservas de <strong>segunda a sexta</strong> ganham a entrega.</span>';
+    alvo.appendChild(regra);
+  }
+
   function montarCardapio() {
     const alvo = document.getElementById('cardapio');
     alvo.innerHTML = '';
-
-    const { aberta } = estadoDaLoja();
-    if (!aberta) {
-      const aviso = document.createElement('div');
-      aviso.className = 'aviso-fechado';
-      aviso.innerHTML =
-        '<span>🕒</span><span><strong>Estamos fechados agora.</strong> ' +
-        'Você pode montar seu pedido e enviar — respondemos assim que abrirmos.</span>';
-      alvo.appendChild(aviso);
-    }
 
     for (const categoria of CARDAPIO) {
       const secao = document.createElement('section');
@@ -150,7 +249,7 @@
 
       const titulo = document.createElement('h2');
       titulo.className = 'categoria__titulo';
-      titulo.textContent = `${categoria.emoji || ''} ${categoria.nome}`.trim();
+      titulo.textContent = categoria.nome;
       secao.appendChild(titulo);
 
       if (categoria.descricao) {
@@ -178,6 +277,15 @@
     if (item.destaque && !esgotado) cartao.classList.add('item--destaque');
     if (esgotado) cartao.classList.add('item--esgotado');
 
+    if (item.imagem) {
+      const foto = document.createElement('img');
+      foto.className = 'item__foto';
+      foto.src = item.imagem;
+      foto.alt = item.nome;
+      foto.loading = 'lazy';
+      cartao.appendChild(foto);
+    }
+
     const texto = document.createElement('div');
     texto.className = 'item__texto';
 
@@ -187,7 +295,7 @@
     if (item.destaque && !esgotado) {
       const selo = document.createElement('span');
       selo.className = 'item__selo';
-      selo.textContent = 'Mais pedido';
+      selo.textContent = item.selo || 'Mais pedido';
       nome.appendChild(selo);
     }
     texto.appendChild(nome);
@@ -275,8 +383,7 @@
 
       const texto = document.createElement('div');
       texto.className = 'linha-pedido__texto';
-      texto.innerHTML =
-        `<div class="linha-pedido__nome"></div><div class="linha-pedido__preco"></div>`;
+      texto.innerHTML = '<div class="linha-pedido__nome"></div><div class="linha-pedido__preco"></div>';
       texto.querySelector('.linha-pedido__nome').textContent = item.nome;
       texto.querySelector('.linha-pedido__preco').textContent =
         `${precoBR(item.preco)} · subtotal ${precoBR(item.preco * qtd)}`;
@@ -284,18 +391,18 @@
 
       const contador = document.createElement('div');
       contador.className = 'contador';
-      contador.appendChild(botaoContador('−', `Remover uma unidade de ${item.nome}`, () =>
-        alterarQuantidade(nome, -1)
-      ));
+      contador.appendChild(
+        botaoContador('−', `Remover uma unidade de ${item.nome}`, () => alterarQuantidade(nome, -1))
+      );
 
       const valor = document.createElement('span');
       valor.className = 'contador__valor';
       valor.textContent = String(qtd);
       contador.appendChild(valor);
 
-      contador.appendChild(botaoContador('+', `Adicionar uma unidade de ${item.nome}`, () =>
-        alterarQuantidade(nome, 1)
-      ));
+      contador.appendChild(
+        botaoContador('+', `Adicionar uma unidade de ${item.nome}`, () => alterarQuantidade(nome, 1))
+      );
 
       linha.appendChild(contador);
       lista.appendChild(linha);
@@ -318,10 +425,13 @@
     const taxa = taxaAtual();
 
     const linhas = [['Subtotal', precoBR(sub)]];
-    if (ehEntrega()) {
-      linhas.push(['Taxa de entrega', taxa === 0 ? 'Grátis' : precoBR(taxa)]);
-    } else {
+
+    if (!ehEntrega()) {
       linhas.push(['Retirada no local', 'Sem taxa']);
+    } else if (temFreteGratis()) {
+      linhas.push(['Entrega (reserva)', 'Grátis 🎁']);
+    } else {
+      linhas.push(['Taxa de entrega', taxa === 0 ? 'Grátis' : precoBR(taxa)]);
     }
 
     resumo.innerHTML = '';
@@ -346,7 +456,7 @@
     return fragmento;
   }
 
-  // ------------------------------------------------------------------ modal
+  // -------------------------------------------------------------------- modal
 
   function abrirModal() {
     montarModal();
@@ -360,7 +470,7 @@
     document.getElementById('erro-form').hidden = true;
   }
 
-  // --------------------------------------------------------------- WhatsApp
+  // ----------------------------------------------------------------- WhatsApp
 
   function montarMensagem(dados) {
     const linhas = [`*Novo pedido — ${LOJA.nome}*`, ''];
@@ -373,16 +483,24 @@
 
     const sub = subtotal();
     const taxa = taxaAtual();
+    const entrega = dados.entrega === 'entrega';
 
     linhas.push('', `Subtotal: ${precoBR(sub)}`);
-    if (dados.entrega === 'entrega') {
-      linhas.push(`Taxa de entrega: ${taxa === 0 ? 'Grátis' : precoBR(taxa)}`);
+    if (entrega) {
+      linhas.push(
+        temFreteGratis()
+          ? 'Entrega: *GRÁTIS* (reserva confirmada de segunda a sexta)'
+          : `Taxa de entrega: ${taxa === 0 ? 'Grátis' : precoBR(taxa)}`
+      );
     }
     linhas.push(`*Total: ${precoBR(sub + taxa)}*`, '');
 
     linhas.push(`*Cliente:* ${dados.nome}`);
-    if (dados.entrega === 'entrega') {
-      linhas.push(`*Entrega em:* ${dados.endereco}`);
+    linhas.push(`*${entrega ? 'Entregar' : 'Retirar'} em:* ${dados.data}`);
+    linhas.push(`*Janela:* ${LOJA.entrega.horario.abre} às ${LOJA.entrega.horario.fecha}`);
+
+    if (entrega) {
+      linhas.push(`*Endereço:* ${dados.endereco}`);
     } else {
       linhas.push('*Retirada no local*');
     }
@@ -411,13 +529,17 @@
     function falhar(mensagem, campo) {
       erro.textContent = mensagem;
       erro.hidden = false;
-      if (campo) form.elements[campo].focus();
+      if (campo && form.elements[campo]) form.elements[campo].focus();
     }
 
     if (quantidadeTotal() === 0) return falhar('Adicione pelo menos um item ao pedido.');
 
     if (!dados.nome || !dados.nome.trim()) {
       return falhar('Precisamos do seu nome para identificar o pedido.', 'nome');
+    }
+
+    if (!dados.data) {
+      return falhar('Escolha a data da entrega ou da retirada.', 'data');
     }
 
     if (dados.entrega === 'entrega' && (!dados.endereco || dados.endereco.trim().length < 8)) {
@@ -434,32 +556,55 @@
     window.open(`https://wa.me/${LOJA.whatsapp}?text=${texto}`, '_blank', 'noopener');
   }
 
-  // ------------------------------------------------------------------ início
+  // ------------------------------------------------------------------- início
 
   function montarRodape() {
-    document.getElementById('rodape-horarios').textContent = horariosEmTexto();
-    document.getElementById('rodape-endereco').textContent = LOJA.endereco;
+    const { abre, fecha } = LOJA.entrega.horario;
+    document.getElementById('rodape-horarios').textContent =
+      `Delivery sábados, domingos e feriados · ${abre} às ${fecha}`;
+
+    const zap = document.getElementById('rodape-whatsapp');
+    zap.textContent = LOJA.whatsappVisivel;
+    zap.href = `https://wa.me/${LOJA.whatsapp}`;
+
+    const insta = document.getElementById('rodape-instagram');
+    insta.textContent = `@${LOJA.instagram}`;
+    insta.href = `https://instagram.com/${LOJA.instagram}`;
+
+    const endereco = document.getElementById('rodape-endereco');
+    endereco.textContent = LOJA.endereco;
+    endereco.hidden = !LOJA.endereco;
   }
 
   function montarFormulario() {
-    const select = document.getElementById('select-pagamento');
+    const pagamento = document.getElementById('select-pagamento');
     for (const forma of LOJA.formasPagamento) {
       const opcao = document.createElement('option');
       opcao.value = forma;
       opcao.textContent = forma;
-      select.appendChild(opcao);
+      pagamento.appendChild(opcao);
+    }
+
+    const datas = document.getElementById('select-data');
+    for (const data of proximasDatasDeEntrega()) {
+      const opcao = document.createElement('option');
+      opcao.value = rotuloData(data);
+      opcao.textContent = rotuloData(data);
+      datas.appendChild(opcao);
     }
 
     // Troco só aparece quando o pagamento é em dinheiro.
-    select.addEventListener('change', () => {
-      document.getElementById('campo-troco').hidden = select.value !== 'Dinheiro';
+    pagamento.addEventListener('change', () => {
+      document.getElementById('campo-troco').hidden = pagamento.value !== 'Dinheiro';
     });
 
     // Endereço só faz sentido na entrega; a taxa muda junto.
     for (const radio of document.querySelectorAll('input[name="entrega"]')) {
       radio.addEventListener('change', () => {
-        const entrega = ehEntrega();
-        document.getElementById('campo-endereco').hidden = !entrega;
+        document.getElementById('campo-endereco').hidden = !ehEntrega();
+        document.getElementById('label-data').textContent = ehEntrega()
+          ? 'Data da entrega'
+          : 'Data da retirada';
         montarResumo();
       });
     }
@@ -467,6 +612,7 @@
 
   function iniciar() {
     montarTopo();
+    montarAvisos();
     montarCardapio();
     montarRodape();
     montarFormulario();

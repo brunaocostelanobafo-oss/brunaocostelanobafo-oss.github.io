@@ -1,148 +1,127 @@
 /*
- * DADOS DO CARDÁPIO
- * -----------------
+ * DADOS DO CARDÁPIO — Brunão Costela no Bafo
+ * ------------------------------------------
  * Este é o único arquivo que você precisa editar no dia a dia.
  *
- * Preços em CENTAVOS: 5990 = R$ 59,90 (evita erro de arredondamento).
+ * Preços em CENTAVOS: 8990 = R$ 89,90 (evita erro de arredondamento).
  * Item esgotado: adicione `disponivel: false`.
  */
 
 const LOJA = {
   nome: 'Brunão Costela no Bafo',
-  tagline: 'Costela assada 12 horas no bafo. Só chegar e comer.',
+  tagline: 'Seu almoço merece uma costela no bafo.',
+  selo: 'Feito na lenha!',
+  desde: '2021',
 
-  // Código do país + DDD + número, só dígitos.
-  // TODO: trocar pelo WhatsApp real da loja antes de divulgar.
-  whatsapp: '5511999999999',
+  // Código do país + DDD + número, só dígitos. (35) 99766-7164
+  whatsapp: '5535997667164',
+  whatsappVisivel: '(35) 99766-7164',
 
-  endereco: 'Rua do Churrasco, 123 — Centro',
+  instagram: 'brunaocostelanobafo',
 
-  // Taxa de entrega em centavos. Use 0 para entrega grátis.
-  taxaEntrega: 800,
+  // Deixe vazio para não aparecer no rodapé.
+  endereco: '',
+
+  // TODO: confirmar o valor real da taxa de entrega.
+  taxaEntrega: 1000,
 
   // Pedido mínimo em centavos. Use 0 para não exigir mínimo.
-  pedidoMinimo: 3000,
+  pedidoMinimo: 0,
 
-  chavePix: 'brunao@costelanobafo.com.br',
+  // Deixe vazio para não enviar a chave na mensagem do pedido.
+  chavePix: '',
 
   formasPagamento: ['Pix', 'Dinheiro', 'Cartão de crédito', 'Cartão de débito'],
 
-  // 0 = domingo … 6 = sábado. null = fechado o dia inteiro.
-  horarios: {
-    0: { abre: '11:00', fecha: '16:00' },
-    1: null,
-    2: null,
-    3: { abre: '18:00', fecha: '23:00' },
-    4: { abre: '18:00', fecha: '23:00' },
-    5: { abre: '18:00', fecha: '23:59' },
-    6: { abre: '11:00', fecha: '23:59' },
+  /* ---------------------------------------------------------------------
+   * ENTREGA
+   * Delivery aos sábados, domingos e feriados, das 11h às 14h.
+   * diasSemana: 0 = domingo … 6 = sábado.
+   * ------------------------------------------------------------------- */
+  entrega: {
+    diasSemana: [0, 6],
+    horario: { abre: '11:00', fecha: '14:00' },
   },
+
+  /* ---------------------------------------------------------------------
+   * RESERVA ANTECIPADA (ENCOMENDA)
+   *
+   * Reservas confirmadas de segunda a sexta ganham a entrega grátis.
+   *
+   * >>> É AQUI QUE VOCÊ ADMINISTRA A RETIRADA DO FRETE <<<
+   *
+   *   freteGratis: true   → reserva feita de segunda a sexta não paga entrega
+   *   freteGratis: false  → todo mundo paga a taxa normal (promoção desligada)
+   *
+   * `diasSemana` define quais dias dão direito ao benefício.
+   * ------------------------------------------------------------------- */
+  reserva: {
+    ativa: true,
+    freteGratis: true,
+    diasSemana: [1, 2, 3, 4, 5],
+  },
+
+  /* ---------------------------------------------------------------------
+   * FERIADOS — contam como dia de entrega, igual sábado e domingo.
+   * Formato AAAA-MM-DD. Atualize no começo de cada ano.
+   * ------------------------------------------------------------------- */
+  feriados: [
+    // 2026
+    '2026-09-07', // Independência
+    '2026-10-12', // Nossa Senhora Aparecida
+    '2026-11-02', // Finados
+    '2026-11-15', // Proclamação da República
+    '2026-11-20', // Consciência Negra
+    '2026-12-25', // Natal
+    // 2027
+    '2027-01-01', // Confraternização Universal
+    '2027-02-08', // Carnaval
+    '2027-02-09', // Carnaval
+    '2027-03-26', // Sexta-feira Santa
+    '2027-04-21', // Tiradentes
+    '2027-05-01', // Dia do Trabalho
+    '2027-05-27', // Corpus Christi
+    '2027-09-07', // Independência
+    '2027-10-12', // Nossa Senhora Aparecida
+    '2027-11-02', // Finados
+    '2027-11-15', // Proclamação da República
+    '2027-11-20', // Consciência Negra
+    '2027-12-25', // Natal
+  ],
 };
 
 const CARDAPIO = [
   {
     id: 'costelas',
-    nome: 'Costelas no Bafo',
+    nome: 'Costela no Bafo',
     emoji: '🔥',
-    descricao: 'A especialidade da casa. Assada lentamente por 12 horas.',
+    descricao: 'Assada na lenha, no bafo. A especialidade da casa.',
     itens: [
-      {
-        nome: 'Costela no Bafo — 500g',
-        descricao: 'Serve 1 a 2 pessoas. Acompanha farofa e vinagrete.',
-        preco: 5990,
-        destaque: true,
-      },
       {
         nome: 'Costela no Bafo — 1kg',
-        descricao: 'Serve 3 a 4 pessoas. Acompanha farofa, vinagrete e pão de alho.',
-        preco: 10990,
+        descricao: 'Porção G. Assada na hora, na lenha.',
+        preco: 8990,
+        imagem: 'assets/costela-1kg.png',
+      },
+      {
+        nome: 'Costela no Bafo — 1,5kg',
+        descricao: 'Porção GG. Assada na hora, na lenha.',
+        preco: 13490,
+        imagem: 'assets/costela-15kg.png',
         destaque: true,
-      },
-      {
-        nome: 'Costela Premium Barbecue',
-        descricao: 'Costela de 700g selada no molho barbecue da casa.',
-        preco: 7490,
-      },
-      {
-        nome: 'Costela Desfiada na Mandioca',
-        descricao: 'Costela desfiada sobre purê de mandioca gratinado.',
-        preco: 6490,
-      },
-    ],
-  },
-  {
-    id: 'porcoes',
-    nome: 'Porções',
-    emoji: '🍖',
-    descricao: 'Direto da brasa para a mesa.',
-    itens: [
-      {
-        nome: 'Fraldinha na Brasa — 500g',
-        descricao: 'Fatiada na hora, com pão de alho e vinagrete.',
-        preco: 5490,
-      },
-      {
-        nome: 'Linguiça Artesanal — 500g',
-        descricao: 'Linguiça de pernil defumada na lenha.',
-        preco: 3990,
-      },
-      {
-        nome: 'Frango a Passarinho — 500g',
-        descricao: 'Crocante, com alho frito e limão.',
-        preco: 3490,
-      },
-      {
-        nome: 'Mandioca Frita',
-        descricao: 'Porção generosa, sequinha, com maionese verde.',
-        preco: 2490,
-      },
-    ],
-  },
-  {
-    id: 'marmitas',
-    nome: 'Marmitas',
-    emoji: '🍱',
-    descricao: 'Prato feito completo, quentinho.',
-    itens: [
-      {
-        nome: 'Marmita de Costela — P',
-        descricao: 'Arroz, feijão, farofa, vinagrete e costela desfiada.',
-        preco: 2490,
-      },
-      {
-        nome: 'Marmita de Costela — G',
-        descricao: 'Porção reforçada de costela, arroz, feijão e acompanhamentos.',
-        preco: 3290,
-      },
-      {
-        nome: 'Marmita Mista',
-        descricao: 'Costela, linguiça e frango com os acompanhamentos da casa.',
-        preco: 3490,
+        selo: 'A mais vendida',
       },
     ],
   },
   {
     id: 'acompanhamentos',
     nome: 'Acompanhamentos',
-    emoji: '🥗',
+    emoji: '🍽️',
     itens: [
-      { nome: 'Farofa da Casa', descricao: 'Na manteiga, com bacon e ovo.', preco: 1290 },
-      { nome: 'Vinagrete', descricao: 'Bem gelado, do jeito certo.', preco: 990 },
-      { nome: 'Arroz Branco', descricao: 'Porção individual.', preco: 990 },
-      { nome: 'Pão de Alho — 2 unidades', descricao: 'Grelhado na brasa.', preco: 1490 },
-      { nome: 'Maionese Temperada', descricao: 'Receita da casa, 300g.', preco: 1590 },
-    ],
-  },
-  {
-    id: 'bebidas',
-    nome: 'Bebidas',
-    emoji: '🥤',
-    itens: [
-      { nome: 'Refrigerante Lata 350ml', preco: 700 },
-      { nome: 'Refrigerante 2 Litros', preco: 1500 },
-      { nome: 'Suco Natural 500ml', descricao: 'Laranja, maracujá ou limão.', preco: 1200 },
-      { nome: 'Água Mineral 500ml', preco: 500 },
-      { nome: 'Cerveja Long Neck', descricao: 'Bem gelada.', preco: 1200 },
+      { nome: 'Mandioca', preco: 1490, imagem: 'assets/mandioca.png' },
+      // TODO: trocar por fotos reais quando você me passar.
+      { nome: 'Farofa', preco: 1290 },
+      { nome: 'Creme de Alho', preco: 1290 },
     ],
   },
 ];

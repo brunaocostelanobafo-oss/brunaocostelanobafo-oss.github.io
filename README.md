@@ -26,17 +26,48 @@ npx --yes serve --listen 8000 .
 
 Depois acesse `http://localhost:8000`.
 
+## Como a entrega funciona
+
+- **Delivery aos sábados, domingos e feriados**, das 11h às 14h.
+- **Reserva confirmada de segunda a sexta ganha a entrega grátis.**
+
+A página calcula tudo sozinha: mostra se estamos entregando, em reserva ou fora
+do horário, monta a lista das próximas datas de entrega (incluindo feriados) e
+tira ou cobra a taxa conforme o dia em que o cliente fez o pedido.
+
 ## Estrutura
 
 ```
 .
-├── index.html          # Página do cardápio
+├── index.html          # Página do cardápio (o selo da marca é um SVG aqui dentro)
 ├── css/
-│   └── styles.css      # Todo o visual
-└── js/
-    ├── menu-data.js    # ⬅️ EDITE AQUI: itens, preços, horários, WhatsApp
-    └── app.js          # Carrinho, formulário e envio pro WhatsApp
+│   └── styles.css      # Todo o visual — preto, vermelho e creme da marca
+├── js/
+│   ├── menu-data.js    # ⬅️ EDITE AQUI: itens, preços, entrega, WhatsApp
+│   └── app.js          # Carrinho, regras de entrega e envio pro WhatsApp
+└── assets/             # Fotos dos produtos
 ```
+
+## Ligando e desligando a entrega grátis
+
+Em `js/menu-data.js`, dentro de `LOJA.reserva`:
+
+```js
+reserva: {
+  ativa: true,
+  freteGratis: true,   // true = reserva de segunda a sexta não paga entrega
+  diasSemana: [1, 2, 3, 4, 5],
+}
+```
+
+Trocar `freteGratis` para `false` desliga a promoção e todo mundo passa a pagar
+a taxa normal. Nada mais precisa ser alterado — o resumo do pedido e a mensagem
+do WhatsApp se ajustam sozinhos.
+
+## Feriados
+
+A lista fica em `LOJA.feriados`, no formato `AAAA-MM-DD`. Feriado conta como dia
+de entrega, igual sábado e domingo. **Atualize a lista no começo de cada ano.**
 
 ## Editando o cardápio
 
@@ -75,15 +106,14 @@ com o aviso "Esgotado hoje" e sem o botão de adicionar:
 Copie uma linha existente dentro da categoria e ajuste. Só `nome` e `preco`
 são obrigatórios.
 
-### Mudar horário de funcionamento
+### Mudar o horário ou os dias de entrega
 
-Em `LOJA.horarios`. A página calcula sozinha se está **Aberto** ou **Fechado**
-e mostra o aviso no topo. `null` = fechado o dia inteiro.
+Em `LOJA.entrega`. `diasSemana` usa 0 = domingo … 6 = sábado.
 
 ```js
-horarios: {
-  0: null,                      // domingo fechado
-  5: { abre: '18:00', fecha: '23:59' },  // sexta
+entrega: {
+  diasSemana: [0, 6],                        // domingo e sábado
+  horario: { abre: '11:00', fecha: '14:00' },
 }
 ```
 
@@ -93,8 +123,14 @@ Com o repositório no GitHub, vá em **Settings → Pages**, escolha a branch
 `main` e a pasta `/ (root)`. Em alguns minutos o cardápio fica no ar num
 endereço público, de graça — é esse link que você manda pros clientes.
 
-## Aviso sobre os dados atuais
+## Pendências
 
-Os itens, preços e o número de WhatsApp neste repositório são **exemplos**
-para o cardápio já funcionar de cara. Troque pelos dados reais da loja
-antes de divulgar o link.
+Itens, preços, WhatsApp e identidade visual já são os reais. Ainda falta:
+
+- [ ] Confirmar o **valor da taxa de entrega** (hoje em R$ 10,00, chutado).
+- [ ] Fotos da **farofa** e do **creme de alho**.
+- [ ] Trocar o selo em SVG pelo **arquivo original do logo**, se houver versão
+      com fundo transparente.
+- [ ] Definir a **chave Pix** em `LOJA.chavePix` (hoje vazia, então não aparece
+      na mensagem do pedido).
+- [ ] Preencher o **endereço da loja** em `LOJA.endereco`, se quiser mostrá-lo.
