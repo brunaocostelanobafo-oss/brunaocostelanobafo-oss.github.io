@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0d0b0a">
+  <title>Painel · Brunão Costela no Bafo</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+
+  <header class="admin__topo">
+    <div class="admin__marca">
+      <h1>Painel</h1>
+      <p>Brunão Costela no Bafo</p>
+    </div>
+    <a class="admin__link-cardapio" href="index.html">Ver cardápio →</a>
+  </header>
+
+  <nav class="abas" id="abas" aria-label="Seções do painel">
+    <button class="aba aba--ativa" data-aba="painel">Painel</button>
+    <button class="aba" data-aba="vendas">Vendas</button>
+    <button class="aba" data-aba="clientes">Clientes</button>
+    <button class="aba" data-aba="caixa">Caixa</button>
+    <button class="aba" data-aba="estoque">Estoque</button>
+    <button class="aba" data-aba="custos">Custos</button>
+    <button class="aba" data-aba="backup">Backup</button>
+  </nav>
+
+  <main class="admin__corpo">
+
+    <!-- ============================ PAINEL ============================ -->
+    <section class="secao secao--ativa" id="secao-painel">
+      <div class="filtros">
+        <label class="filtro">
+          <span>Período</span>
+          <select id="filtro-periodo">
+            <option value="hoje">Hoje</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="tudo">Tudo</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="alertas" id="alertas"></div>
+
+      <div class="tiles" id="tiles"></div>
+
+      <figure class="grafico">
+        <figcaption>
+          <h2>Receita por dia</h2>
+          <p id="legenda-receita"></p>
+        </figcaption>
+        <div class="grafico__area" id="gr-receita"></div>
+      </figure>
+
+      <figure class="grafico">
+        <figcaption>
+          <h2>Para onde vai cada real de venda</h2>
+          <p>Receita repartida entre custo da mercadoria, despesas e o que sobra.</p>
+        </figcaption>
+        <div class="grafico__legenda" id="leg-composicao"></div>
+        <div class="grafico__area grafico__area--baixa" id="gr-composicao"></div>
+      </figure>
+
+      <figure class="grafico">
+        <figcaption>
+          <h2>Produtos que mais faturam</h2>
+          <p id="legenda-produtos"></p>
+        </figcaption>
+        <div class="grafico__area" id="gr-produtos"></div>
+      </figure>
+
+      <details class="tabela-alternativa">
+        <summary>Ver os mesmos números em tabela</summary>
+        <div id="tabela-painel"></div>
+      </details>
+    </section>
+
+    <!-- ============================ VENDAS ============================ -->
+    <section class="secao" id="secao-vendas">
+      <form class="cartao form-grade" id="form-venda">
+        <h2 class="cartao__titulo">Lançar venda</h2>
+
+        <label class="campo-adm">
+          <span>Data</span>
+          <input type="date" name="data" required>
+        </label>
+
+        <label class="campo-adm">
+          <span>Cliente</span>
+          <select name="clienteId" id="venda-cliente"></select>
+        </label>
+
+        <div class="itens-venda" id="itens-venda"></div>
+
+        <label class="campo-adm">
+          <span>Taxa de entrega (R$)</span>
+          <input type="text" name="taxaEntrega" inputmode="decimal" placeholder="0,00">
+        </label>
+
+        <label class="campo-adm">
+          <span>Desconto (R$)</span>
+          <input type="text" name="desconto" inputmode="decimal" placeholder="0,00">
+        </label>
+
+        <label class="campo-adm">
+          <span>Pagamento</span>
+          <select name="pagamento">
+            <option>Pix</option>
+            <option>Dinheiro</option>
+            <option>Cartão de crédito</option>
+            <option>Cartão de débito</option>
+          </select>
+        </label>
+
+        <label class="campo-adm campo-adm--largo">
+          <span>Observações</span>
+          <input type="text" name="obs" placeholder="Opcional">
+        </label>
+
+        <div class="form-rodape">
+          <strong id="venda-total">Total: R$ 0,00</strong>
+          <button type="submit" class="botao botao--principal">Lançar venda</button>
+        </div>
+        <p class="erro-adm" id="erro-venda" hidden></p>
+      </form>
+
+      <div class="cartao">
+        <h2 class="cartao__titulo">Vendas lançadas</h2>
+        <div id="lista-vendas"></div>
+      </div>
+    </section>
+
+    <!-- =========================== CLIENTES =========================== -->
+    <section class="secao" id="secao-clientes">
+      <form class="cartao form-grade" id="form-cliente">
+        <h2 class="cartao__titulo">Cadastrar cliente</h2>
+
+        <label class="campo-adm">
+          <span>Nome</span>
+          <input type="text" name="nome" required placeholder="Nome do cliente">
+        </label>
+
+        <label class="campo-adm">
+          <span>WhatsApp</span>
+          <input type="text" name="whatsapp" inputmode="tel" placeholder="(35) 99999-9999">
+        </label>
+
+        <label class="campo-adm campo-adm--largo">
+          <span>Endereço</span>
+          <input type="text" name="endereco" placeholder="Rua, número, bairro e referência">
+        </label>
+
+        <label class="campo-adm campo-adm--largo">
+          <span>Observações</span>
+          <input type="text" name="obs" placeholder="Preferências, portaria, cachorro no portão…">
+        </label>
+
+        <div class="form-rodape">
+          <span class="dica">O WhatsApp identifica o cliente e evita cadastro repetido.</span>
+          <button type="submit" class="botao botao--principal">Cadastrar</button>
+        </div>
+        <p class="erro-adm" id="erro-cliente" hidden></p>
+      </form>
+
+      <div class="cartao">
+        <h2 class="cartao__titulo">Clientes</h2>
+        <input type="search" class="busca" id="busca-cliente" placeholder="Buscar por nome, WhatsApp ou endereço…">
+        <div id="lista-clientes"></div>
+      </div>
+    </section>
+
+    <!-- ============================ CAIXA ============================ -->
+    <section class="secao" id="secao-caixa">
+      <form class="cartao form-grade" id="form-lancamento">
+        <h2 class="cartao__titulo">Lançar movimento de caixa</h2>
+
+        <label class="campo-adm">
+          <span>Data</span>
+          <input type="date" name="data" required>
+        </label>
+
+        <label class="campo-adm">
+          <span>Tipo</span>
+          <select name="tipo" id="lanc-tipo">
+            <option value="saida">Saída (dinheiro saiu)</option>
+            <option value="entrada">Entrada (dinheiro entrou)</option>
+          </select>
+        </label>
+
+        <label class="campo-adm">
+          <span>Categoria</span>
+          <select name="categoria" id="lanc-categoria"></select>
+        </label>
+
+        <label class="campo-adm">
+          <span>Valor (R$)</span>
+          <input type="text" name="valor" inputmode="decimal" required placeholder="0,00">
+        </label>
+
+        <label class="campo-adm campo-adm--largo">
+          <span>Descrição</span>
+          <input type="text" name="descricao" placeholder="Ex.: 40kg de costela no frigorífico">
+        </label>
+
+        <div class="form-rodape">
+          <span class="dica" id="dica-categoria"></span>
+          <button type="submit" class="botao botao--principal">Lançar</button>
+        </div>
+        <p class="erro-adm" id="erro-lancamento" hidden></p>
+      </form>
+
+      <div class="cartao">
+        <h2 class="cartao__titulo">Movimentos</h2>
+        <div id="lista-lancamentos"></div>
+      </div>
+    </section>
+
+    <!-- =========================== ESTOQUE =========================== -->
+    <section class="secao" id="secao-estoque">
+      <form class="cartao form-grade" id="form-insumo">
+        <h2 class="cartao__titulo">Cadastrar insumo</h2>
+
+        <label class="campo-adm">
+          <span>Nome</span>
+          <input type="text" name="nome" required placeholder="Ex.: Costela bovina">
+        </label>
+
+        <label class="campo-adm">
+          <span>Unidade</span>
+          <select name="unidade">
+            <option>kg</option><option>g</option><option>un</option>
+            <option>L</option><option>ml</option><option>pct</option>
+          </select>
+        </label>
+
+        <label class="campo-adm">
+          <span>Custo por unidade (R$)</span>
+          <input type="text" name="custoUnitario" inputmode="decimal" placeholder="0,00">
+        </label>
+
+        <label class="campo-adm">
+          <span>Estoque mínimo</span>
+          <input type="text" name="minimo" inputmode="decimal" placeholder="0">
+        </label>
+
+        <div class="form-rodape">
+          <span class="dica">Abaixo do mínimo, o painel avisa que precisa repor.</span>
+          <button type="submit" class="botao botao--principal">Cadastrar</button>
+        </div>
+        <p class="erro-adm" id="erro-insumo" hidden></p>
+      </form>
+
+      <div class="cartao">
+        <h2 class="cartao__titulo">Insumos em estoque</h2>
+        <div id="lista-insumos"></div>
+      </div>
+    </section>
+
+    <!-- ============================ CUSTOS ============================ -->
+    <section class="secao" id="secao-custos">
+      <div class="cartao">
+        <h2 class="cartao__titulo">Custo de cada produto</h2>
+        <p class="cartao__texto">
+          Quanto custa produzir uma unidade — a carne, o tempero, o gás, a embalagem.
+          É esse número que gera o <strong>CMV</strong> e revela a margem real de cada item.
+          Enquanto estiver zerado, o painel calcula lucro como se o produto fosse de graça.
+        </p>
+        <div id="lista-custos"></div>
+      </div>
+    </section>
+
+    <!-- ============================ BACKUP ============================ -->
+    <section class="secao" id="secao-backup">
+      <div class="cartao">
+        <h2 class="cartao__titulo">Backup dos dados</h2>
+        <p class="cartao__texto">
+          Tudo que você lança fica guardado <strong>neste navegador, neste
+          aparelho</strong>. Não existe servidor. Se limpar os dados do navegador,
+          trocar de celular ou usar aba anônima, os lançamentos somem.
+          <strong>Exporte com frequência.</strong>
+        </p>
+        <div class="botoes-linha">
+          <button class="botao botao--principal" id="btn-exportar">Baixar backup</button>
+          <label class="botao botao--secundario">
+            Restaurar backup
+            <input type="file" id="btn-importar" accept="application/json,.json" hidden>
+          </label>
+        </div>
+        <p class="aviso-perigo">
+          Restaurar substitui tudo que está aqui pelo conteúdo do arquivo.
+        </p>
+        <hr class="divisor">
+        <button class="botao botao--perigo" id="btn-apagar">Apagar todos os dados</button>
+      </div>
+
+      <div class="cartao">
+        <h2 class="cartao__titulo">Como as contas são feitas</h2>
+        <dl class="explicacao">
+          <dt>Receita</dt>
+          <dd>Soma das vendas do período, já com taxa de entrega e menos descontos.</dd>
+          <dt>CMV (Custo da Mercadoria Vendida)</dt>
+          <dd>Custo dos produtos que saíram, usando o custo cadastrado em <em>Custos</em>.</dd>
+          <dt>Lucro bruto</dt>
+          <dd>Receita − CMV. O que sobra antes das despesas do negócio.</dd>
+          <dt>Despesas operacionais</dt>
+          <dd>Saídas de caixa que não são compra de mercadoria: gás, embalagem, marketing, aluguel.</dd>
+          <dt>Lucro líquido</dt>
+          <dd>Lucro bruto − despesas operacionais. O que realmente sobra.</dd>
+          <dt>Por que compra de mercadoria não é despesa aqui</dt>
+          <dd>
+            Ela sai do caixa na hora da compra, mas só vira custo no resultado quando
+            o produto é vendido — pelo CMV. Contar nos dois lugares dobraria o custo
+            e faria o lucro parecer menor do que é.
+          </dd>
+        </dl>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/menu-data.js"></script>
+  <script src="js/admin-store.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

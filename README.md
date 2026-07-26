@@ -35,16 +35,63 @@ A página calcula tudo sozinha: mostra se estamos entregando, em reserva ou fora
 do horário, monta a lista das próximas datas de entrega (incluindo feriados) e
 tira ou cobra a taxa conforme o dia em que o cliente fez o pedido.
 
+## Painel administrativo
+
+Abra `admin.html`. Ele controla vendas, clientes, caixa, estoque, custos e CMV.
+
+| Aba | Para quê |
+|---|---|
+| **Painel** | Receita, CMV, lucro, ticket médio, saldo de caixa e gráficos |
+| **Vendas** | Lançar cada venda, com cliente e forma de pagamento |
+| **Clientes** | Cadastro com nome, WhatsApp e endereço, mais o histórico de compras |
+| **Caixa** | Entradas e saídas de dinheiro por categoria |
+| **Estoque** | Insumos, entradas, baixas e alerta de estoque mínimo |
+| **Custos** | Quanto custa produzir cada item — é o que gera o CMV |
+| **Backup** | Exportar e restaurar os dados |
+
+### ⚠️ Onde os dados ficam
+
+**No navegador do aparelho que você está usando. Não existe servidor.**
+
+Isso significa que os lançamentos:
+
+- não aparecem em outro celular ou computador;
+- somem se você limpar os dados do navegador;
+- não são vistos por mais ninguém — nem por quem abrir o `admin.html` pela
+  internet, porque cada navegador só enxerga o que foi digitado nele.
+
+**Baixe o backup com frequência** (aba Backup). É um arquivo `.json` que você
+guarda no Drive ou manda pra si mesmo no WhatsApp, e que restaura tudo em
+qualquer aparelho.
+
+### Como o resultado é calculado
+
+```
+Receita − CMV                    = Lucro bruto
+Lucro bruto − Despesas operacionais = Lucro líquido
+```
+
+Compra de mercadoria **não** entra como despesa operacional: ela sai do caixa na
+hora da compra, mas só vira custo no resultado quando o produto é vendido, pelo
+CMV. Contar nos dois lugares dobraria o custo e faria o lucro parecer menor.
+
+O caixa é uma conta separada: entradas (vendas + aportes) − saídas (todas,
+inclusive mercadoria).
+
 ## Estrutura
 
 ```
 .
 ├── index.html          # Página do cardápio (o selo da marca é um SVG aqui dentro)
+├── admin.html          # Painel administrativo
 ├── css/
-│   └── styles.css      # Todo o visual — preto, vermelho e creme da marca
+│   ├── styles.css      # Visual do cardápio — preto, vermelho e creme da marca
+│   └── admin.css       # Visual do painel
 ├── js/
 │   ├── menu-data.js    # ⬅️ EDITE AQUI: itens, preços, entrega, WhatsApp
-│   └── app.js          # Carrinho, regras de entrega e envio pro WhatsApp
+│   ├── app.js          # Carrinho, regras de entrega e envio pro WhatsApp
+│   ├── admin-store.js  # Dados e contas do painel
+│   └── admin.js        # Telas e gráficos do painel
 └── assets/             # Fotos dos produtos
 ```
 
@@ -134,3 +181,5 @@ Itens, preços, WhatsApp e identidade visual já são os reais. Ainda falta:
 - [ ] Definir a **chave Pix** em `LOJA.chavePix` (hoje vazia, então não aparece
       na mensagem do pedido).
 - [ ] Preencher o **endereço da loja** em `LOJA.endereco`, se quiser mostrá-lo.
+- [ ] Cadastrar o **custo de cada produto** na aba Custos do painel — sem isso o
+      CMV fica zerado e o lucro aparece inflado.
