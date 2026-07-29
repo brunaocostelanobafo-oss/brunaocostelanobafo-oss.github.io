@@ -479,7 +479,16 @@
       const cliente = v.clienteNome || 'Sem cliente';
       texto.appendChild(el('div', 'registro__titulo', `${dataBR(v.data)} · ${cliente}`));
       const detalhe = v.itens.map((i) => `${i.qtd}x ${i.nome}`).join(', ');
-      texto.appendChild(el('div', 'registro__detalhe', `${detalhe} · ${v.pagamento}`));
+      const infoLinha = el('div', 'registro__detalhe', `${detalhe} · ${v.pagamento}`);
+      if (v.recibo) {
+        infoLinha.appendChild(document.createTextNode(' · '));
+        const link = el('a', 'registro__recibo', 'comprovante');
+        link.href = v.recibo;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        infoLinha.appendChild(link);
+      }
+      texto.appendChild(infoLinha);
       linha.appendChild(texto);
 
       linha.appendChild(el('strong', 'registro__valor', reais(Store.totalVenda(v))));
@@ -990,8 +999,13 @@
       return l;
     };
 
+    const selo = document.createElement('img');
+    selo.className = 'ticket__selo';
+    selo.src = 'assets/selo-ticket.png';
+    selo.alt = 'Brunão Costela no Bafo';
+    via.appendChild(selo);
+
     via.appendChild(el('div', 'ticket__marca', 'BRUNÃO COSTELA NO BAFO'));
-    via.appendChild(el('div', 'ticket__sub', 'Delivery & Retirada'));
     via.appendChild(regua(true));
 
     if (venda.orderNsu) via.appendChild(el('div', null, 'PEDIDO ' + venda.orderNsu));
@@ -1042,10 +1056,13 @@
     via.appendChild(total);
     via.appendChild(el('div', null, 'Pagamento: ' + (venda.pagamento || '—')));
 
-    if (venda.obs) {
+    // Só o que o cliente escreveu. Link de comprovante e "pago pelo site"
+    // são controle interno: quem está separando o pedido não precisa
+    // disso, e ocupava o espaço que importa.
+    if (venda.obs && venda.obs.trim()) {
       const obs = el('div', 'ticket__obs');
       obs.appendChild(el('div', 'ticket__rotulo', 'OBSERVAÇÕES'));
-      obs.appendChild(el('div', null, venda.obs));
+      obs.appendChild(el('div', null, venda.obs.trim()));
       via.appendChild(obs);
     }
 
@@ -1210,8 +1227,11 @@
             taxaEntrega: taxa,
             desconto: 0,
             pagamento: bruta.metodo || 'Pix',
-            obs: [bruta.observacoes, bruta.recibo ? `Comprovante: ${bruta.recibo}` : 'Pago pelo site']
-              .filter(Boolean).join(' · '),
+            // Observações guardam só o que o cliente escreveu. O
+            // comprovante fica em campo próprio, para não poluir o
+            // ticket de expedição.
+            obs: bruta.observacoes || '',
+            recibo: bruta.recibo || '',
             orderNsu: bruta.order_nsu,
             origem: 'site',
             // Dados de expedição: para onde e quando, não quando compraram.

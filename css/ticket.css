@@ -26,9 +26,13 @@
 
   .ticket {
     display: block !important;
-    width: 72mm;
+    /* A impressora começa a queimar alguns milímetros à direita da borda
+       física do papel, e o quanto varia de modelo para modelo. A margem
+       esquerda maior evita que a primeira letra de cada linha se perca —
+       era o que estava acontecendo com 2mm. */
+    width: 66mm;
     margin: 0;
-    padding: 3mm 2mm 6mm;
+    padding: 3mm 2mm 6mm 6mm;
     background: #fff;
     color: #000;
     font-family: ui-monospace, 'Cascadia Mono', Consolas, 'Courier New', monospace;
@@ -41,6 +45,13 @@
   /* Cada pedido sai numa via separada. */
   .ticket__via { page-break-after: always; }
   .ticket__via:last-child { page-break-after: auto; }
+
+  .ticket__selo {
+    display: block;
+    width: 26mm;
+    height: auto;
+    margin: 0 auto 1.5mm;
+  }
 
   .ticket__marca {
     text-align: center;
