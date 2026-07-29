@@ -532,6 +532,35 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .opcao:has(input:checked) { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.15); }
 .opcao input { accent-color: var(--vermelho); width: 17px; height: 17px; }
 
+/* ---------- Agendamento de horário ---------- */
+
+.agendar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--borda);
+  background: var(--preto-carta);
+  cursor: pointer;
+}
+
+.agendar:has(input:checked) { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.12); }
+.agendar input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--vermelho); flex-shrink: 0; }
+.agendar__texto { display: block; }
+.agendar__texto strong { display: block; font-size: 14px; }
+.agendar__texto small { display: block; margin-top: 3px; font-size: 12px; color: var(--creme-suave); line-height: 1.45; }
+
+.campo--hora { margin-top: 10px; }
+.campo--hora input[type='time'] {
+  width: 100%;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--borda);
+  background: var(--preto-carta);
+  font-size: 15px;
+}
+
 /* ---------- Resumo ---------- */
 
 .resumo {

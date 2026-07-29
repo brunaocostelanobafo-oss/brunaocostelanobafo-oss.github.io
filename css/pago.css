@@ -1,0 +1,141 @@
+/* Página de pós-pagamento — herda as variáveis de css/styles.css */
+
+.pago {
+  padding: 24px 16px 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.pago__caixa { width: 100%; max-width: 520px; }
+
+.pago__selo { text-align: center; margin-bottom: 26px; }
+
+.pago__check {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--verde-zap);
+  color: #06381a;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pago__titulo {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.pago__sub { margin: 6px 0 0; font-size: 14px; color: var(--creme-suave); }
+
+.pago__bloco {
+  margin-bottom: 14px;
+  padding: 16px;
+  border-radius: var(--raio);
+  background: var(--preto-carta);
+  border: 1px solid var(--borda);
+}
+
+.pago__bloco--data { border-color: var(--vermelho); }
+
+.pago__h2 {
+  margin: 0 0 11px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--creme-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.pago__itens { list-style: none; margin: 0; padding: 0; }
+
+.pago__itens li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 14px;
+}
+
+.pago__itens li:last-child { border-bottom: none; }
+.pago__itens span { color: var(--creme-suave); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.pago__total {
+  margin: 12px 0 0;
+  padding-top: 11px;
+  border-top: 1px solid var(--borda);
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.4px;
+  text-align: right;
+}
+
+.pago__data {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 25px;
+  letter-spacing: 0.5px;
+  color: var(--vermelho-claro);
+  line-height: 1.15;
+}
+
+.pago__endereco { margin: 8px 0 0; font-size: 13.5px; color: var(--creme-suave); }
+
+.pago__instrucao { margin: 0 0 10px; font-size: 13.5px; line-height: 1.6; color: var(--creme-forte); }
+.pago__instrucao:last-child { margin-bottom: 0; }
+
+.pago__nota {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(37, 211, 102, 0.1);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  font-size: 13px;
+  color: var(--verde-zap);
+  font-weight: 600;
+}
+
+.pago__zap {
+  display: block;
+  margin: 20px 0 0;
+  padding: 15px;
+  border-radius: var(--raio);
+  background: var(--verde-zap);
+  color: #06381a;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pago__zap:hover { filter: brightness(1.08); }
+
+.pago__aviso {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--creme-suave);
+  line-height: 1.55;
+}
+
+.pago__aviso a { color: var(--creme-forte); }
+
+.pago__voltar {
+  display: block;
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--creme-suave);
+  text-decoration: none;
+}
+
+.pago__voltar:hover { color: var(--vermelho-claro); }

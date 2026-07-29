@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0d0b0a">
+  <title>Pedido confirmado · Brunão Costela no Bafo</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/pago.css">
+</head>
+<body class="pago">
+
+  <main class="pago__caixa">
+
+    <div class="pago__selo">
+      <span class="pago__check">✓</span>
+      <h1 class="pago__titulo">Pedido confirmado!</h1>
+      <p class="pago__sub" id="pago-sub">Recebemos seu pagamento.</p>
+    </div>
+
+    <section class="pago__bloco" id="bloco-pedido" hidden>
+      <h2 class="pago__h2">Seu pedido</h2>
+      <ul class="pago__itens" id="pago-itens"></ul>
+      <p class="pago__total" id="pago-total"></p>
+    </section>
+
+    <section class="pago__bloco pago__bloco--data" id="bloco-entrega" hidden>
+      <h2 class="pago__h2" id="entrega-titulo">Entrega agendada</h2>
+      <p class="pago__data" id="pago-data"></p>
+      <p class="pago__endereco" id="pago-endereco"></p>
+    </section>
+
+    <section class="pago__bloco">
+      <h2 class="pago__h2">🚚 Como funciona nossa entrega</h2>
+      <div id="pago-instrucoes"></div>
+      <p class="pago__nota" id="pago-agendado" hidden></p>
+    </section>
+
+    <a class="pago__zap" id="pago-zap" target="_blank" rel="noopener">
+      Falar com a gente no WhatsApp
+    </a>
+
+    <p class="pago__aviso" id="pago-recibo-linha" hidden>
+      <a id="pago-recibo" target="_blank" rel="noopener">Ver comprovante de pagamento</a>
+    </p>
+
+    <p class="pago__aviso">
+      Já registramos seu pedido aqui. Não precisa fazer mais nada —
+      o WhatsApp é só se você quiser falar com a gente.
+    </p>
+
+    <a class="pago__voltar" href="index.html">← Voltar ao cardápio</a>
+  </main>
+
+  <script src="js/menu-data.js"></script>
+  <script src="js/pago.js"></script>
+</body>
+</html>

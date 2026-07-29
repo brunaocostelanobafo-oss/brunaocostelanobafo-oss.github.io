@@ -168,6 +168,24 @@
     return LOJA.taxaEntrega;
   }
 
+  function pagamentoOnlineLigado() {
+    return !!(LOJA.pagamentoOnline && LOJA.pagamentoOnline.ativa && LOJA.pagamentoOnline.urlScript);
+  }
+
+  /** Agendar horário certo é opcional e só faz sentido na entrega. */
+  function querAgendar() {
+    const marca = document.getElementById('check-agendar');
+    return !!(marca && marca.checked && ehEntrega() && LOJA.agendamentoHorario.ativo);
+  }
+
+  function taxaAgendamento() {
+    return querAgendar() ? LOJA.agendamentoHorario.taxa : 0;
+  }
+
+  function totalGeral() {
+    return subtotal() + taxaAtual() + taxaAgendamento();
+  }
+
   // -------------------------------------------------------------- renderização
 
   function montarTopo() {
@@ -445,11 +463,15 @@
       linhas.push(['Taxa de entrega', taxa === 0 ? 'Grátis' : precoBR(taxa)]);
     }
 
+    if (taxaAgendamento()) {
+      linhas.push(['Agendamento de horário', precoBR(taxaAgendamento())]);
+    }
+
     resumo.innerHTML = '';
     for (const [rotulo, valor] of linhas) {
       resumo.appendChild(criarLinhaResumo(rotulo, valor, false));
     }
-    resumo.appendChild(criarLinhaResumo('Total', precoBR(sub + taxa), true));
+    resumo.appendChild(criarLinhaResumo('Total', precoBR(totalGeral()), true));
   }
 
   function criarLinhaResumo(rotulo, valor, ehTotal) {
@@ -561,10 +583,97 @@
       return falhar(`O pedido mínimo é ${precoBR(LOJA.pedidoMinimo)}. Adicione mais um item.`);
     }
 
+    if (querAgendar() && !dados.hora) {
+      return falhar('Escolha o horário que você quer receber.', 'hora');
+    }
+
     erro.hidden = true;
+
+    if (pagamentoOnlineLigado()) return pagarOnline(dados, falhar);
 
     const texto = encodeURIComponent(montarMensagem(dados));
     window.open(`https://wa.me/${LOJA.whatsapp}?text=${texto}`, '_blank', 'noopener');
+  }
+
+  // ------------------------------------------------------- pagamento online
+
+  /**
+   * Monta o pedido no formato da InfinitePay e manda para o Apps Script,
+   * que é quem fala com a API — o navegador não consegue por causa do CORS.
+   *
+   * A taxa de entrega e o agendamento viram itens, porque o checkout só
+   * entende lista de itens; assim o cliente paga tudo de uma vez.
+   */
+  function pagarOnline(dados, falhar) {
+    const botao = document.getElementById('botao-enviar');
+    const rotuloOriginal = botao.textContent;
+    botao.disabled = true;
+    botao.textContent = 'Gerando o pagamento…';
+
+    const itens = Object.entries(carrinho).map(([nome, qtd]) => {
+      const item = acharItem(nome);
+      return { quantity: qtd, price: item.preco, description: item.nome };
+    });
+
+    if (taxaAtual() > 0) {
+      itens.push({ quantity: 1, price: taxaAtual(), description: 'Taxa de entrega' });
+    }
+    if (taxaAgendamento() > 0) {
+      itens.push({ quantity: 1, price: taxaAgendamento(), description: `Agendamento de horário (${dados.hora})` });
+    }
+
+    const entrega = dados.entrega === 'entrega';
+
+    // Guardado antes de sair da página: o cliente volta do checkout numa
+    // navegação nova, e é daqui que a tela de confirmação lê o pedido.
+    const resumoPedido = {
+      itens: itens.map((i) => ({ nome: i.description, qtd: i.quantity, preco: i.price })),
+      total: totalGeral(),
+      nome: dados.nome,
+      entrega,
+      endereco: entrega ? dados.endereco : '',
+      data: dados.data,
+      hora: querAgendar() ? dados.hora : '',
+      observacoes: dados.observacoes || '',
+      freteGratis: entrega && temFreteGratis(),
+    };
+
+    try {
+      localStorage.setItem('brunao:ultimo-pedido', JSON.stringify(resumoPedido));
+    } catch { /* modo privado — a tela de confirmação mostra menos detalhe */ }
+
+    fetch(LOJA.pagamentoOnline.urlScript, {
+      method: 'POST',
+      // text/plain de propósito: o Apps Script não responde a preflight,
+      // e application/json faria o navegador disparar um.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        acao: 'criar-link',
+        itens,
+        cliente: { nome: dados.nome },
+        enderecoTexto: entrega ? dados.endereco : 'Retirada no local',
+      }),
+    })
+      .then((r) => r.json())
+      .then((resposta) => {
+        if (!resposta.ok || !resposta.url) {
+          throw new Error(resposta.erro || 'Não foi possível gerar o pagamento.');
+        }
+        try {
+          const salvo = JSON.parse(localStorage.getItem('brunao:ultimo-pedido'));
+          salvo.order_nsu = resposta.order_nsu;
+          localStorage.setItem('brunao:ultimo-pedido', JSON.stringify(salvo));
+        } catch { /* segue sem o número do pedido */ }
+
+        window.location.href = resposta.url;
+      })
+      .catch((erro) => {
+        botao.disabled = false;
+        botao.textContent = rotuloOriginal;
+        falhar(
+          `${erro.message} Se continuar, chame no WhatsApp ${LOJA.whatsappVisivel} que a gente resolve.`
+        );
+      });
   }
 
   // ------------------------------------------------------------------- início
@@ -609,13 +718,46 @@
       document.getElementById('campo-troco').hidden = pagamento.value !== 'Dinheiro';
     });
 
+    // Com pagamento online o cliente paga no checkout, então não faz
+    // sentido perguntar aqui a forma de pagamento nem o troco.
+    if (pagamentoOnlineLigado()) {
+      document.getElementById('campo-pagamento').hidden = true;
+      document.getElementById('botao-enviar').textContent = 'Pagar e confirmar pedido';
+      document.getElementById('modal-aviso').textContent =
+        'Você vai para o pagamento seguro da InfinitePay. Pix ou cartão.';
+    }
+
+    // Agendamento de horário
+    const agendar = document.getElementById('check-agendar');
+    if (LOJA.agendamentoHorario && LOJA.agendamentoHorario.ativo) {
+      const { abre, fecha } = LOJA.entrega.horario;
+      document.getElementById('agendar-descricao').textContent =
+        `Sem agendar, você recebe entre ${abre} e ${fecha}, na ordem das reservas. ` +
+        `Para escolher a hora, custa ${precoBR(LOJA.agendamentoHorario.taxa)}.`;
+      document.getElementById('campo-agendar').hidden = !ehEntrega();
+
+      agendar.addEventListener('change', () => {
+        document.getElementById('campo-hora').hidden = !agendar.checked;
+        montarResumo();
+      });
+    }
+
     // Endereço só faz sentido na entrega; a taxa muda junto.
     for (const radio of document.querySelectorAll('input[name="entrega"]')) {
       radio.addEventListener('change', () => {
-        document.getElementById('campo-endereco').hidden = !ehEntrega();
-        document.getElementById('label-data').textContent = ehEntrega()
+        const entrega = ehEntrega();
+        document.getElementById('campo-endereco').hidden = !entrega;
+        document.getElementById('label-data').textContent = entrega
           ? 'Data da entrega'
           : 'Data da retirada';
+
+        if (LOJA.agendamentoHorario && LOJA.agendamentoHorario.ativo) {
+          document.getElementById('campo-agendar').hidden = !entrega;
+          if (!entrega) {
+            agendar.checked = false;
+            document.getElementById('campo-hora').hidden = true;
+          }
+        }
         montarResumo();
       });
     }

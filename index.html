@@ -124,7 +124,21 @@
                    placeholder="Rua, número, bairro e ponto de referência">
           </label>
 
-          <label class="campo">
+          <div class="campo" id="campo-agendar" hidden>
+            <label class="agendar">
+              <input type="checkbox" name="agendar" id="check-agendar">
+              <span class="agendar__texto">
+                <strong>Quero agendar um horário</strong>
+                <small id="agendar-descricao"></small>
+              </span>
+            </label>
+            <label class="campo campo--hora" id="campo-hora" hidden>
+              <span class="campo__label">Horário desejado</span>
+              <input type="time" name="hora" min="11:00" max="14:00" value="11:30">
+            </label>
+          </div>
+
+          <label class="campo" id="campo-pagamento">
             <span class="campo__label">Pagamento</span>
             <select name="pagamento" id="select-pagamento"></select>
           </label>
@@ -148,7 +162,7 @@
         <button type="submit" form="form-pedido" class="botao-enviar" id="botao-enviar">
           Enviar pedido pelo WhatsApp
         </button>
-        <p class="modal__aviso">Você confere a mensagem no WhatsApp antes de enviar.</p>
+        <p class="modal__aviso" id="modal-aviso">Você confere a mensagem no WhatsApp antes de enviar.</p>
       </footer>
     </div>
   </div>

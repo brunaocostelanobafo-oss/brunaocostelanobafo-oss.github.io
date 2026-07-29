@@ -22,8 +22,37 @@ const LOJA = {
   // Deixe vazio para não aparecer no rodapé.
   endereco: '',
 
-  // TODO: confirmar o valor real da taxa de entrega.
-  taxaEntrega: 1000,
+  taxaEntrega: 800,
+
+  /* Agendar um horário certo dentro da janela de entrega, em vez de
+     esperar a rota chegar. Custa à parte. Deixe `ativo: false` para
+     não oferecer. */
+  agendamentoHorario: {
+    ativo: true,
+    taxa: 800,
+  },
+
+  /* ---------------------------------------------------------------------
+   * PAGAMENTO ONLINE (InfinitePay)
+   *
+   * Com `ativa: true`, o cliente paga na hora do pedido e a venda cai
+   * sozinha no painel. Com `false`, o cardápio volta a mandar o pedido
+   * pelo WhatsApp e você lança na mão.
+   *
+   * A URL sai da implantação do Apps Script — veja
+   * integracao/apps-script/CONFIGURACAO.md
+   * ------------------------------------------------------------------- */
+  pagamentoOnline: {
+    ativa: true,
+    urlScript: 'https://script.google.com/macros/s/AKfycbz2qeJ-xuAXrd_whJOqJEI_uYyW3JYgvJiaM49SUeEA8sHfRzPXLlyj6xqjzFTrwzqp/exec',
+  },
+
+  /* Instruções mostradas na página de pós-pagamento. Cada item é um
+     parágrafo. Edite à vontade — é texto puro. */
+  textoEntrega: [
+    'Para as reservas antecipadas trabalhamos com uma única rota, realizada entre 11h e 14h, seguindo a ordem das reservas.',
+    'Assim que a rota começar, avisaremos pelo WhatsApp.',
+  ],
 
   // Pedido mínimo em centavos. Use 0 para não exigir mínimo.
   pedidoMinimo: 0,
