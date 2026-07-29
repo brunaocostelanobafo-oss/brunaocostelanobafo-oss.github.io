@@ -773,6 +773,16 @@
 
   const CHAVE_INTEGRACAO = 'brunao:integracao';
 
+  /** Recado curto na barra do topo. Texto vazio esconde. */
+  function avisoBarra(texto, tom) {
+    const barra = document.getElementById('aviso-barra');
+    if (!barra) return;
+    barra.textContent = texto;
+    barra.className = 'aviso-barra' + (tom ? ` aviso-barra--${tom}` : '');
+    barra.hidden = !texto;
+    if (texto && tom) setTimeout(() => { barra.hidden = true; }, 6000);
+  }
+
   /**
    * A URL e o token ficam no navegador, nunca no código.
    *
@@ -824,7 +834,13 @@
     return { itens, taxa };
   }
 
-  function sincronizarVendas() {
+  /**
+   * @param {boolean} automatico Disparado sozinho ao abrir o painel.
+   *   Nesse modo não reclama de configuração faltando (quem ainda não
+   *   configurou não precisa levar erro na cara toda vez que abre) e
+   *   avisa discretamente na barra em vez de ocupar a tela.
+   */
+  function sincronizarVendas(automatico) {
     const alvo = document.getElementById('resultado-sinc');
     const botao = document.getElementById('btn-sincronizar');
     const { url, token } = lerIntegracao();
@@ -832,10 +848,13 @@
     alvo.innerHTML = '';
 
     if (!url || !token) {
+      if (automatico) return;
       alvo.appendChild(el('p', 'erro-adm', 'Preencha a URL e o token em "Configurar conexão".'));
       document.getElementById('config-integracao').open = true;
       return;
     }
+
+    if (automatico) avisoBarra('Buscando vendas pagas…');
 
     botao.disabled = true;
     botao.textContent = 'Buscando…';
@@ -886,6 +905,18 @@
           novas++;
         }
 
+        // Na busca automática, silêncio quando não há novidade — só o que
+        // mudou merece interromper quem abriu o painel.
+        if (automatico) {
+          if (novas) {
+            avisoBarra(`✓ ${novas} venda(s) nova(s) do site`, 'bom');
+            renderTudo();
+          } else {
+            avisoBarra('');
+          }
+          return;
+        }
+
         const caixa = el('div', 'sinc__resultado');
         if (novas) {
           caixa.appendChild(el('strong', null, `✓ ${novas} venda(s) nova(s) lançada(s)`));
@@ -903,6 +934,12 @@
         renderTudo();
       })
       .catch((erro) => {
+        // Falha na automática não pode travar o painel: os lançamentos
+        // que já estão aqui continuam valendo mesmo sem internet.
+        if (automatico) {
+          avisoBarra('Não consegui buscar as vendas do site agora.', 'ruim');
+          return;
+        }
         alvo.appendChild(el('p', 'erro-adm',
           `Não consegui buscar: ${erro.message} Confira a URL e o token em "Configurar conexão".`));
       })
@@ -931,7 +968,12 @@
       document.getElementById('config-integracao').open = false;
     });
 
-    document.getElementById('btn-sincronizar').addEventListener('click', sincronizarVendas);
+    document.getElementById('btn-sincronizar').addEventListener('click', () => sincronizarVendas(false));
+
+    // Busca sozinho ao abrir, para você não depender de lembrar do botão.
+    // Fora da renderização inicial: o painel abre na hora, e a venda nova
+    // entra quando o Apps Script responder, uns segundos depois.
+    if (url && token) setTimeout(() => sincronizarVendas(true), 400);
   }
 
   // ------------------------------------------------- ler pedido do WhatsApp
