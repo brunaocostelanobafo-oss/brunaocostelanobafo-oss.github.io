@@ -502,6 +502,24 @@
 
 .registro__excluir:hover { border-color: #d03b3b; color: #ff8f88; }
 
+.registro__imprimir {
+  flex-shrink: 0;
+  width: 32px;
+  height: 28px;
+  border: 1px solid var(--borda);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--creme-suave);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.registro__imprimir:hover { border-color: var(--vermelho); color: var(--creme-forte); }
+
+.expedicao { display: flex; gap: 11px; align-items: flex-end; flex-wrap: wrap; }
+.expedicao .campo-adm { flex: 1; min-width: 160px; }
+
 .vazio { margin: 0; padding: 24px 0; text-align: center; color: var(--creme-suave); font-size: 13px; }
 
 /* ---------- Clientes ---------- */

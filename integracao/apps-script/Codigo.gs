@@ -44,6 +44,8 @@ var COLUNAS = [
   'data', 'order_nsu', 'transaction_nsu', 'slug', 'cliente', 'telefone',
   'endereco', 'itens', 'valor_centavos', 'pago_centavos', 'parcelas',
   'metodo', 'recibo', 'status', 'registrado_em',
+  // Para o ticket de expedição: quando entregar, não quando compraram.
+  'entrega_texto', 'hora_agendada', 'retirada', 'observacoes',
 ];
 
 // ===========================================================================
@@ -290,6 +292,10 @@ function gravarPendente(orderNsu, dados, itens) {
   linha[indiceDe('recibo')] = '';
   linha[indiceDe('status')] = 'pendente';
   linha[indiceDe('registrado_em')] = new Date();
+  linha[indiceDe('entrega_texto')] = dados.entregaTexto || '';
+  linha[indiceDe('hora_agendada')] = dados.horaAgendada || '';
+  linha[indiceDe('retirada')] = dados.retirada ? 'sim' : '';
+  linha[indiceDe('observacoes')] = dados.observacoes || '';
 
   for (var i = 0; i < COLUNAS.length; i++) if (linha[i] === undefined) linha[i] = '';
   aba().appendRow(linha);
@@ -358,6 +364,10 @@ function lerVendas(desde) {
       valor: Number(linha.pago_centavos || linha.valor_centavos || 0),
       metodo: linha.metodo,
       recibo: linha.recibo,
+      entrega_texto: linha.entrega_texto || '',
+      hora_agendada: linha.hora_agendada || '',
+      retirada: linha.retirada === 'sim',
+      observacoes: linha.observacoes || '',
     });
   }
   return vendas;

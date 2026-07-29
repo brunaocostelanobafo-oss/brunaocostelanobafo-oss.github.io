@@ -484,6 +484,13 @@
 
       linha.appendChild(el('strong', 'registro__valor', reais(Store.totalVenda(v))));
 
+      const imprimir = el('button', 'registro__imprimir', '🖨');
+      imprimir.type = 'button';
+      imprimir.title = 'Imprimir ticket de expedição';
+      imprimir.setAttribute('aria-label', `Imprimir ticket de ${v.clienteNome || 'venda'}`);
+      imprimir.addEventListener('click', () => imprimirVendas([v]));
+      linha.appendChild(imprimir);
+
       const botao = el('button', 'registro__excluir', '×');
       botao.type = 'button';
       botao.title = 'Excluir venda';
@@ -958,6 +965,122 @@
     });
   }
 
+  // ----------------------------------------------- ticket de expedição 80mm
+
+  /**
+   * Monta uma via do ticket para a impressora térmica.
+   *
+   * Feito para quem está separando o pedido, não para o cliente: o que
+   * precisa saltar aos olhos é para onde vai, quando, e o que entra na
+   * sacola. Por isso a data de entrega e o endereço vêm em destaque, e o
+   * dinheiro fica embaixo.
+   */
+  function montarVia(venda) {
+    const via = el('div', 'ticket__via');
+    const cliente = venda.clienteId
+      ? Store.dados.clientes.find((c) => c.id === venda.clienteId)
+      : null;
+
+    const regua = (forte) => el('div', forte ? 'ticket__regua--forte' : 'ticket__regua');
+    const rotulo = (t) => el('div', 'ticket__rotulo', t);
+    const linha = (esq, dir) => {
+      const l = el('div', 'ticket__linha');
+      l.appendChild(el('span', null, esq));
+      l.appendChild(el('span', null, dir));
+      return l;
+    };
+
+    via.appendChild(el('div', 'ticket__marca', 'BRUNÃO COSTELA NO BAFO'));
+    via.appendChild(el('div', 'ticket__sub', 'Delivery & Retirada'));
+    via.appendChild(regua(true));
+
+    if (venda.orderNsu) via.appendChild(el('div', null, 'PEDIDO ' + venda.orderNsu));
+    via.appendChild(el('div', 'ticket__pequeno',
+      'Impresso em ' + new Date().toLocaleString('pt-BR')));
+    via.appendChild(regua());
+
+    // O que o expedidor precisa ver primeiro
+    const entrega = venda.entregaTexto || dataBR(venda.data);
+    via.appendChild(rotulo(venda.retirada ? 'RETIRADA' : 'ENTREGA'));
+    via.appendChild(el('div', 'ticket__destaque', entrega));
+
+    if (venda.horaAgendada) {
+      via.appendChild(el('div', 'ticket__destaque', 'HORÁRIO ' + venda.horaAgendada));
+    } else if (!venda.retirada) {
+      const { abre, fecha } = LOJA.entrega.horario;
+      via.appendChild(el('div', null, `Janela: ${abre} às ${fecha}`));
+    }
+
+    via.appendChild(regua());
+    via.appendChild(rotulo('CLIENTE'));
+    via.appendChild(el('div', null, venda.clienteNome || 'Não identificado'));
+    if (cliente && cliente.whatsapp) via.appendChild(el('div', null, cliente.whatsapp));
+
+    via.appendChild(regua());
+    via.appendChild(rotulo(venda.retirada ? 'RETIRAR NO LOCAL' : 'ENDEREÇO'));
+    const endereco = (cliente && cliente.endereco) || venda.enderecoTexto || '';
+    via.appendChild(el('div', null, venda.retirada ? '—' : (endereco || 'Endereço não informado')));
+
+    via.appendChild(regua());
+    via.appendChild(rotulo('ITENS'));
+    for (const item of venda.itens) {
+      const bloco = el('div', 'ticket__item');
+      bloco.appendChild(el('div', 'ticket__item-nome', `${item.qtd}x ${item.nome}`));
+      bloco.appendChild(linha('', reais(item.preco * item.qtd)));
+      via.appendChild(bloco);
+    }
+
+    via.appendChild(regua());
+    const subtotal = venda.itens.reduce((s, i) => s + i.preco * i.qtd, 0);
+    via.appendChild(linha('Subtotal', reais(subtotal)));
+    if (venda.taxaEntrega) via.appendChild(linha('Entrega/agendamento', reais(venda.taxaEntrega)));
+    if (venda.desconto) via.appendChild(linha('Desconto', '-' + reais(venda.desconto)));
+
+    const total = el('div', 'ticket__total');
+    total.appendChild(el('span', null, 'TOTAL'));
+    total.appendChild(el('span', null, reais(Store.totalVenda(venda))));
+    via.appendChild(total);
+    via.appendChild(el('div', null, 'Pagamento: ' + (venda.pagamento || '—')));
+
+    if (venda.obs) {
+      const obs = el('div', 'ticket__obs');
+      obs.appendChild(el('div', 'ticket__rotulo', 'OBSERVAÇÕES'));
+      obs.appendChild(el('div', null, venda.obs));
+      via.appendChild(obs);
+    }
+
+    via.appendChild(regua(true));
+    const rodape = el('div', 'ticket__rodape');
+    rodape.appendChild(el('div', null, 'Obrigado pela preferência!'));
+    rodape.appendChild(el('div', null, LOJA.whatsappVisivel));
+    via.appendChild(rodape);
+
+    return via;
+  }
+
+  function imprimirVendas(vendas) {
+    if (!vendas.length) {
+      alert('Nenhuma venda para imprimir.');
+      return;
+    }
+    const alvo = document.getElementById('ticket');
+    alvo.innerHTML = '';
+    for (const venda of vendas) alvo.appendChild(montarVia(venda));
+    window.print();
+  }
+
+  /** Todas as vendas de uma data, para separar a rota de uma vez. */
+  function imprimirDoDia() {
+    const dia = document.getElementById('data-expedicao').value;
+    if (!dia) return alert('Escolha a data.');
+
+    const vendas = Store.dados.vendas.filter((v) => (v.entregaISO || v.data) === dia);
+    if (!vendas.length) {
+      return alert(`Nenhuma venda para ${dataBR(dia)}.`);
+    }
+    imprimirVendas(vendas);
+  }
+
   // ------------------------------------ puxar vendas pagas pela InfinitePay
 
   const CHAVE_INTEGRACAO = 'brunao:integracao';
@@ -1087,9 +1210,15 @@
             taxaEntrega: taxa,
             desconto: 0,
             pagamento: bruta.metodo || 'Pix',
-            obs: bruta.recibo ? `Pago pelo site · comprovante: ${bruta.recibo}` : 'Pago pelo site',
+            obs: [bruta.observacoes, bruta.recibo ? `Comprovante: ${bruta.recibo}` : 'Pago pelo site']
+              .filter(Boolean).join(' · '),
             orderNsu: bruta.order_nsu,
             origem: 'site',
+            // Dados de expedição: para onde e quando, não quando compraram.
+            entregaTexto: bruta.entrega_texto || '',
+            horaAgendada: bruta.hora_agendada || '',
+            retirada: !!bruta.retirada,
+            enderecoTexto: bruta.endereco || '',
           });
           novas++;
         }
@@ -1510,6 +1639,9 @@
     configurarColar();
     configurarSincronizacao();
     configurarBackup();
+
+    document.getElementById('data-expedicao').value = Store.hojeISO();
+    document.getElementById('btn-imprimir-dia').addEventListener('click', imprimirDoDia);
 
     document.getElementById('campo-rendimento').addEventListener('change', (ev) => {
       const fator = paraNumero(ev.target.value);

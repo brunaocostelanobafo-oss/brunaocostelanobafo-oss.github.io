@@ -684,6 +684,13 @@
         itens,
         cliente: { nome: dados.nome },
         enderecoTexto: entrega ? dados.endereco : 'Retirada no local',
+        // Vão para a planilha e daí para o ticket de expedição: quem
+        // separa o pedido precisa saber a data e o horário, não a data
+        // em que a compra foi feita.
+        entregaTexto: dados.data,
+        horaAgendada: querAgendar() ? dados.hora : '',
+        retirada: !entrega,
+        observacoes: dados.observacoes || '',
       }),
     })
       .then((r) => r.json())

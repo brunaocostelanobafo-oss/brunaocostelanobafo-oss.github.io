@@ -1,0 +1,92 @@
+/* Ticket de expedição — impressora térmica de 80mm
+   ------------------------------------------------
+   Papel de 80mm tem cerca de 72mm imprimíveis. Impressora térmica não
+   tem tinta: ela queima o papel, então fundo colorido sai como borrão e
+   cinza claro some. Por isso o ticket é preto sobre branco, sem
+   sombra, sem imagem e em fonte monoespaçada — que é o que a cabeça
+   térmica reproduz melhor em corpo pequeno. */
+
+.ticket { display: none; }
+
+@media print {
+  @page {
+    size: 80mm auto;   /* altura livre: o rolo corta onde o conteúdo acaba */
+    margin: 0;
+  }
+
+  /* Some com o painel inteiro; só o ticket vai para o papel. */
+  body > *:not(.ticket) { display: none !important; }
+  .tooltip { display: none !important; }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .ticket {
+    display: block !important;
+    width: 72mm;
+    margin: 0;
+    padding: 3mm 2mm 6mm;
+    background: #fff;
+    color: #000;
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, 'Courier New', monospace;
+    font-size: 11pt;
+    line-height: 1.35;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Cada pedido sai numa via separada. */
+  .ticket__via { page-break-after: always; }
+  .ticket__via:last-child { page-break-after: auto; }
+
+  .ticket__marca {
+    text-align: center;
+    font-weight: 700;
+    font-size: 13pt;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+  }
+
+  .ticket__sub { text-align: center; font-size: 9pt; margin-bottom: 2mm; }
+
+  .ticket__regua { border-top: 1px dashed #000; margin: 2mm 0; }
+  .ticket__regua--forte { border-top: 2px solid #000; margin: 2mm 0; }
+
+  .ticket__rotulo { font-size: 8.5pt; font-weight: 700; letter-spacing: 0.5px; }
+
+  .ticket__destaque {
+    font-size: 13pt;
+    font-weight: 700;
+    text-align: center;
+    padding: 1.5mm 0;
+    border: 2px solid #000;
+    margin: 1mm 0 2mm;
+  }
+
+  .ticket__linha { display: flex; justify-content: space-between; gap: 3mm; }
+  .ticket__linha span:last-child { white-space: nowrap; }
+
+  .ticket__item { margin: 1mm 0; }
+  .ticket__item-nome { font-weight: 700; }
+
+  .ticket__total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13pt;
+    font-weight: 700;
+    margin-top: 1.5mm;
+  }
+
+  .ticket__obs {
+    margin-top: 2mm;
+    padding: 1.5mm;
+    border: 1px solid #000;
+    font-size: 10pt;
+  }
+
+  .ticket__rodape { text-align: center; font-size: 9pt; margin-top: 3mm; }
+  .ticket__pequeno { font-size: 8.5pt; }
+}

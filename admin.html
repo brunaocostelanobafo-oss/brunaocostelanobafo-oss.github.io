@@ -9,6 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/ticket.css">
 </head>
 <body class="admin">
 
@@ -179,7 +180,25 @@
       </form>
 
       <div class="cartao">
+        <h2 class="cartao__titulo">🖨 Expedição do dia</h2>
+        <p class="cartao__texto">
+          Imprime de uma vez os tickets de todos os pedidos de uma data,
+          na ordem em que foram lançados. Papel térmico 80mm.
+        </p>
+        <div class="expedicao">
+          <label class="campo-adm">
+            <span>Data</span>
+            <input type="date" id="data-expedicao">
+          </label>
+          <button type="button" class="botao botao--principal" id="btn-imprimir-dia">
+            Imprimir tickets do dia
+          </button>
+        </div>
+      </div>
+
+      <div class="cartao">
         <h2 class="cartao__titulo">Vendas lançadas</h2>
+        <p class="cartao__texto">Use o 🖨 para imprimir o ticket de um pedido só.</p>
         <div id="lista-vendas"></div>
       </div>
     </section>
@@ -390,6 +409,9 @@
     </section>
 
   </main>
+
+  <!-- Ticket de expedição. Fica fora da tela e só aparece na impressão. -->
+  <div class="ticket" id="ticket" aria-hidden="true"></div>
 
   <script src="js/menu-data.js"></script>
   <script src="js/admin-store.js"></script>
