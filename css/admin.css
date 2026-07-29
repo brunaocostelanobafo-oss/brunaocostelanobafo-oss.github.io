@@ -327,6 +327,42 @@
 .aviso-perigo { margin: 10px 0 0; font-size: 11.5px; color: var(--creme-suave); }
 .divisor { margin: 18px 0; border: none; border-top: 1px solid var(--borda); }
 
+/* ---------- Puxar vendas pagas ---------- */
+
+.cartao--sincronizar { border-color: rgba(57, 135, 229, 0.45); }
+
+.config-integracao {
+  margin-bottom: 13px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: var(--preto);
+  border: 1px solid var(--borda);
+}
+
+.config-integracao summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--creme-suave);
+}
+
+.config-integracao summary:hover { color: var(--creme-forte); }
+.config-integracao .campo-adm { margin-top: 11px; }
+.config-integracao .dica { display: block; margin: 9px 0 11px; }
+
+.sinc__resultado {
+  margin-top: 13px;
+  padding: 13px 15px;
+  border-radius: 9px;
+  background: rgba(57, 135, 229, 0.1);
+  border: 1px solid rgba(57, 135, 229, 0.45);
+  font-size: 13.5px;
+}
+
+.sinc__resultado > strong { color: #6ba8ee; }
+.sinc__linha { margin: 7px 0 0; font-size: 12.5px; color: var(--creme-suave); }
+.sinc__ok { margin: 12px 0 0; font-size: 13px; color: var(--verde-zap); }
+
 /* ---------- Colar pedido do WhatsApp ---------- */
 
 .cartao--colar { border-color: rgba(37, 211, 102, 0.4); }

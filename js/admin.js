@@ -769,6 +769,171 @@
     });
   }
 
+  // ------------------------------------ puxar vendas pagas pela InfinitePay
+
+  const CHAVE_INTEGRACAO = 'brunao:integracao';
+
+  /**
+   * A URL e o token ficam no navegador, nunca no código.
+   *
+   * O painel é uma página pública — qualquer um pode abrir o admin.html
+   * do site. Se o token estivesse no código, estaria à vista de todos, e
+   * ele é o que protege o faturamento.
+   */
+  function lerIntegracao() {
+    try {
+      return JSON.parse(localStorage.getItem(CHAVE_INTEGRACAO) || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  function salvarIntegracao(url, token) {
+    localStorage.setItem(CHAVE_INTEGRACAO, JSON.stringify({ url: url.trim(), token: token.trim() }));
+  }
+
+  /**
+   * Converte a venda da planilha para o formato do painel.
+   *
+   * Taxa de entrega e agendamento chegam como itens porque o checkout da
+   * InfinitePay só entende lista de itens. Aqui eles voltam a ser taxa,
+   * senão apareceriam como produtos vendidos e sujariam o CMV e o
+   * ranking de produtos.
+   */
+  function converterVendaDoSite(bruta) {
+    const itens = [];
+    let taxa = 0;
+
+    for (const linha of (bruta.itens || [])) {
+      const nome = String(linha.description || '').trim();
+      const doCardapio = CARDAPIO.flatMap((c) => c.itens).find((i) => i.nome === nome);
+
+      if (doCardapio) {
+        itens.push({
+          nome,
+          qtd: linha.quantity,
+          preco: linha.price,
+          custo: Store.custoDe(nome),
+        });
+      } else {
+        // Taxa de entrega, agendamento e qualquer outro acréscimo.
+        taxa += (linha.price || 0) * (linha.quantity || 1);
+      }
+    }
+
+    return { itens, taxa };
+  }
+
+  function sincronizarVendas() {
+    const alvo = document.getElementById('resultado-sinc');
+    const botao = document.getElementById('btn-sincronizar');
+    const { url, token } = lerIntegracao();
+
+    alvo.innerHTML = '';
+
+    if (!url || !token) {
+      alvo.appendChild(el('p', 'erro-adm', 'Preencha a URL e o token em "Configurar conexão".'));
+      document.getElementById('config-integracao').open = true;
+      return;
+    }
+
+    botao.disabled = true;
+    botao.textContent = 'Buscando…';
+
+    const endereco = `${url}?acao=vendas&token=${encodeURIComponent(token)}`;
+
+    fetch(endereco)
+      .then((r) => r.json())
+      .then((resposta) => {
+        if (!resposta.ok) throw new Error(resposta.erro || 'A planilha recusou o pedido.');
+
+        let novas = 0;
+        let repetidas = 0;
+        let clientesNovos = 0;
+
+        for (const bruta of (resposta.vendas || [])) {
+          if (Store.vendaJaImportada(bruta.order_nsu)) { repetidas++; continue; }
+
+          const { itens, taxa } = converterVendaDoSite(bruta);
+          if (!itens.length && !taxa) continue;
+
+          // Cliente: reaproveita o cadastro se já existir pelo nome.
+          let cliente = Store.dados.clientes.find(
+            (c) => c.nome.toLowerCase() === String(bruta.cliente || '').toLowerCase()
+          );
+          if (!cliente && bruta.cliente) {
+            cliente = Store.addCliente({
+              nome: bruta.cliente,
+              whatsapp: bruta.telefone || '',
+              endereco: bruta.endereco || '',
+              obs: '',
+            });
+            clientesNovos++;
+          }
+
+          Store.addVenda({
+            data: bruta.data,
+            clienteId: cliente ? cliente.id : null,
+            clienteNome: bruta.cliente || '',
+            itens,
+            taxaEntrega: taxa,
+            desconto: 0,
+            pagamento: bruta.metodo || 'Pix',
+            obs: bruta.recibo ? `Pago pelo site · comprovante: ${bruta.recibo}` : 'Pago pelo site',
+            orderNsu: bruta.order_nsu,
+            origem: 'site',
+          });
+          novas++;
+        }
+
+        const caixa = el('div', 'sinc__resultado');
+        if (novas) {
+          caixa.appendChild(el('strong', null, `✓ ${novas} venda(s) nova(s) lançada(s)`));
+          if (clientesNovos) {
+            caixa.appendChild(el('p', 'sinc__linha', `${clientesNovos} cliente(s) cadastrado(s) junto.`));
+          }
+        } else {
+          caixa.appendChild(el('strong', null, 'Nenhuma venda nova.'));
+        }
+        if (repetidas) {
+          caixa.appendChild(el('p', 'sinc__linha', `${repetidas} já estavam aqui e foram ignoradas.`));
+        }
+        alvo.appendChild(caixa);
+
+        renderTudo();
+      })
+      .catch((erro) => {
+        alvo.appendChild(el('p', 'erro-adm',
+          `Não consegui buscar: ${erro.message} Confira a URL e o token em "Configurar conexão".`));
+      })
+      .finally(() => {
+        botao.disabled = false;
+        botao.textContent = 'Puxar vendas pagas';
+      });
+  }
+
+  function configurarSincronizacao() {
+    const { url, token } = lerIntegracao();
+    document.getElementById('sinc-url').value = url || '';
+    document.getElementById('sinc-token').value = token || '';
+
+    // Sem configuração ainda: já abre o painel de conexão.
+    if (!url || !token) document.getElementById('config-integracao').open = true;
+
+    document.getElementById('btn-salvar-integracao').addEventListener('click', () => {
+      salvarIntegracao(
+        document.getElementById('sinc-url').value,
+        document.getElementById('sinc-token').value
+      );
+      const alvo = document.getElementById('resultado-sinc');
+      alvo.innerHTML = '';
+      alvo.appendChild(el('p', 'sinc__ok', 'Conexão salva neste aparelho.'));
+      document.getElementById('config-integracao').open = false;
+    });
+
+    document.getElementById('btn-sincronizar').addEventListener('click', sincronizarVendas);
+  }
+
   // ------------------------------------------------- ler pedido do WhatsApp
 
   /**
@@ -1112,6 +1277,7 @@
     configurarAbas();
     configurarFormularios();
     configurarColar();
+    configurarSincronizacao();
     configurarBackup();
 
     document.getElementById('filtro-periodo').addEventListener('change', (ev) => {

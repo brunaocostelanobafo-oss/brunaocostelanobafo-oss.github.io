@@ -149,6 +149,18 @@ const Store = (function () {
     salvar();
   }
 
+  /**
+   * O pedido pago pelo site já foi trazido para cá?
+   *
+   * O número do pedido (order_nsu) é gerado uma vez e nunca se repete,
+   * então é ele que impede a mesma venda de entrar duas vezes quando
+   * você aperta "Puxar vendas" de novo.
+   */
+  function vendaJaImportada(orderNsu) {
+    if (!orderNsu) return false;
+    return dados.vendas.some((v) => v.orderNsu === orderNsu);
+  }
+
   // ------------------------------------------------------------- lançamentos
 
   function addLancamento(lanc) {
@@ -411,7 +423,7 @@ const Store = (function () {
     hojeISO,
     totalVenda,
     custoVenda,
-    addVenda, removerVenda,
+    addVenda, removerVenda, vendaJaImportada,
     addLancamento, removerLancamento, categoriaEhEstoque,
     addCliente, atualizarCliente, removerCliente,
     acharClientePorTelefone, resumoCliente, normalizarTelefone,

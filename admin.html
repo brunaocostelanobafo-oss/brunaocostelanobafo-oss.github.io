@@ -84,6 +84,36 @@
 
     <!-- ============================ VENDAS ============================ -->
     <section class="secao" id="secao-vendas">
+      <div class="cartao cartao--sincronizar">
+        <h2 class="cartao__titulo">💳 Vendas pagas pelo site</h2>
+        <p class="cartao__texto">
+          Puxa da planilha os pedidos que o cliente já pagou pela InfinitePay.
+          Só entram os confirmados, e o mesmo pedido nunca entra duas vezes.
+        </p>
+
+        <details class="config-integracao" id="config-integracao">
+          <summary>Configurar conexão</summary>
+          <label class="campo-adm">
+            <span>URL do Apps Script</span>
+            <input type="text" id="sinc-url" placeholder="https://script.google.com/macros/s/.../exec">
+          </label>
+          <label class="campo-adm">
+            <span>Token do painel</span>
+            <input type="password" id="sinc-token" placeholder="a senha que você definiu no script">
+          </label>
+          <p class="dica">
+            Fica guardado só neste aparelho. Nunca é enviado para o site nem
+            aparece no código publicado.
+          </p>
+          <button type="button" class="botao botao--secundario" id="btn-salvar-integracao">Salvar</button>
+        </details>
+
+        <div class="botoes-linha">
+          <button type="button" class="botao botao--principal" id="btn-sincronizar">Puxar vendas pagas</button>
+        </div>
+        <div id="resultado-sinc"></div>
+      </div>
+
       <div class="cartao cartao--colar">
         <h2 class="cartao__titulo">📋 Colar pedido do WhatsApp</h2>
         <p class="cartao__texto">
