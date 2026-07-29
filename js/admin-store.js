@@ -70,10 +70,38 @@ const Store = (function () {
       const bruto = localStorage.getItem(CHAVE);
       if (!bruto) return estruturaNova();
       const salvo = JSON.parse(bruto);
-      return Object.assign(estruturaNova(), salvo);
+      return migrar(Object.assign(estruturaNova(), salvo));
     } catch {
       return estruturaNova();
     }
+  }
+
+  /**
+   * Conserta dados gravados por versões anteriores.
+   *
+   * As primeiras importações jogavam "Pago pelo site" e o link do
+   * comprovante dentro das observações, que hoje guardam só o que o
+   * cliente escreveu. Sem isso, vendas antigas continuariam imprimindo
+   * esse texto no ticket de expedição para sempre.
+   */
+  function migrar(base) {
+    for (const venda of base.vendas) {
+      if (!venda.obs) continue;
+
+      const link = venda.obs.match(/https?:\/\/\S+/);
+      if (link && !venda.recibo) venda.recibo = link[0];
+
+      const limpo = venda.obs
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/comprovante:/gi, '')
+        .replace(/pago pelo site/gi, '')
+        .replace(/\s*·\s*/g, ' · ')
+        .replace(/^[\s·]+|[\s·]+$/g, '')
+        .trim();
+
+      venda.obs = limpo;
+    }
+    return base;
   }
 
   function estruturaNova() {

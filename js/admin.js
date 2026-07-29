@@ -480,6 +480,10 @@
       texto.appendChild(el('div', 'registro__titulo', `${dataBR(v.data)} · ${cliente}`));
       const detalhe = v.itens.map((i) => `${i.qtd}x ${i.nome}`).join(', ');
       const infoLinha = el('div', 'registro__detalhe', `${detalhe} · ${v.pagamento}`);
+      if (v.pago === false) {
+        infoLinha.appendChild(document.createTextNode(' · '));
+        infoLinha.appendChild(el('strong', 'registro__receber', 'A RECEBER'));
+      }
       if (v.recibo) {
         infoLinha.appendChild(document.createTextNode(' · '));
         const link = el('a', 'registro__recibo', 'comprovante');
@@ -1054,7 +1058,19 @@
     total.appendChild(el('span', null, 'TOTAL'));
     total.appendChild(el('span', null, reais(Store.totalVenda(venda))));
     via.appendChild(total);
-    via.appendChild(el('div', null, 'Pagamento: ' + (venda.pagamento || '—')));
+    via.appendChild(el('div', null, 'Forma: ' + (venda.pagamento || '—')));
+
+    /* Situação do pagamento em caixa própria e grande. É o que decide se
+       o entregador cobra ou não — errar aqui custa dinheiro, então não
+       pode ficar disputando atenção no meio das observações.
+       `pago` ausente conta como pago: as vendas antigas vieram todas do
+       site, onde só entra o que já foi confirmado. */
+    const aReceber = venda.pago === false;
+    const situacao = el('div', 'ticket__situacao' + (aReceber ? ' ticket__situacao--receber' : ''));
+    situacao.textContent = aReceber
+      ? `RECEBER ${reais(Store.totalVenda(venda))}`
+      : 'PAGO — NAO COBRAR';
+    via.appendChild(situacao);
 
     // Só o que o cliente escreveu. Link de comprovante e "pago pelo site"
     // são controle interno: quem está separando o pedido não precisa
@@ -1232,6 +1248,9 @@
             // ticket de expedição.
             obs: bruta.observacoes || '',
             recibo: bruta.recibo || '',
+            // Venda do site é sempre paga: o Apps Script só entrega as
+            // que a InfinitePay confirmou.
+            pago: true,
             orderNsu: bruta.order_nsu,
             origem: 'site',
             // Dados de expedição: para onde e quando, não quando compraram.
@@ -1538,6 +1557,7 @@
         taxaEntrega: paraCentavos(formVenda.elements.taxaEntrega.value),
         desconto: paraCentavos(formVenda.elements.desconto.value),
         pagamento: formVenda.elements.pagamento.value,
+        pago: formVenda.elements.situacao.value === 'pago',
         obs: formVenda.elements.obs.value.trim(),
       });
 

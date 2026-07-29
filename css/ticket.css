@@ -91,6 +91,27 @@
     margin-top: 1.5mm;
   }
 
+  /* Fundo preto sólido com texto vago: a impressora queima a área
+     inteira, e o contraste invertido salta aos olhos de quem está
+     conferindo a sacola às pressas. */
+  .ticket__situacao {
+    margin-top: 2mm;
+    padding: 2mm 1mm;
+    background: #000;
+    color: #fff;
+    text-align: center;
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .ticket__situacao--receber {
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    font-size: 15pt;
+  }
+
   .ticket__obs {
     margin-top: 2mm;
     padding: 1.5mm;
