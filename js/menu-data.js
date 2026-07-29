@@ -30,6 +30,11 @@ const LOJA = {
   agendamentoHorario: {
     ativo: true,
     taxa: 800,
+
+    // De quantos em quantos minutos os horários são oferecidos.
+    // Os horários saem sozinhos da janela de entrega definida abaixo,
+    // então mudar o horário da rota muda a lista junto.
+    intervaloMinutos: 30,
   },
 
   /* ---------------------------------------------------------------------

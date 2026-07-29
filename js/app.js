@@ -96,6 +96,12 @@
     return data.getHours() * 60 + data.getMinutes();
   }
 
+  /** "11:30" + 30 -> "12:00" */
+  function somarMinutos(hhmm, minutos) {
+    const total = emMinutos(hhmm) + minutos;
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  }
+
   /** As próximas datas em que a loja entrega, a partir de hoje. */
   function proximasDatasDeEntrega(quantas = 6, hoje = new Date()) {
     const datas = [];
@@ -180,6 +186,29 @@
 
   function taxaAgendamento() {
     return querAgendar() ? LOJA.agendamentoHorario.taxa : 0;
+  }
+
+  /**
+   * Horários que podem ser agendados, dentro da janela de entrega.
+   *
+   * Um campo de hora livre deixava o cliente escolher 03:00 ou 22:45,
+   * quando não há operação. A lista fechada torna o horário inválido
+   * impossível de escolher, em vez de recusado depois.
+   *
+   * O último horário da janela fica de fora: às 14:00 a rota encerra,
+   * então não dá para começar uma entrega ali.
+   */
+  function horariosAgendaveis() {
+    const { abre, fecha } = LOJA.entrega.horario;
+    const passo = LOJA.agendamentoHorario.intervaloMinutos || 30;
+    const lista = [];
+
+    for (let m = emMinutos(abre); m < emMinutos(fecha); m += passo) {
+      const h = String(Math.floor(m / 60)).padStart(2, '0');
+      const min = String(m % 60).padStart(2, '0');
+      lista.push(`${h}:${min}`);
+    }
+    return lista;
   }
 
   function totalGeral() {
@@ -583,8 +612,11 @@
       return falhar(`O pedido mínimo é ${precoBR(LOJA.pedidoMinimo)}. Adicione mais um item.`);
     }
 
-    if (querAgendar() && !dados.hora) {
-      return falhar('Escolha o horário que você quer receber.', 'hora');
+    // A lista já impede horário fora da janela, mas a conferência fica
+    // como rede: o valor do campo pode ser adulterado pelo navegador.
+    if (querAgendar() && !horariosAgendaveis().includes(dados.hora)) {
+      const { abre, fecha } = LOJA.entrega.horario;
+      return falhar(`Escolha um horário entre ${abre} e ${fecha}.`, 'hora');
     }
 
     erro.hidden = true;
@@ -735,6 +767,15 @@
         `Sem agendar, você recebe entre ${abre} e ${fecha}, na ordem das reservas. ` +
         `Para escolher a hora, custa ${precoBR(LOJA.agendamentoHorario.taxa)}.`;
       document.getElementById('campo-agendar').hidden = !ehEntrega();
+
+      const horas = document.getElementById('select-hora');
+      horas.innerHTML = '';
+      for (const hora of horariosAgendaveis()) {
+        const opcao = document.createElement('option');
+        opcao.value = hora;
+        opcao.textContent = `${hora} — entrega entre ${hora} e ${somarMinutos(hora, LOJA.agendamentoHorario.intervaloMinutos || 30)}`;
+        horas.appendChild(opcao);
+      }
 
       agendar.addEventListener('change', () => {
         document.getElementById('campo-hora').hidden = !agendar.checked;

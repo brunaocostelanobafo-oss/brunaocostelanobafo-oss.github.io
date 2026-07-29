@@ -552,14 +552,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .agendar__texto small { display: block; margin-top: 3px; font-size: 12px; color: var(--creme-suave); line-height: 1.45; }
 
 .campo--hora { margin-top: 10px; }
-.campo--hora input[type='time'] {
-  width: 100%;
-  padding: 12px 13px;
-  border-radius: 10px;
-  border: 1px solid var(--borda);
-  background: var(--preto-carta);
-  font-size: 15px;
-}
 
 /* ---------- Resumo ---------- */
 
