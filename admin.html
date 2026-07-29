@@ -313,11 +313,30 @@
     <!-- ============================ CUSTOS ============================ -->
     <section class="secao" id="secao-custos">
       <div class="cartao">
-        <h2 class="cartao__titulo">Custo de cada produto</h2>
+        <h2 class="cartao__titulo">Rendimento da carne</h2>
         <p class="cartao__texto">
-          Quanto custa produzir uma unidade — a carne, o tempero, o gás, a embalagem.
-          É esse número que gera o <strong>CMV</strong> e revela a margem real de cada item.
-          Enquanto estiver zerado, o painel calcula lucro como se o produto fosse de graça.
+          Carne perde peso ao assar. Este número diz quanto de carne crua é
+          preciso para entregar <strong>1kg pronto</strong> — e vale para
+          qualquer corte. É ele que faz o custo e a baixa de estoque saírem
+          certos sem você refazer conta.
+        </p>
+        <div class="rendimento">
+          <span>1 kg pronto consome</span>
+          <input type="text" id="campo-rendimento" inputmode="decimal">
+          <span>kg de carne crua</span>
+        </div>
+      </div>
+
+      <div class="cartao">
+        <h2 class="cartao__titulo">Ficha técnica dos produtos</h2>
+        <p class="cartao__texto">
+          Monte o que entra em cada produto e o custo passa a ser
+          <strong>calculado</strong>, não digitado. Quando o preço da carne
+          mudar, basta lançar a compra nova — todas as margens se ajustam
+          sozinhas. A cada venda, os insumos da ficha saem do estoque.
+        </p>
+        <p class="cartao__texto" id="aviso-sem-insumo" hidden>
+          ⚠ Cadastre seus insumos na aba <strong>Estoque</strong> antes de montar as fichas.
         </p>
         <div id="lista-custos"></div>
       </div>

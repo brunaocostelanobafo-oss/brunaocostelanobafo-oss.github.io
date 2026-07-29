@@ -692,39 +692,228 @@
   // ---------------------------------------------------------------- custos
 
   function renderCustos() {
+    const campoRend = document.getElementById('campo-rendimento');
+    if (campoRend && document.activeElement !== campoRend) {
+      campoRend.value = String(Store.dados.config.rendimento).replace('.', ',');
+    }
+
+    document.getElementById('aviso-sem-insumo').hidden = Store.dados.insumos.length > 0;
+
     const alvo = document.getElementById('lista-custos');
     alvo.innerHTML = '';
 
     for (const categoria of CARDAPIO) {
       for (const item of categoria.itens) {
-        const custo = Store.custoDe(item.nome);
-        const margem = item.preco ? ((item.preco - custo) / item.preco) * 100 : 0;
-
-        const linha = el('div', 'custo');
-        const texto = el('div', 'custo__texto');
-        texto.appendChild(el('div', 'custo__nome', item.nome));
-        texto.appendChild(el('div', 'custo__detalhe',
-          custo ? `Vende a ${reais(item.preco)} · margem ${pct(margem)}`
-                : `Vende a ${reais(item.preco)} · custo não cadastrado`
-        ));
-        linha.appendChild(texto);
-
-        const campo = document.createElement('input');
-        campo.type = 'text';
-        campo.inputMode = 'decimal';
-        campo.className = 'custo__campo';
-        campo.value = custo ? (custo / 100).toFixed(2).replace('.', ',') : '';
-        campo.placeholder = '0,00';
-        campo.setAttribute('aria-label', `Custo de ${item.nome}`);
-        campo.addEventListener('change', () => {
-          Store.definirCusto(item.nome, paraCentavos(campo.value));
-          renderTudo();
-        });
-        linha.appendChild(campo);
-
-        alvo.appendChild(linha);
+        alvo.appendChild(montarCartaoProduto(item));
       }
     }
+  }
+
+  function montarCartaoProduto(item) {
+    const custo = Store.custoDe(item.nome);
+    const daFicha = Store.custoDaFicha(item.nome);
+    const margem = item.preco ? ((item.preco - custo) / item.preco) * 100 : 0;
+
+    const cartao = el('div', 'produto-ficha');
+
+    // Cabeçalho: preço, custo e margem
+    const topo = el('div', 'produto-ficha__topo');
+    const texto = el('div');
+    texto.appendChild(el('div', 'custo__nome', item.nome));
+    texto.appendChild(el('div', 'custo__detalhe',
+      custo
+        ? `Vende a ${reais(item.preco)} · custo ${reais(custo)} · margem ${pct(margem)}` +
+          (daFicha !== null ? ' · pela ficha' : ' · valor digitado')
+        : `Vende a ${reais(item.preco)} · sem custo cadastrado`
+    ));
+    topo.appendChild(texto);
+    cartao.appendChild(topo);
+
+    // Ficha técnica
+    const detalhes = document.createElement('details');
+    detalhes.className = 'ficha';
+    if (daFicha !== null) detalhes.open = false;
+
+    const resumo = document.createElement('summary');
+    resumo.textContent = daFicha !== null ? 'Ver ficha técnica' : 'Montar ficha técnica';
+    detalhes.appendChild(resumo);
+
+    const ficha = Store.fichaDe(item.nome);
+    const corpo = el('div', 'ficha__corpo');
+
+    // Componentes já cadastrados
+    if (ficha.componentes && ficha.componentes.length) {
+      for (const [indice, c] of ficha.componentes.entries()) {
+        corpo.appendChild(linhaComponente(item.nome, ficha, indice, c));
+      }
+    } else {
+      corpo.appendChild(el('p', 'ficha__vazio', 'Nenhum insumo na ficha ainda.'));
+    }
+
+    corpo.appendChild(formNovoComponente(item.nome, ficha));
+
+    // Custos extras (gás, lenha, rateios)
+    corpo.appendChild(el('div', 'ficha__titulo', 'Outros custos por unidade'));
+    for (const [indice, e] of (ficha.extras || []).entries()) {
+      const linha = el('div', 'ficha__extra');
+      linha.appendChild(el('span', null, e.nome));
+      linha.appendChild(el('strong', null, reais(e.valor)));
+      const x = el('button', 'registro__excluir', '×');
+      x.type = 'button';
+      x.setAttribute('aria-label', `Remover ${e.nome}`);
+      x.addEventListener('click', () => {
+        ficha.extras.splice(indice, 1);
+        Store.salvarFicha(item.nome, ficha);
+        renderTudo();
+      });
+      linha.appendChild(x);
+      corpo.appendChild(linha);
+    }
+    corpo.appendChild(formNovoExtra(item.nome, ficha));
+
+    if (daFicha !== null) {
+      corpo.appendChild(el('div', 'ficha__total', `Custo pela ficha: ${reais(daFicha)}`));
+    }
+
+    // Valor digitado à mão, para quem ainda não montou ficha
+    const manual = el('div', 'ficha__manual');
+    manual.appendChild(el('span', null,
+      daFicha !== null ? 'Valor manual (ignorado, a ficha manda)' : 'Ou informe o custo direto'));
+    const campo = document.createElement('input');
+    campo.type = 'text';
+    campo.inputMode = 'decimal';
+    campo.className = 'custo__campo';
+    campo.value = Store.dados.custos[item.nome] ? (Store.dados.custos[item.nome] / 100).toFixed(2).replace('.', ',') : '';
+    campo.placeholder = '0,00';
+    campo.setAttribute('aria-label', `Custo manual de ${item.nome}`);
+    campo.addEventListener('change', () => {
+      Store.definirCusto(item.nome, paraCentavos(campo.value));
+      renderTudo();
+    });
+    manual.appendChild(campo);
+    corpo.appendChild(manual);
+
+    detalhes.appendChild(corpo);
+    cartao.appendChild(detalhes);
+    return cartao;
+  }
+
+  function linhaComponente(produto, ficha, indice, c) {
+    const insumo = Store.dados.insumos.find((i) => i.id === c.insumoId);
+    const linha = el('div', 'ficha__linha');
+
+    if (!insumo) {
+      linha.appendChild(el('span', 'ficha__sumido', 'Insumo removido do estoque'));
+    } else {
+      const bruta = Store.quantidadeBruta(c);
+      const custo = Math.round(bruta * (insumo.custoUnitario || 0));
+
+      const desc = el('div', 'ficha__desc');
+      desc.appendChild(el('strong', null, insumo.nome));
+      desc.appendChild(el('span', null,
+        c.aplicarRendimento
+          ? `${c.quantidade}${insumo.unidade} prontos → ${bruta}${insumo.unidade} crus × ${reais(insumo.custoUnitario)}`
+          : `${c.quantidade}${insumo.unidade} × ${reais(insumo.custoUnitario)}`
+      ));
+      linha.appendChild(desc);
+      linha.appendChild(el('strong', 'ficha__valor', reais(custo)));
+    }
+
+    const x = el('button', 'registro__excluir', '×');
+    x.type = 'button';
+    x.setAttribute('aria-label', 'Remover da ficha');
+    x.addEventListener('click', () => {
+      ficha.componentes.splice(indice, 1);
+      Store.salvarFicha(produto, ficha);
+      renderTudo();
+    });
+    linha.appendChild(x);
+    return linha;
+  }
+
+  function formNovoComponente(produto, ficha) {
+    const form = el('div', 'ficha__form');
+
+    const select = document.createElement('select');
+    select.className = 'ficha__select';
+    select.setAttribute('aria-label', 'Insumo');
+    select.appendChild(new Option('Escolha o insumo…', ''));
+    for (const i of Store.dados.insumos) {
+      select.appendChild(new Option(`${i.nome} (${i.unidade})`, i.id));
+    }
+    form.appendChild(select);
+
+    const qtd = document.createElement('input');
+    qtd.type = 'text';
+    qtd.inputMode = 'decimal';
+    qtd.className = 'ficha__qtd';
+    qtd.placeholder = 'Qtd';
+    qtd.setAttribute('aria-label', 'Quantidade');
+    form.appendChild(qtd);
+
+    const marcaRotulo = document.createElement('label');
+    marcaRotulo.className = 'ficha__rendimento';
+    const marca = document.createElement('input');
+    marca.type = 'checkbox';
+    marca.checked = true;
+    marcaRotulo.appendChild(marca);
+    marcaRotulo.appendChild(el('span', null, `é carne (×${Store.dados.config.rendimento})`));
+    form.appendChild(marcaRotulo);
+
+    const botao = el('button', 'botao botao--pequeno', 'Adicionar');
+    botao.type = 'button';
+    botao.addEventListener('click', () => {
+      const q = paraNumero(qtd.value);
+      if (!select.value) return alert('Escolha o insumo.');
+      if (q <= 0) return alert('Informe a quantidade.');
+
+      ficha.componentes = ficha.componentes || [];
+      ficha.componentes.push({
+        insumoId: select.value,
+        quantidade: q,
+        aplicarRendimento: marca.checked,
+      });
+      Store.salvarFicha(produto, ficha);
+      renderTudo();
+    });
+    form.appendChild(botao);
+
+    return form;
+  }
+
+  function formNovoExtra(produto, ficha) {
+    const form = el('div', 'ficha__form');
+
+    const nome = document.createElement('input');
+    nome.type = 'text';
+    nome.className = 'ficha__select';
+    nome.placeholder = 'Ex.: gás e lenha';
+    nome.setAttribute('aria-label', 'Nome do custo');
+    form.appendChild(nome);
+
+    const valor = document.createElement('input');
+    valor.type = 'text';
+    valor.inputMode = 'decimal';
+    valor.className = 'ficha__qtd';
+    valor.placeholder = 'R$';
+    valor.setAttribute('aria-label', 'Valor');
+    form.appendChild(valor);
+
+    const botao = el('button', 'botao botao--pequeno', 'Adicionar');
+    botao.type = 'button';
+    botao.addEventListener('click', () => {
+      const v = paraCentavos(valor.value);
+      if (!nome.value.trim()) return alert('Dê um nome ao custo.');
+      if (v <= 0) return alert('Informe o valor.');
+
+      ficha.extras = ficha.extras || [];
+      ficha.extras.push({ nome: nome.value.trim(), valor: v });
+      Store.salvarFicha(produto, ficha);
+      renderTudo();
+    });
+    form.appendChild(botao);
+
+    return form;
   }
 
   // ---------------------------------------------------------------- backup
@@ -1321,6 +1510,17 @@
     configurarColar();
     configurarSincronizacao();
     configurarBackup();
+
+    document.getElementById('campo-rendimento').addEventListener('change', (ev) => {
+      const fator = paraNumero(ev.target.value);
+      if (fator <= 0) {
+        alert('O rendimento precisa ser maior que zero.');
+        ev.target.value = String(Store.dados.config.rendimento).replace('.', ',');
+        return;
+      }
+      Store.definirRendimento(fator);
+      renderTudo();
+    });
 
     document.getElementById('filtro-periodo').addEventListener('change', (ev) => {
       periodoAtual = ev.target.value;

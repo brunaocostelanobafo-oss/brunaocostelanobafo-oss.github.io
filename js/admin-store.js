@@ -43,7 +43,22 @@ const Store = (function () {
     lancamentos: [],
     insumos: [],
     movimentos: [],
-    custos: {}, // { 'Nome do produto': custoEmCentavos }
+    custos: {}, // { 'Nome do produto': custoEmCentavos } — usado quando não há ficha
+
+    /* Ficha técnica: o que entra em cada produto.
+       { 'Costela no Bafo — 1kg': {
+           componentes: [{ insumoId, quantidade, aplicarRendimento }],
+           extras: [{ nome, valor }],
+       } } */
+    fichas: {},
+
+    config: {
+      /* Carne perde peso ao assar. Para entregar 1kg pronto é preciso
+         1,7kg de carne crua. O componente marcado com `aplicarRendimento`
+         é multiplicado por este fator, tanto no custo quanto na baixa de
+         estoque. Vale para qualquer corte. */
+      rendimento: 1.7,
+    },
   };
 
   let dados = carregar();
@@ -140,11 +155,13 @@ const Store = (function () {
   function addVenda(venda) {
     venda.id = id();
     dados.vendas.push(venda);
+    baixarEstoquePorVenda(venda);
     salvar();
     return venda;
   }
 
   function removerVenda(idVenda) {
+    devolverEstoqueDaVenda(idVenda);
     dados.vendas = dados.vendas.filter((v) => v.id !== idVenda);
     salvar();
   }
@@ -280,16 +297,115 @@ const Store = (function () {
     salvar();
   }
 
+  /**
+   * Quanto do insumo sai do estoque por unidade do produto.
+   *
+   * A ficha é escrita em peso PRONTO, que é o que o cliente recebe. Como
+   * a carne perde peso ao assar, o componente marcado com
+   * `aplicarRendimento` é multiplicado pelo fator — 1kg pronto consome
+   * 1,7kg cru. Embalagem e tempero não perdem peso, então ficam de fora.
+   */
+  function quantidadeBruta(componente) {
+    const fator = componente.aplicarRendimento ? (dados.config.rendimento || 1) : 1;
+    return Number((componente.quantidade * fator).toFixed(4));
+  }
+
+  function temFicha(produto) {
+    const f = dados.fichas[produto];
+    return !!(f && ((f.componentes && f.componentes.length) || (f.extras && f.extras.length)));
+  }
+
+  /** Custo calculado pela ficha, ou null se o produto não tem ficha. */
+  function custoDaFicha(produto) {
+    if (!temFicha(produto)) return null;
+    const ficha = dados.fichas[produto];
+    let total = 0;
+
+    for (const c of (ficha.componentes || [])) {
+      const insumo = dados.insumos.find((i) => i.id === c.insumoId);
+      if (!insumo) continue;
+      total += Math.round(quantidadeBruta(c) * (insumo.custoUnitario || 0));
+    }
+    for (const e of (ficha.extras || [])) total += e.valor || 0;
+
+    return total;
+  }
+
+  /**
+   * A ficha manda quando existe. O valor digitado à mão continua valendo
+   * para produto sem ficha, para não obrigar você a montar ficha de tudo
+   * de uma vez.
+   */
   function custoDe(produto) {
+    const daFicha = custoDaFicha(produto);
+    if (daFicha !== null && daFicha > 0) return daFicha;
     return dados.custos[produto] || 0;
   }
 
-  /** Quantos produtos do cardápio ainda estão sem custo cadastrado. */
+  function salvarFicha(produto, ficha) {
+    dados.fichas[produto] = ficha;
+    salvar();
+  }
+
+  function fichaDe(produto) {
+    return dados.fichas[produto] || { componentes: [], extras: [] };
+  }
+
+  function definirRendimento(fator) {
+    dados.config.rendimento = fator;
+    salvar();
+  }
+
+  /** Quantos produtos do cardápio ainda estão sem custo — por ficha ou à mão. */
   function produtosSemCusto() {
     if (typeof CARDAPIO === 'undefined') return [];
     return CARDAPIO.flatMap((c) => c.itens)
-      .filter((item) => !dados.custos[item.nome])
+      .filter((item) => !custoDe(item.nome))
       .map((item) => item.nome);
+  }
+
+  // ------------------------------------------- baixa de estoque pela venda
+
+  /**
+   * Tira do estoque o que a venda consumiu, seguindo a ficha de cada item.
+   * Produto sem ficha não baixa nada — não há como adivinhar o que ele leva.
+   */
+  function baixarEstoquePorVenda(venda) {
+    for (const item of venda.itens) {
+      if (!temFicha(item.nome)) continue;
+
+      for (const c of (dados.fichas[item.nome].componentes || [])) {
+        const insumo = dados.insumos.find((i) => i.id === c.insumoId);
+        if (!insumo) continue;
+
+        const consumo = Number((quantidadeBruta(c) * item.qtd).toFixed(3));
+        insumo.quantidade = Math.max(0, Number((insumo.quantidade - consumo).toFixed(3)));
+
+        dados.movimentos.push({
+          id: id(),
+          data: venda.data,
+          insumoId: insumo.id,
+          tipo: 'saida',
+          quantidade: consumo,
+          custoUnitario: insumo.custoUnitario,
+          obs: `Baixa automática — ${item.qtd}x ${item.nome}`,
+          vendaId: venda.id,
+        });
+      }
+    }
+  }
+
+  /** Excluir uma venda devolve ao estoque o que ela tinha baixado. */
+  function devolverEstoqueDaVenda(idVenda) {
+    const doVenda = dados.movimentos.filter((m) => m.vendaId === idVenda);
+
+    for (const mov of doVenda) {
+      const insumo = dados.insumos.find((i) => i.id === mov.insumoId);
+      if (insumo) {
+        insumo.quantidade = Number((insumo.quantidade + mov.quantidade).toFixed(3));
+      }
+    }
+    dados.movimentos = dados.movimentos.filter((m) => m.vendaId !== idVenda);
   }
 
   // ---------------------------------------------------------------- relatório
@@ -429,6 +545,7 @@ const Store = (function () {
     acharClientePorTelefone, resumoCliente, normalizarTelefone,
     addInsumo, removerInsumo, movimentarEstoque, insumosEmAlerta, valorDoEstoque,
     definirCusto, custoDe, produtosSemCusto,
+    temFicha, custoDaFicha, salvarFicha, fichaDe, quantidadeBruta, definirRendimento,
     relatorio, receitaPorDia, rankingProdutos, rankingClientes,
     exportar, importar, apagarTudo,
   };
