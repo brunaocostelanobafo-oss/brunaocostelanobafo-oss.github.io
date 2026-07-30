@@ -18,3 +18,12 @@ dist/
 
 # Preferencias locais do Claude Code (nao versionar)
 .claude/settings.local.json
+
+# DADOS DE CLIENTE — NUNCA VERSIONAR
+# O repositorio e publico. Backups do painel e planilhas de pedido tem
+# nome, telefone e endereco de cliente. Uma vez enviado, fica no
+# historico do git mesmo depois de apagado.
+backup*.json
+*.xlsx
+*.xls
+*.csv
