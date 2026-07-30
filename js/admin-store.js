@@ -53,11 +53,15 @@ const Store = (function () {
     fichas: {},
 
     config: {
-      /* Carne perde peso ao assar. Para entregar 1kg pronto é preciso
-         1,7kg de carne crua. O componente marcado com `aplicarRendimento`
-         é multiplicado por este fator, tanto no custo quanto na baixa de
-         estoque. Vale para qualquer corte. */
-      rendimento: 1.7,
+      /* Entre a carne crua e o que chega ao cliente se perde peso: água
+         no forno, osso, aparas e gordura. Para entregar 1kg pronto são
+         precisos 2kg de carne crua — número fechado com a produção real
+         de julho de 2026, não estimado.
+
+         O componente marcado com `aplicarRendimento` é multiplicado por
+         este fator, tanto no custo quanto na baixa de estoque. Vale para
+         qualquer corte. */
+      rendimento: 2.0,
     },
   };
 
