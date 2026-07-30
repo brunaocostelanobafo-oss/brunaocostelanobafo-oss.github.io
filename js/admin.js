@@ -335,6 +335,10 @@
     tiles.appendChild(tile('CMV', reais(rel.cmv), rel.receita ? pct(rel.cmvPercent) + ' da receita' : null));
     tiles.appendChild(tile('Lucro bruto', reais(rel.lucroBruto), rel.receita ? pct(rel.margemBruta) + ' de margem' : null));
     tiles.appendChild(tile('Despesas', reais(rel.despesasOperacionais)));
+    if (rel.consumoProprio) {
+      tiles.appendChild(tile('Consumo e cortesias', reais(rel.consumoProprio),
+        'saiu do estoque sem virar venda'));
+    }
     tiles.appendChild(tile(
       'Lucro líquido', reais(rel.lucroLiquido),
       rel.receita ? pct(rel.margemLiquida) + ' de margem' : null,
@@ -370,6 +374,7 @@
         ['CMV', `${reais(rel.cmv)} (${pct(rel.cmvPercent)})`],
         ['Lucro bruto', `${reais(rel.lucroBruto)} (${pct(rel.margemBruta)})`],
         ['Despesas operacionais', reais(rel.despesasOperacionais)],
+        ['Consumo próprio e cortesias', reais(rel.consumoProprio)],
         ['Compra de mercadoria', reais(rel.compraMercadoria)],
         ['Lucro líquido', `${reais(rel.lucroLiquido)} (${pct(rel.margemLiquida)})`],
         ['Caixa — entradas', reais(rel.caixaEntradas)],
@@ -689,7 +694,11 @@
       campo.setAttribute('aria-label', `Quantidade para movimentar ${i.nome}`);
       acoes.appendChild(campo);
 
-      for (const [rotulo, tipo] of [['+ Entrada', 'entrada'], ['− Saída', 'saida']]) {
+      for (const [rotulo, tipo] of [
+        ['+ Entrada', 'entrada'],
+        ['− Saída', 'saida'],
+        ['🎁 Cortesia', 'consumo'],
+      ]) {
         const b = el('button', 'botao botao--pequeno', rotulo);
         b.type = 'button';
         b.addEventListener('click', () => {
@@ -698,6 +707,7 @@
           Store.movimentarEstoque({
             data: Store.hojeISO(), insumoId: i.id, tipo, quantidade: q,
             custoUnitario: i.custoUnitario,
+            obs: tipo === 'consumo' ? 'Consumo próprio e cortesias' : '',
           });
           campo.value = '';
           renderTudo();

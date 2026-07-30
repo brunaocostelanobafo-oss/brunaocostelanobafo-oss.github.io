@@ -34,7 +34,7 @@ const Store = (function () {
     { nome: 'Outros', estoque: false },
   ];
 
-  const CATEGORIAS_ENTRADA = ['Aporte do dono', 'Empréstimo', 'Outros'];
+  const CATEGORIAS_ENTRADA = ['Saldo inicial', 'Aporte do dono', 'Empréstimo', 'Outros'];
 
   const VAZIO = {
     versao: VERSAO,
@@ -296,7 +296,15 @@ const Store = (function () {
     salvar();
   }
 
-  /** Entrada soma no estoque, saída subtrai. O saldo nunca fica negativo. */
+  /**
+   * Entrada soma no estoque, saída e consumo subtraem. O saldo nunca
+   * fica negativo.
+   *
+   * 'consumo' é o que a casa comeu ou deu de cortesia. Sai do estoque
+   * como qualquer saída, mas é marcado à parte porque o custo dele
+   * precisa aparecer no resultado: é carne comprada que não virou
+   * receita, e sem essa linha o lucro sairia inflado.
+   */
   function movimentarEstoque(mov) {
     const insumo = dados.insumos.find((i) => i.id === mov.insumoId);
     if (!insumo) return null;
@@ -475,7 +483,15 @@ const Store = (function () {
       .filter((l) => l.tipo === 'entrada')
       .reduce((s, l) => s + l.valor, 0);
 
-    const lucroLiquido = lucroBruto - despesasOperacionais;
+    /* Consumo próprio e cortesias: carne que saiu do estoque sem virar
+       receita. O dinheiro já saiu na compra, então não entra no caixa de
+       novo — mas o custo precisa aparecer no resultado, senão o lucro
+       fica maior do que foi. */
+    const consumoProprio = dados.movimentos
+      .filter((m) => m.tipo === 'consumo' && dentroDoPeriodo(m.data, periodo))
+      .reduce((s, m) => s + Math.round(m.quantidade * (m.custoUnitario || 0)), 0);
+
+    const lucroLiquido = lucroBruto - despesasOperacionais - consumoProprio;
     const totalSaidas = saidas.reduce((s, l) => s + l.valor, 0);
 
     return {
@@ -489,6 +505,7 @@ const Store = (function () {
       margemBruta: receita ? (lucroBruto / receita) * 100 : 0,
       despesasOperacionais,
       compraMercadoria,
+      consumoProprio,
       lucroLiquido,
       margemLiquida: receita ? (lucroLiquido / receita) * 100 : 0,
       pedidos: vendas.length,
