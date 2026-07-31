@@ -329,6 +329,39 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .rodape__links a:hover { color: var(--vermelho-claro); }
 .rodape__credito { margin: 16px 0 0; font-size: 11px; color: #5c5045; }
 
+/* ---------- Botão flutuante do WhatsApp ---------- */
+
+.zap-flutuante {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--verde-zap);
+  color: #06381a;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s, bottom 0.2s;
+}
+
+.zap-flutuante svg { width: 30px; height: 30px; }
+.zap-flutuante:hover { transform: scale(1.06); }
+.zap-flutuante:active { transform: scale(0.94); }
+
+/* A barra do carrinho ocupa a base da tela quando há itens; sem isto o
+   botão ficaria por cima dela justamente na hora de fechar o pedido.
+   E com o pedido aberto o WhatsApp só atrapalha, competindo com o botão
+   de pagar.
+
+   As duas situações são marcadas no body pelo JavaScript em vez de
+   `:has()`: o navegador não recalcula `:has()` quando o atributo hidden
+   muda, e o botão ficava por cima da barra até algo forçar o redesenho. */
+body.tem-carrinho .zap-flutuante { bottom: 82px; }
+body.pedido-aberto .zap-flutuante { display: none; }
+
 /* ---------- Barra do carrinho ---------- */
 
 .barra-carrinho {

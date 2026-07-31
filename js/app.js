@@ -408,6 +408,8 @@
     const barra = document.getElementById('barra-carrinho');
     const qtd = quantidadeTotal();
     barra.hidden = qtd === 0;
+    // Marca no body para o botão do WhatsApp sair da frente da barra.
+    document.body.classList.toggle('tem-carrinho', qtd > 0);
     if (qtd === 0) return;
     document.getElementById('carrinho-qtd').textContent = String(qtd);
     document.getElementById('carrinho-total').textContent = precoBR(subtotal());
@@ -524,11 +526,13 @@
     montarModal();
     document.getElementById('modal-pedido').hidden = false;
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('pedido-aberto');
   }
 
   function fecharModal() {
     document.getElementById('modal-pedido').hidden = true;
     document.body.style.overflow = '';
+    document.body.classList.remove('pedido-aberto');
     document.getElementById('erro-form').hidden = true;
   }
 
@@ -733,6 +737,13 @@
     const endereco = document.getElementById('rodape-endereco');
     endereco.textContent = LOJA.endereco;
     endereco.hidden = !LOJA.endereco;
+
+    /* A mensagem fala em dúvida de propósito. Se convidasse a fazer o
+       pedido, o botão puxaria o cliente para fora do checkout — e aí a
+       venda voltaria a ser digitada à mão no painel. */
+    const flutuante = document.getElementById('zap-flutuante');
+    flutuante.href = `https://wa.me/${LOJA.whatsapp}?text=` +
+      encodeURIComponent('Olá! Estou no cardápio e queria tirar uma dúvida.');
   }
 
   function montarFormulario() {
