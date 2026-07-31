@@ -267,6 +267,14 @@ function aba() {
     folha.appendRow(COLUNAS);
     folha.setFrozenRows(1);
   }
+
+  /* "Domingo, 02/08" e "11:30" são texto, mas o Sheets acha que são data
+     e hora e converte sozinho ao gravar. Depois disso o texto original se
+     perde e o ticket sai com 1899-12-30T14:36:28Z no lugar do horário.
+     Marcar as colunas como texto impede a conversão. */
+    var col = indiceDe('entrega_texto') + 1;
+    folha.getRange(1, col, folha.getMaxRows(), 2).setNumberFormat('@');
+
   return folha;
 }
 
@@ -364,8 +372,8 @@ function lerVendas(desde) {
       valor: Number(linha.pago_centavos || linha.valor_centavos || 0),
       metodo: linha.metodo,
       recibo: linha.recibo,
-      entrega_texto: linha.entrega_texto || '',
-      hora_agendada: linha.hora_agendada || '',
+      entrega_texto: formatarEntrega(linha.entrega_texto),
+      hora_agendada: formatarHora(linha.hora_agendada),
       retirada: linha.retirada === 'sim',
       observacoes: linha.observacoes || '',
     });
@@ -400,6 +408,27 @@ function traduzirMetodo(metodo) {
 
 function hojeISO() {
   return Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+}
+
+var DIAS_PT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+function ehData(valor) {
+  return Object.prototype.toString.call(valor) === '[object Date]';
+}
+
+/* As linhas gravadas antes da correção têm data de verdade no lugar do
+   texto. Em vez de perder esses pedidos, traduzimos de volta na leitura. */
+function formatarEntrega(valor) {
+  if (!ehData(valor)) return String(valor || '');
+
+  var iso = Utilities.formatDate(valor, 'America/Sao_Paulo', 'yyyy-MM-dd').split('-');
+  var dia = new Date(Number(iso[0]), Number(iso[1]) - 1, Number(iso[2]));
+  return DIAS_PT[dia.getDay()] + ', ' + iso[2] + '/' + iso[1];
+}
+
+function formatarHora(valor) {
+  if (!ehData(valor)) return String(valor || '');
+  return Utilities.formatDate(valor, 'America/Sao_Paulo', 'HH:mm');
 }
 
 function formatarData(valor) {

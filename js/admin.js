@@ -65,6 +65,45 @@
     return DIAS_CURTOS[new Date(a, m - 1, d).getDay()];
   }
 
+  const DIAS_PT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+  /**
+   * Conserta data e hora que chegaram como carimbo ISO.
+   *
+   * O Google Sheets convertia "Domingo, 02/08" e "11:30" em data e hora
+   * de verdade ao gravar, e o valor voltava como 2026-08-02T03:00:00Z e
+   * 1899-12-30T14:36:28Z — aquele 1899 é a data-zero que planilhas usam
+   * para guardar hora pura. A origem já foi corrigida; isto recupera os
+   * pedidos que entraram antes.
+   */
+  const FUSO = 'America/Sao_Paulo';
+  const ehCarimbo = (v) => /^\d{4}-\d{2}-\d{2}T/.test(String(v || ''));
+
+  function textoEntrega(valor) {
+    const bruto = String(valor || '');
+    if (!ehCarimbo(bruto)) return bruto;
+
+    const d = new Date(bruto);
+    const partes = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: FUSO, weekday: 'long', day: '2-digit', month: '2-digit',
+    }).formatToParts(d);
+    const pegar = (t) => (partes.find((p) => p.type === t) || {}).value || '';
+    const dia = pegar('weekday');
+    return `${dia.charAt(0).toUpperCase()}${dia.slice(1)}, ${pegar('day')}/${pegar('month')}`;
+  }
+
+  function textoHora(valor) {
+    const bruto = String(valor || '');
+    if (!ehCarimbo(bruto)) return bruto;
+
+    /* Subtrair 3h na mão erra por 6 minutos: a data-zero das planilhas
+       é 1899, quando São Paulo usava −3h06min28s. O navegador conhece
+       esse histórico de fusos e devolve o horário que o cliente marcou. */
+    return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: FUSO, hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(new Date(bruto));
+  }
+
   function el(tag, classe, texto) {
     const e = document.createElement(tag);
     if (classe) e.className = classe;
@@ -1028,12 +1067,13 @@
     via.appendChild(regua());
 
     // O que o expedidor precisa ver primeiro
-    const entrega = venda.entregaTexto || dataBR(venda.data);
+    const entrega = textoEntrega(venda.entregaTexto) || dataBR(venda.data);
     via.appendChild(rotulo(venda.retirada ? 'RETIRADA' : 'ENTREGA'));
     via.appendChild(el('div', 'ticket__destaque', entrega));
 
-    if (venda.horaAgendada) {
-      via.appendChild(el('div', 'ticket__destaque', 'HORÁRIO ' + venda.horaAgendada));
+    const hora = textoHora(venda.horaAgendada);
+    if (hora) {
+      via.appendChild(el('div', 'ticket__destaque', 'HORÁRIO ' + hora));
     } else if (!venda.retirada) {
       const { abre, fecha } = LOJA.entrega.horario;
       via.appendChild(el('div', null, `Janela: ${abre} às ${fecha}`));
