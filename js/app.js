@@ -254,16 +254,17 @@
     const aviso = document.createElement('div');
     aviso.className = `aviso aviso--${modo}`;
 
-    if (modo === 'reserva' && temFreteGratis()) {
-      aviso.innerHTML =
-        '<span class="aviso__icone">🎁</span>' +
-        '<span><strong>Reserva confirmada hoje ganha entrega grátis.</strong> ' +
-        `Escolha a data e receba entre ${abre} e ${fecha}.</span>`;
-    } else if (modo === 'reserva') {
+    /* Com a promoção ligada, o bloco de destaque logo abaixo já anuncia a
+       entrega grátis. Repetir aqui só ocupava espaço — e falando em
+       "hoje", o que confunde: no sábado "hoje" não dá direito ao
+       benefício, que é das reservas de segunda a sexta. */
+    const destaqueJaAnuncia = modo === 'reserva' && temFreteGratis();
+
+    if (modo === 'reserva') {
+      // O horário e os dias já vêm na linha da regra, logo abaixo.
       aviso.innerHTML =
         '<span class="aviso__icone">📅</span>' +
-        '<span><strong>Reservas abertas.</strong> ' +
-        `A entrega acontece aos sábados, domingos e feriados, das ${abre} às ${fecha}.</span>`;
+        '<span><strong>Reservas abertas.</strong> Escolha a data na hora do pedido.</span>';
     } else if (modo === 'entregando') {
       aviso.innerHTML =
         '<span class="aviso__icone">🔥</span>' +
@@ -274,7 +275,7 @@
         '<span><strong>Fora do horário de entrega.</strong> ' +
         'Monte seu pedido e reserve para a próxima data — respondemos assim que abrirmos.</span>';
     }
-    alvo.appendChild(aviso);
+    if (!destaqueJaAnuncia) alvo.appendChild(aviso);
 
     // A promoção da entrega grátis é o principal argumento de venda da casa,
     // então ganha destaque próprio em vez de virar mais uma linha de aviso.
