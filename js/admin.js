@@ -681,6 +681,48 @@
 
   // -------------------------------------------------------------- clientes
 
+  /** Id do cliente em edição, ou null quando o formulário está cadastrando. */
+  let editandoCliente = null;
+
+  function editarCliente(cliente) {
+    const form = document.getElementById('form-cliente');
+    editandoCliente = cliente.id;
+
+    form.elements.nome.value = cliente.nome || '';
+    form.elements.whatsapp.value = cliente.whatsapp || '';
+    form.elements.endereco.value = cliente.endereco || '';
+    form.elements.obs.value = cliente.obs || '';
+
+    const resumo = Store.resumoCliente(cliente.id);
+    const aviso = document.getElementById('editando-cliente');
+    aviso.innerHTML = '';
+    aviso.hidden = false;
+
+    const texto = el('div');
+    texto.appendChild(el('strong', null, `✏️ Corrigindo o cadastro de ${cliente.nome}`));
+    texto.appendChild(el('div', 'editando__sub',
+      `${resumo.pedidos} pedido(s) · ${reais(resumo.total)} · última em ${dataBR(resumo.ultimaCompra)}`));
+    aviso.appendChild(texto);
+
+    const cancelar = el('button', 'botao botao--secundario', 'Cancelar');
+    cancelar.type = 'button';
+    cancelar.addEventListener('click', sairDaEdicaoCliente);
+    aviso.appendChild(cancelar);
+
+    document.getElementById('botao-cadastrar-cliente').textContent = 'Salvar alterações';
+    document.getElementById('titulo-cliente').textContent = 'Corrigir cliente';
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function sairDaEdicaoCliente() {
+    editandoCliente = null;
+    document.getElementById('form-cliente').reset();
+    document.getElementById('editando-cliente').hidden = true;
+    document.getElementById('botao-cadastrar-cliente').textContent = 'Cadastrar';
+    document.getElementById('titulo-cliente').textContent = 'Cadastrar cliente';
+    limparErro('erro-cliente');
+  }
+
   function renderClientes() {
     const alvo = document.getElementById('lista-clientes');
     const busca = (document.getElementById('busca-cliente').value || '').toLowerCase().trim();
@@ -713,15 +755,26 @@
       }
       topo.appendChild(nome);
 
+      const acoes = el('div', 'cliente__acoes');
+
+      const editar = el('button', 'registro__imprimir', '✏️');
+      editar.type = 'button';
+      editar.title = 'Corrigir cadastro';
+      editar.setAttribute('aria-label', `Corrigir cadastro de ${c.nome}`);
+      editar.addEventListener('click', () => editarCliente(c));
+      acoes.appendChild(editar);
+
       const excluir = el('button', 'registro__excluir', '×');
       excluir.type = 'button';
       excluir.setAttribute('aria-label', `Excluir ${c.nome}`);
       excluir.addEventListener('click', () => {
         if (!confirm(`Excluir ${c.nome}? As vendas dele continuam registradas.`)) return;
+        if (editandoCliente === c.id) sairDaEdicaoCliente();
         Store.removerCliente(c.id);
         renderTudo();
       });
-      topo.appendChild(excluir);
+      acoes.appendChild(excluir);
+      topo.appendChild(acoes);
       cartao.appendChild(topo);
 
       if (c.endereco) cartao.appendChild(el('div', 'cliente__linha', '📍 ' + c.endereco));
@@ -1771,20 +1824,28 @@
       const whatsapp = formCliente.elements.whatsapp.value.trim();
       if (!nome) return erro('erro-cliente', 'O nome é obrigatório.');
 
+      // Ao corrigir, o próprio cadastro não conta como duplicata.
       const jaExiste = Store.acharClientePorTelefone(whatsapp);
-      if (whatsapp && jaExiste) {
+      if (whatsapp && jaExiste && jaExiste.id !== editandoCliente) {
         return erro('erro-cliente', `Esse WhatsApp já está cadastrado em ${jaExiste.nome}.`);
       }
       limparErro('erro-cliente');
 
-      Store.addCliente({
+      const dados = {
         nome,
         whatsapp,
         endereco: formCliente.elements.endereco.value.trim(),
         obs: formCliente.elements.obs.value.trim(),
-      });
+      };
 
-      formCliente.reset();
+      if (editandoCliente) {
+        Store.atualizarCliente(editandoCliente, dados);
+        sairDaEdicaoCliente();
+      } else {
+        Store.addCliente(dados);
+        formCliente.reset();
+      }
+
       renderTudo();
     });
 

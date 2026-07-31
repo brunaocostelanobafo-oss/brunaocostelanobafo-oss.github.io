@@ -234,7 +234,9 @@
     <!-- =========================== CLIENTES =========================== -->
     <section class="secao" id="secao-clientes">
       <form class="cartao form-grade" id="form-cliente">
-        <h2 class="cartao__titulo">Cadastrar cliente</h2>
+        <h2 class="cartao__titulo" id="titulo-cliente">Cadastrar cliente</h2>
+
+        <div class="editando" id="editando-cliente" hidden></div>
 
         <label class="campo-adm">
           <span>Nome</span>
@@ -258,7 +260,7 @@
 
         <div class="form-rodape">
           <span class="dica">O WhatsApp identifica o cliente e evita cadastro repetido.</span>
-          <button type="submit" class="botao botao--principal">Cadastrar</button>
+          <button type="submit" class="botao botao--principal" id="botao-cadastrar-cliente">Cadastrar</button>
         </div>
         <p class="erro-adm" id="erro-cliente" hidden></p>
       </form>

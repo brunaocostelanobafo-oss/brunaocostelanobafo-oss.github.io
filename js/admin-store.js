@@ -275,7 +275,17 @@ const Store = (function () {
 
   function atualizarCliente(idCliente, campos) {
     const c = dados.clientes.find((x) => x.id === idCliente);
-    if (c) Object.assign(c, campos);
+    if (!c) return null;
+
+    Object.assign(c, campos);
+
+    /* A venda guarda o nome do cliente junto, para continuar legível se
+       o cadastro for apagado. Corrigir o nome aqui sem corrigir lá
+       deixaria a lista de vendas mostrando o nome antigo para sempre. */
+    for (const venda of dados.vendas) {
+      if (venda.clienteId === idCliente) venda.clienteNome = c.nome;
+    }
+
     salvar();
     return c;
   }
