@@ -135,6 +135,8 @@
       <form class="cartao form-grade" id="form-venda">
         <h2 class="cartao__titulo">Lançar venda</h2>
 
+        <div class="editando" id="editando-venda" hidden></div>
+
         <label class="campo-adm">
           <span>Data do pedido</span>
           <input type="date" name="data" required>
@@ -200,7 +202,7 @@
 
         <div class="form-rodape">
           <strong id="venda-total">Total: R$ 0,00</strong>
-          <button type="submit" class="botao botao--principal">Lançar venda</button>
+          <button type="submit" class="botao botao--principal" id="botao-lancar">Lançar venda</button>
         </div>
         <p class="erro-adm" id="erro-venda" hidden></p>
       </form>

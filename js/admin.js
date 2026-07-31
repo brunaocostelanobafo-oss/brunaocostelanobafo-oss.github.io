@@ -532,6 +532,75 @@
     select.value = atual;
   }
 
+  /* Id da venda em edição, ou null quando o formulário está criando uma
+     nova. É isto que decide se o botão grava ou substitui. */
+  let editando = null;
+
+  /** Joga a venda no formulário para correção. */
+  function editarVenda(venda) {
+    const form = document.getElementById('form-venda');
+    editando = venda.id;
+
+    form.elements.data.value = venda.data;
+    form.elements.dataEntrega.value = venda.entregaISO || '';
+    form.elements.horaAgendada.value = textoHora(venda.horaAgendada);
+    form.elements.retirada.checked = !!venda.retirada;
+    form.elements.clienteId.value = venda.clienteId || '';
+    form.elements.taxaEntrega.value = venda.taxaEntrega ? (venda.taxaEntrega / 100).toFixed(2).replace('.', ',') : '';
+    form.elements.desconto.value = venda.desconto ? (venda.desconto / 100).toFixed(2).replace('.', ',') : '';
+    form.elements.pagamento.value = venda.pagamento || 'Pix';
+    form.elements.situacao.value = venda.pago === false ? 'receber' : 'pago';
+    form.elements.obs.value = venda.obs || '';
+
+    document.querySelectorAll('.item-venda__qtd').forEach((campo) => {
+      const item = venda.itens.find((i) => i.nome === campo.dataset.produto);
+      campo.value = item ? String(item.qtd) : '0';
+    });
+
+    // Item que não está mais no cardápio não tem campo — avisa em vez de sumir.
+    const orfaos = venda.itens.filter(
+      (i) => !document.querySelector(`.item-venda__qtd[data-produto="${CSS.escape(i.nome)}"]`)
+    );
+
+    atualizarTotalVenda();
+    mostrarModoEdicao(venda, orfaos);
+    document.getElementById('form-venda').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function mostrarModoEdicao(venda, orfaos) {
+    const aviso = document.getElementById('editando-venda');
+    aviso.innerHTML = '';
+    aviso.hidden = false;
+
+    const texto = el('div');
+    texto.appendChild(el('strong', null, `✏️ Corrigindo o pedido de ${venda.clienteNome || 'sem cliente'}`));
+    texto.appendChild(el('div', 'editando__sub', `${dataBR(venda.data)} · ${reais(Store.totalVenda(venda))}`));
+    if (orfaos.length) {
+      texto.appendChild(el('div', 'editando__alerta',
+        `⚠ ${orfaos.map((o) => o.nome).join(', ')} saiu do cardápio e será perdido se você salvar.`));
+    }
+    aviso.appendChild(texto);
+
+    const cancelar = el('button', 'botao botao--secundario', 'Cancelar');
+    cancelar.type = 'button';
+    cancelar.addEventListener('click', sairDaEdicao);
+    aviso.appendChild(cancelar);
+
+    document.getElementById('botao-lancar').textContent = 'Salvar alterações';
+  }
+
+  function sairDaEdicao() {
+    editando = null;
+    const form = document.getElementById('form-venda');
+    form.reset();
+    form.elements.data.value = Store.hojeISO();
+    document.querySelectorAll('.item-venda__qtd').forEach((i) => { i.value = '0'; });
+    document.getElementById('editando-venda').hidden = true;
+    document.getElementById('botao-lancar').textContent = 'Lançar venda';
+    limparErro('erro-venda');
+    atualizarTotalVenda();
+  }
+
   function renderVendas() {
     const alvo = document.getElementById('lista-vendas');
     alvo.innerHTML = '';
@@ -580,6 +649,13 @@
       linha.appendChild(texto);
 
       linha.appendChild(el('strong', 'registro__valor', reais(Store.totalVenda(v))));
+
+      const editar = el('button', 'registro__imprimir', '✏️');
+      editar.type = 'button';
+      editar.title = 'Corrigir este pedido';
+      editar.setAttribute('aria-label', `Corrigir pedido de ${v.clienteNome || 'venda'}`);
+      editar.addEventListener('click', () => editarVenda(v));
+      linha.appendChild(editar);
 
       const imprimir = el('button', 'registro__imprimir', '🖨');
       imprimir.type = 'button';
@@ -1652,7 +1728,7 @@
       const clienteId = recemCadastrado ? recemCadastrado.id : (formVenda.elements.clienteId.value || null);
       const cliente = clienteId ? Store.dados.clientes.find((c) => c.id === clienteId) : null;
 
-      Store.addVenda({
+      const dadosVenda = {
         data: formVenda.elements.data.value,
         clienteId,
         clienteNome: cliente ? cliente.nome : '',
@@ -1669,11 +1745,18 @@
         entregaTexto: rotuloEntrega(entregaISO),
         horaAgendada: formVenda.elements.horaAgendada.value.trim(),
         retirada: formVenda.elements.retirada.checked,
-      });
+      };
 
-      formVenda.reset();
-      formVenda.elements.data.value = Store.hojeISO();
-      document.querySelectorAll('.item-venda__qtd').forEach((i) => { i.value = '0'; });
+      if (editando) {
+        Store.atualizarVenda(editando, dadosVenda);
+        sairDaEdicao();
+      } else {
+        Store.addVenda(dadosVenda);
+        formVenda.reset();
+        formVenda.elements.data.value = Store.hojeISO();
+        document.querySelectorAll('.item-venda__qtd').forEach((i) => { i.value = '0'; });
+      }
+
       document.getElementById('colar-pedido').value = '';
       document.getElementById('resultado-colar').innerHTML = '';
       atualizarTotalVenda();

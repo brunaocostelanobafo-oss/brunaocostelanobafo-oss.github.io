@@ -199,6 +199,40 @@ const Store = (function () {
   }
 
   /**
+   * Substitui uma venda pelos dados corrigidos.
+   *
+   * O estoque é desfeito e refeito: devolve o que a versão antiga tinha
+   * baixado e baixa de novo pela nova lista de itens. Sem isso, corrigir
+   * um pedido deixaria a despensa torta — tirando duas vezes o que só
+   * saiu uma.
+   *
+   * O que veio do site (número do pedido, origem, comprovante) é
+   * preservado: você está corrigindo o pedido, não criando outro.
+   */
+  function atualizarVenda(idVenda, campos) {
+    const indice = dados.vendas.findIndex((v) => v.id === idVenda);
+    if (indice === -1) return null;
+
+    const antiga = dados.vendas[indice];
+    devolverEstoqueDaVenda(idVenda);
+
+    const nova = {
+      ...antiga,
+      ...campos,
+      id: antiga.id,
+      orderNsu: antiga.orderNsu,
+      origem: antiga.origem,
+      recibo: antiga.recibo,
+      editadaEm: new Date().toISOString(),
+    };
+
+    dados.vendas[indice] = nova;
+    baixarEstoquePorVenda(nova);
+    salvar();
+    return nova;
+  }
+
+  /**
    * O pedido pago pelo site já foi trazido para cá?
    *
    * O número do pedido (order_nsu) é gerado uma vez e nunca se repete,
@@ -588,7 +622,7 @@ const Store = (function () {
     hojeISO,
     totalVenda,
     custoVenda,
-    addVenda, removerVenda, vendaJaImportada,
+    addVenda, removerVenda, atualizarVenda, vendaJaImportada,
     addLancamento, removerLancamento, categoriaEhEstoque,
     addCliente, atualizarCliente, removerCliente,
     acharClientePorTelefone, resumoCliente, normalizarTelefone,

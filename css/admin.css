@@ -282,6 +282,24 @@
 .campo-adm input:focus, .campo-adm select:focus { outline: none; border-color: var(--vermelho); }
 .campo-adm input::placeholder { color: #5c5045; }
 
+.editando {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: rgba(250, 178, 25, 0.1);
+  border: 1px solid rgba(250, 178, 25, 0.55);
+  font-size: 13.5px;
+}
+
+.editando strong { color: #fab219; }
+.editando__sub { margin-top: 3px; font-size: 12px; color: var(--creme-suave); }
+.editando__alerta { margin-top: 6px; font-size: 12px; color: #ff8f88; }
+
 .marcar {
   display: flex;
   align-items: center;

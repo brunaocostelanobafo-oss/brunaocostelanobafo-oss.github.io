@@ -799,12 +799,15 @@
           ? 'Data da entrega'
           : 'Data da retirada';
 
+        /* Ao trocar para retirada o bloco some, mas a escolha continua
+           marcada: quem tinha agendado e volta para entrega encontra o
+           horário como deixou. Desmarcar em silêncio fazia o cliente
+           perder o agendamento sem perceber — a taxa sumia do resumo e
+           nada avisava. Retirada não paga agendamento de qualquer
+           forma, porque `querAgendar` exige entrega. */
         if (LOJA.agendamentoHorario && LOJA.agendamentoHorario.ativo) {
           document.getElementById('campo-agendar').hidden = !entrega;
-          if (!entrega) {
-            agendar.checked = false;
-            document.getElementById('campo-hora').hidden = true;
-          }
+          document.getElementById('campo-hora').hidden = !entrega || !agendar.checked;
         }
         montarResumo();
       });
