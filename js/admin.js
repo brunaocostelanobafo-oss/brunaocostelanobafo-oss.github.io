@@ -79,6 +79,14 @@
   const FUSO = 'America/Sao_Paulo';
   const ehCarimbo = (v) => /^\d{4}-\d{2}-\d{2}T/.test(String(v || ''));
 
+  /** "2026-08-02" -> "Domingo, 02/08" */
+  function rotuloEntrega(iso) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return '';
+    const [a, m, d] = iso.split('-').map(Number);
+    const data = new Date(a, m - 1, d);
+    return `${DIAS_PT[data.getDay()]}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+  }
+
   function textoEntrega(valor) {
     const bruto = String(valor || '');
     if (!ehCarimbo(bruto)) return bruto;
@@ -90,6 +98,24 @@
     const pegar = (t) => (partes.find((p) => p.type === t) || {}).value || '';
     const dia = pegar('weekday');
     return `${dia.charAt(0).toUpperCase()}${dia.slice(1)}, ${pegar('day')}/${pegar('month')}`;
+  }
+
+  /**
+   * "Domingo, 02/08" -> "2026-08-02", para o filtro da expedição do dia.
+   * A mensagem não traz o ano, então vale o do pedido — e se a entrega
+   * cair no ano seguinte (pedido em dezembro, entrega em janeiro), o ano
+   * avança.
+   */
+  function entregaParaISO(entrega, dataPedido) {
+    if (ehCarimbo(entrega)) return String(entrega).slice(0, 10);
+
+    const m = String(entrega || '').match(/(\d{2})\/(\d{2})/);
+    if (!m || !dataPedido) return '';
+
+    const [dia, mes] = [m[1], m[2]];
+    let ano = Number(String(dataPedido).slice(0, 4));
+    if (mes < String(dataPedido).slice(5, 7)) ano++;
+    return `${ano}-${mes}-${dia}`;
   }
 
   function textoHora(valor) {
@@ -1304,8 +1330,9 @@
             orderNsu: bruta.order_nsu,
             origem: 'site',
             // Dados de expedição: para onde e quando, não quando compraram.
-            entregaTexto: bruta.entrega_texto || '',
-            horaAgendada: bruta.hora_agendada || '',
+            entregaTexto: textoEntrega(bruta.entrega_texto),
+            entregaISO: entregaParaISO(bruta.entrega_texto, bruta.data),
+            horaAgendada: textoHora(bruta.hora_agendada),
             retirada: !!bruta.retirada,
             enderecoTexto: bruta.endereco || '',
           });
@@ -1459,7 +1486,16 @@
   function aplicarPedido(pedido) {
     const form = document.getElementById('form-venda');
 
-    form.elements.data.value = pedido.data || Store.hojeISO();
+    /* A data que vem na mensagem é a da ENTREGA, não a do pedido. Antes
+       as duas eram tratadas como a mesma coisa e o ticket saía com a
+       data errada. */
+    form.elements.data.value = Store.hojeISO();
+    form.elements.dataEntrega.value = pedido.data || '';
+    form.elements.retirada.checked = !!pedido.retirada;
+
+    const agendamento = pedido.itens.find((i) => /^Agendamento de horário/.test(i.nome));
+    const hora = agendamento && agendamento.nome.match(/(\d{2}:\d{2})/);
+    form.elements.horaAgendada.value = hora ? hora[1] : '';
     form.elements.taxaEntrega.value = pedido.taxaEntrega
       ? (pedido.taxaEntrega / 100).toFixed(2).replace('.', ',') : '';
     form.elements.obs.value = [pedido.observacoes, pedido.troco ? `Troco para R$ ${pedido.troco}` : '']
@@ -1595,6 +1631,9 @@
 
       // Se o pedido veio colado do WhatsApp e trouxe cliente novo, cadastra
       // antes de gravar a venda para que ela já nasça vinculada a ele.
+      // Sem data de entrega informada, vale a data do pedido.
+      const entregaISO = formVenda.elements.dataEntrega.value || formVenda.elements.data.value;
+
       const recemCadastrado = cadastrarClienteDaMensagem();
       const clienteId = recemCadastrado ? recemCadastrado.id : (formVenda.elements.clienteId.value || null);
       const cliente = clienteId ? Store.dados.clientes.find((c) => c.id === clienteId) : null;
@@ -1609,6 +1648,13 @@
         pagamento: formVenda.elements.pagamento.value,
         pago: formVenda.elements.situacao.value === 'pago',
         obs: formVenda.elements.obs.value.trim(),
+        /* Quando entregar, que é o que o ticket de expedição precisa.
+           Sem isso ele caía na data do lançamento — que costuma ser
+           dias antes da entrega. */
+        entregaISO: entregaISO,
+        entregaTexto: rotuloEntrega(entregaISO),
+        horaAgendada: formVenda.elements.horaAgendada.value.trim(),
+        retirada: formVenda.elements.retirada.checked,
       });
 
       formVenda.reset();

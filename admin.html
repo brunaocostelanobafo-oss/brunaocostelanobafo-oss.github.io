@@ -136,13 +136,31 @@
         <h2 class="cartao__titulo">Lançar venda</h2>
 
         <label class="campo-adm">
-          <span>Data</span>
+          <span>Data do pedido</span>
           <input type="date" name="data" required>
         </label>
 
         <label class="campo-adm">
           <span>Cliente</span>
           <select name="clienteId" id="venda-cliente"></select>
+        </label>
+
+        <label class="campo-adm">
+          <span>Data da entrega</span>
+          <input type="date" name="dataEntrega">
+        </label>
+
+        <label class="campo-adm">
+          <span>Horário agendado <span class="campo__opcional">(opcional)</span></span>
+          <input type="text" name="horaAgendada" placeholder="Ex.: 12:30">
+        </label>
+
+        <label class="campo-adm campo-adm--largo">
+          <span>Retirada</span>
+          <label class="marcar">
+            <input type="checkbox" name="retirada">
+            <span>O cliente retira no local (não vai para a rota)</span>
+          </label>
         </label>
 
         <div class="itens-venda" id="itens-venda"></div>

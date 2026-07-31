@@ -282,6 +282,22 @@
 .campo-adm input:focus, .campo-adm select:focus { outline: none; border-color: var(--vermelho); }
 .campo-adm input::placeholder { color: #5c5045; }
 
+.marcar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--borda);
+  background: var(--preto);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.marcar:has(input:checked) { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.12); }
+.marcar input { width: 17px; height: 17px; accent-color: var(--vermelho); flex-shrink: 0; }
+.marcar span { text-transform: none; font-weight: 400; letter-spacing: 0; color: var(--creme-forte); }
+
 .form-rodape {
   display: flex;
   align-items: center;
