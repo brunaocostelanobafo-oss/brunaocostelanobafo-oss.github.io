@@ -548,6 +548,20 @@
 
       const cliente = v.clienteNome || 'Sem cliente';
       texto.appendChild(el('div', 'registro__titulo', `${dataBR(v.data)} · ${cliente}`));
+
+      /* Quando entregar é o que decide a rota do dia, então precisa
+         estar à vista. Antes só aparecia abrindo a impressão do ticket.
+         Nas vendas antigas a data do pedido já é a da entrega, e aí a
+         linha só repetiria — por isso ela só sai quando há data própria. */
+      const entrega = textoEntrega(v.entregaTexto) || rotuloEntrega(v.entregaISO);
+      if (entrega) {
+        const hora = textoHora(v.horaAgendada);
+        const linhaEntrega = el('div', 'registro__entrega');
+        linhaEntrega.textContent = v.retirada
+          ? `📦 Retirada — ${entrega}`
+          : `🚚 Entrega ${entrega}${hora ? ` · ${hora}` : ''}`;
+        texto.appendChild(linhaEntrega);
+      }
       const detalhe = v.itens.map((i) => `${i.qtd}x ${i.nome}`).join(', ');
       const infoLinha = el('div', 'registro__detalhe', `${detalhe} · ${v.pagamento}`);
       if (v.pago === false) {
