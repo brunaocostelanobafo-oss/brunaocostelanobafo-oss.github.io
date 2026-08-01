@@ -661,6 +661,77 @@ const Store = (function () {
     };
   }
 
+  /**
+   * A segunda-feira da semana de uma data — a chave que agrupa a
+   * operação. Uma operação é a semana inteira: as compras e o preparo de
+   * segunda a sexta e as entregas do fim de semana. Agrupar só pelo dia
+   * da entrega jogaria a carne comprada na quinta para fora da conta que
+   * ela pagou.
+   */
+  function segundaDaSemana(iso) {
+    const [a, m, d] = String(iso).split('-').map(Number);
+    if (!a || !m || !d) return '';
+
+    const data = new Date(a, m - 1, d);
+    const recuo = data.getDay() === 0 ? 6 : data.getDay() - 1;
+    data.setDate(data.getDate() - recuo);
+
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${data.getFullYear()}-${mes}-${dia}`;
+  }
+
+  /** Resultado fechado de cada operação, da mais recente para a mais antiga. */
+  function relatorioPorOperacao() {
+    const semanas = new Map();
+
+    const daSemana = (chave) => {
+      if (!semanas.has(chave)) {
+        semanas.set(chave, {
+          semana: chave, receita: 0, cmv: 0, despesas: 0,
+          consumoProprio: 0, pedidos: 0, itens: 0, datasEntrega: new Set(),
+        });
+      }
+      return semanas.get(chave);
+    };
+
+    for (const venda of dados.vendas) {
+      const entrega = dataDeEntrega(venda);
+      const s = daSemana(segundaDaSemana(entrega));
+      s.receita += totalVenda(venda);
+      s.cmv += custoVenda(venda);
+      s.pedidos++;
+      s.itens += venda.itens.reduce((soma, i) => soma + i.qtd, 0);
+      s.datasEntrega.add(entrega);
+    }
+
+    for (const l of dados.lancamentos) {
+      if (l.tipo !== 'saida' || categoriaEhEstoque(l.categoria)) continue;
+      daSemana(segundaDaSemana(l.data)).despesas += l.valor;
+    }
+
+    for (const mov of dados.movimentos) {
+      if (mov.tipo !== 'consumo') continue;
+      daSemana(segundaDaSemana(mov.data)).consumoProprio +=
+        Math.round(mov.quantidade * (mov.custoUnitario || 0));
+    }
+
+    return [...semanas.values()]
+      .map((s) => {
+        const lucroBruto = s.receita - s.cmv;
+        const lucroLiquido = lucroBruto - s.despesas - s.consumoProprio;
+        return {
+          ...s,
+          datasEntrega: [...s.datasEntrega].sort(),
+          lucroBruto,
+          lucroLiquido,
+          margem: s.receita ? (lucroLiquido / s.receita) * 100 : 0,
+          ticketMedio: s.pedidos ? Math.round(s.receita / s.pedidos) : 0,
+        };
+      })
+      .sort((a, b) => b.semana.localeCompare(a.semana));
+  }
+
   /** Receita por dia do período — alimenta o gráfico de barras. */
   function receitaPorDia(periodo) {
     const dias = diasDoPeriodo(periodo);
@@ -742,6 +813,7 @@ const Store = (function () {
     definirCusto, custoDe, produtosSemCusto,
     temFicha, custoDaFicha, salvarFicha, fichaDe, quantidadeBruta, definirRendimento,
     relatorio, receitaPorDia, rankingProdutos, rankingClientes,
+    relatorioPorOperacao, segundaDaSemana,
     exportar, importar, apagarTudo,
   };
 })();

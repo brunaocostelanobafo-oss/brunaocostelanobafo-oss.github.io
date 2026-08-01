@@ -427,6 +427,9 @@
       ranking.length ? 'Ordenados por receita no período.' : '';
     graficoProdutos(document.getElementById('gr-produtos'), ranking);
 
+    // Independe do filtro de período: cada operação é um fechamento próprio.
+    renderPorOperacao();
+
     // Tabela alternativa (mesmos números, para quem prefere ler)
     const tabela = document.getElementById('tabela-painel');
     tabela.innerHTML = '';
@@ -447,6 +450,64 @@
         ['Caixa — saldo', reais(rel.caixaSaldo)],
       ]
     ));
+  }
+
+  /** "2026-07-27" + entregas -> "Sáb 01/08 e Dom 02/08" */
+  function rotuloOperacao(op) {
+    if (!op.datasEntrega.length) return 'sem entrega';
+
+    const curto = (iso) => {
+      const [, m, d] = iso.split('-');
+      const dia = new Date(...iso.split('-').map((n, i) => (i === 1 ? n - 1 : Number(n))));
+      return `${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dia.getDay()]} ${d}/${m}`;
+    };
+
+    const datas = op.datasEntrega.map(curto);
+    if (datas.length === 1) return datas[0];
+    if (datas.length === 2) return `${datas[0]} e ${datas[1]}`;
+    return `${datas[0]} a ${datas[datas.length - 1]}`;
+  }
+
+  function renderPorOperacao() {
+    const alvo = document.getElementById('por-operacao');
+    alvo.innerHTML = '';
+
+    const operacoes = Store.relatorioPorOperacao().slice(0, 12);
+    if (!operacoes.length) {
+      alvo.appendChild(vazio('Nenhuma operação fechada ainda.'));
+      return;
+    }
+
+    for (const op of operacoes) {
+      const cartao = el('div', 'operacao' + (op.lucroLiquido < 0 ? ' operacao--prejuizo' : ''));
+
+      const topo = el('div', 'operacao__topo');
+      const titulo = el('div');
+      titulo.appendChild(el('strong', 'operacao__periodo', rotuloOperacao(op)));
+      titulo.appendChild(el('span', 'operacao__pedidos',
+        `${op.pedidos} pedido(s) · ${op.itens} item(ns) · ticket ${reais(op.ticketMedio)}`));
+      topo.appendChild(titulo);
+
+      const resultado = el('div', 'operacao__resultado');
+      resultado.appendChild(el('strong', null, reais(op.lucroLiquido)));
+      resultado.appendChild(el('span', null, `${pct(op.margem)} de margem`));
+      topo.appendChild(resultado);
+      cartao.appendChild(topo);
+
+      const linhas = el('dl', 'operacao__contas');
+      const linha = (rotulo, valor, classe) => {
+        linhas.appendChild(el('dt', classe, rotulo));
+        linhas.appendChild(el('dd', classe, valor));
+      };
+      linha('Faturamento', reais(op.receita));
+      linha('Custo da mercadoria', '− ' + reais(op.cmv));
+      linha('Lucro bruto', reais(op.lucroBruto), 'operacao__bruto');
+      if (op.despesas) linha('Despesas', '− ' + reais(op.despesas));
+      if (op.consumoProprio) linha('Consumo e cortesias', '− ' + reais(op.consumoProprio));
+      cartao.appendChild(linhas);
+
+      alvo.appendChild(cartao);
+    }
   }
 
   function montarTabela(cabecalho, linhas) {
