@@ -611,6 +611,7 @@
     form.elements.desconto.value = venda.desconto ? (venda.desconto / 100).toFixed(2).replace('.', ',') : '';
     form.elements.pagamento.value = venda.pagamento || 'Pix';
     form.elements.situacao.value = venda.pago === false ? 'receber' : 'pago';
+    form.elements.pagador.value = venda.pagador || '';
     form.elements.obs.value = venda.obs || '';
 
     document.querySelectorAll('.item-venda__qtd').forEach((campo) => {
@@ -738,6 +739,9 @@
       if (v.pago === false) {
         infoLinha.appendChild(document.createTextNode(' · '));
         infoLinha.appendChild(el('strong', 'registro__receber', 'A RECEBER'));
+      }
+      if (v.pagador && v.pagador.toLowerCase() !== String(v.clienteNome || '').toLowerCase()) {
+        infoLinha.appendChild(document.createTextNode(` · pago por ${v.pagador}`));
       }
       if (v.recibo) {
         infoLinha.appendChild(document.createTextNode(' · '));
@@ -1968,6 +1972,11 @@
         desconto: paraCentavos(formVenda.elements.desconto.value),
         pagamento: formVenda.elements.pagamento.value,
         pago: formVenda.elements.situacao.value === 'pago',
+        /* Quem paga nem sempre é quem pede — a InfinitePay mostra o
+           titular da conta, e o painel mostra quem preencheu o pedido.
+           Sem anotar isso, a conferência do extrato trava num nome que
+           não existe em lugar nenhum. */
+        pagador: formVenda.elements.pagador.value.trim(),
         obs: formVenda.elements.obs.value.trim(),
         /* Quando entregar, que é o que o ticket de expedição precisa.
            Sem isso ele caía na data do lançamento — que costuma ser

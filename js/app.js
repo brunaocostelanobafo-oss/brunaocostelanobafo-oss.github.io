@@ -103,7 +103,8 @@
   }
 
   /** As próximas datas em que a loja entrega, a partir de hoje. */
-  function proximasDatasDeEntrega(quantas = 6, hoje = new Date()) {
+  function proximasDatasDeEntrega(quantas, hoje = new Date()) {
+    quantas = quantas || LOJA.entrega.datasOferecidas || 6;
     const datas = [];
     const { fecha } = LOJA.entrega.horario;
 

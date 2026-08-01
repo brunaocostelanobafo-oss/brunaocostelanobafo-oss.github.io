@@ -75,6 +75,13 @@ const LOJA = {
   entrega: {
     diasSemana: [0, 6],
     horario: { abre: '11:00', fecha: '14:00' },
+
+    /* Quantas datas de entrega o cliente pode escolher.
+       4 = o fim de semana que vem e o seguinte.
+       2 = só o fim de semana imediato.
+       Quanto mais longe, mais tempo o preço da carne tem para mudar
+       depois que o pedido já foi pago. */
+    datasOferecidas: 4,
   },
 
   /* ---------------------------------------------------------------------
