@@ -120,6 +120,18 @@ Abra a planilha e veja a aba `Vendas`. Se a linha estiver como `pendente`, o
 cliente gerou o link mas não pagou. Se nem linha existe, veja a aba `Erros` —
 o programa anota lá tudo que deu problema.
 
+**Um pedido pago na InfinitePay não chegou na planilha**
+Três causas possíveis, nesta ordem:
+
+1. **O link foi gerado fora do cardápio** (pelo app da InfinitePay, por
+   exemplo). Nesse caso não há aviso configurado e o pedido nunca chega —
+   é esperado, e a venda precisa ser lançada à mão no painel.
+2. **O aviso chegou mas não passou na conferência.** Vai estar na aba `Erros`.
+3. **O aviso não chegou.** A linha fica como `pendente` na aba `Vendas`.
+
+Para ver os dois últimos de uma vez, abra no navegador:
+`SUA_URL/exec?acao=diagnostico&token=SEU_TOKEN`
+
 **Mudei o código e nada mudou**
 Toda alteração precisa de nova publicação: **Implantar** → **Gerenciar
 implantações** → ✏️ (lápis) → Versão: **Nova versão** → **Implantar**.

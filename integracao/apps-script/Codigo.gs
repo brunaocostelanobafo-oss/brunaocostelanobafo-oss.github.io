@@ -92,6 +92,7 @@ function doGet(e) {
 
     if (p.acao === 'vendas') return json({ ok: true, vendas: lerVendas(p.desde) });
     if (p.acao === 'ping') return json({ ok: true, mensagem: 'Integração no ar.' });
+    if (p.acao === 'diagnostico') return json({ ok: true, diagnostico: diagnostico() });
 
     return json({ ok: false, erro: 'Ação desconhecida.' });
   } catch (erro) {
@@ -379,6 +380,60 @@ function lerVendas(desde) {
     });
   }
   return vendas;
+}
+
+// ===========================================================================
+// Diagnóstico — o que fica invisível na conferência do dia a dia
+// ===========================================================================
+
+/**
+ * Mostra o que a lista de vendas esconde: os pedidos que geraram link mas
+ * nunca foram confirmados, e os erros que o webhook registrou.
+ *
+ * Um pedido pago que não aparece na planilha cai num destes dois lugares —
+ * ou em nenhum, e aí o link foi criado fora do cardápio.
+ */
+function diagnostico() {
+  var folha = aba();
+  var valores = folha.getDataRange().getValues();
+  var pendentes = [];
+
+  for (var i = 1; i < valores.length; i++) {
+    var linha = {};
+    for (var c = 0; c < COLUNAS.length; c++) linha[COLUNAS[c]] = valores[i][c];
+    if (linha.status === 'pago') continue;
+
+    pendentes.push({
+      data: formatarData(linha.data),
+      order_nsu: String(linha.order_nsu),
+      cliente: linha.cliente,
+      valor: Number(linha.valor_centavos || 0),
+      status: linha.status,
+      registrado_em: String(linha.registrado_em),
+    });
+  }
+
+  var erros = [];
+  var folhaErros = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Erros');
+  if (folhaErros) {
+    var linhasErro = folhaErros.getDataRange().getValues();
+    // Os mais recentes primeiro, no máximo 20.
+    for (var e = linhasErro.length - 1; e >= 0 && erros.length < 20; e--) {
+      if (!linhasErro[e][0]) continue;
+      erros.push({
+        quando: String(linhasErro[e][0]),
+        onde: String(linhasErro[e][1]),
+        mensagem: String(linhasErro[e][2]).slice(0, 300),
+      });
+    }
+  }
+
+  return {
+    totalLinhas: Math.max(0, valores.length - 1),
+    pendentes: pendentes,
+    erros: erros,
+    urlWebhook: ScriptApp.getService().getUrl(),
+  };
 }
 
 // ===========================================================================
