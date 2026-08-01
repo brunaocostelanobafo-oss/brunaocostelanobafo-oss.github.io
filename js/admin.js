@@ -1988,6 +1988,13 @@
     configurarSincronizacao();
     configurarBackup();
 
+    /* Painel aberto em outra aba: em vez de seguir com a cópia velha e
+       depois gravar por cima, esta aba recarrega e redesenha na hora. */
+    Store.observarOutrasAbas(() => {
+      renderTudo();
+      avisoBarra('Os dados mudaram em outra aba do painel — esta tela foi atualizada.', 'bom');
+    });
+
     document.getElementById('data-expedicao').value = Store.hojeISO();
     document.getElementById('btn-imprimir-dia').addEventListener('click', imprimirDoDia);
 

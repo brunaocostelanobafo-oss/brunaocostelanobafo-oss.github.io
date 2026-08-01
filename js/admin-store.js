@@ -144,6 +144,32 @@ const Store = (function () {
     }
   }
 
+  /* ------------------------------------------------------------------
+   * Painel aberto em mais de uma aba
+   *
+   * Cada aba carregava os dados na abertura e guardava a própria cópia.
+   * A última a gravar escrevia tudo por cima — e o que a outra tinha
+   * lançado desaparecia. Foi assim que vendas sumiram do painel mesmo
+   * continuando na planilha.
+   *
+   * O navegador avisa as OUTRAS abas quando o armazenamento muda. Ao
+   * receber esse aviso, a aba recarrega em vez de seguir com a cópia
+   * velha, e a tela é redesenhada.
+   * ---------------------------------------------------------------- */
+  let aoMudarEmOutraAba = null;
+
+  window.addEventListener('storage', (evento) => {
+    if (evento.key !== CHAVE || evento.newValue === null) return;
+
+    dados = carregar();
+    delete dados._precisaSalvar;   // quem gravou já cuidou disso
+    if (aoMudarEmOutraAba) aoMudarEmOutraAba();
+  });
+
+  function observarOutrasAbas(callback) {
+    aoMudarEmOutraAba = callback;
+  }
+
   function id() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
@@ -670,7 +696,7 @@ const Store = (function () {
     totalVenda,
     custoVenda,
     addVenda, removerVenda, atualizarVenda, vendaJaImportada,
-    marcarEntregue, dataDeEntrega,
+    marcarEntregue, dataDeEntrega, observarOutrasAbas,
     addLancamento, removerLancamento, categoriaEhEstoque,
     addCliente, atualizarCliente, removerCliente,
     acharClientePorTelefone, resumoCliente, normalizarTelefone,
