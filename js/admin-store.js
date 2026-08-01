@@ -67,6 +67,14 @@ const Store = (function () {
 
   let dados = carregar();
 
+  /* A migração só vale se ficar gravada. Sem isto ela se repetiria a
+     cada abertura e, no dia seguinte, marcaria como entregue um pedido
+     atrasado que ainda estava na fila. */
+  if (dados._precisaSalvar) {
+    delete dados._precisaSalvar;
+    salvar();
+  }
+
   // ------------------------------------------------------------ persistência
 
   function carregar() {
@@ -89,6 +97,20 @@ const Store = (function () {
    * esse texto no ticket de expedição para sempre.
    */
   function migrar(base) {
+    /* Pedido entregue passou a ser marcado à mão, mas o histórico já
+       tinha 42 vendas de julho. Sem esta passada única, todas elas
+       apareceriam na fila de "a entregar" para sempre.
+       Roda uma vez só: depois disso, um pedido de ontem que ficou para
+       trás continua na fila, que é onde ele tem que estar. */
+    if (!base.config.migrouEntregues) {
+      const hoje = hojeISO();
+      for (const venda of base.vendas) {
+        if (venda.entregue === undefined) venda.entregue = dataDeEntrega(venda) < hoje;
+      }
+      base.config.migrouEntregues = true;
+      base._precisaSalvar = true;
+    }
+
     for (const venda of base.vendas) {
       if (!venda.obs) continue;
 
@@ -239,6 +261,21 @@ const Store = (function () {
    * então é ele que impede a mesma venda de entrar duas vezes quando
    * você aperta "Puxar vendas" de novo.
    */
+  /** A data que manda na fila da expedição é a da entrega, não a do pedido. */
+  function dataDeEntrega(venda) {
+    return venda.entregaISO || venda.data;
+  }
+
+  function marcarEntregue(idVenda, entregue) {
+    const v = dados.vendas.find((x) => x.id === idVenda);
+    if (!v) return null;
+
+    v.entregue = !!entregue;
+    v.entregueEm = entregue ? hojeISO() : '';
+    salvar();
+    return v;
+  }
+
   function vendaJaImportada(orderNsu) {
     if (!orderNsu) return false;
     return dados.vendas.some((v) => v.orderNsu === orderNsu);
@@ -633,6 +670,7 @@ const Store = (function () {
     totalVenda,
     custoVenda,
     addVenda, removerVenda, atualizarVenda, vendaJaImportada,
+    marcarEntregue, dataDeEntrega,
     addLancamento, removerLancamento, categoriaEhEstoque,
     addCliente, atualizarCliente, removerCliente,
     acharClientePorTelefone, resumoCliente, normalizarTelefone,

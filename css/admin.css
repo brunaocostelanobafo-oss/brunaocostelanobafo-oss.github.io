@@ -525,6 +525,50 @@
   color: var(--vermelho-claro);
 }
 .registro__valor { font-size: 14.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lista-cabecalho {
+  margin: 4px 0 2px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: var(--creme-suave);
+}
+
+.lista-cabecalho--fila { color: var(--vermelho-claro); }
+
+.entregues { margin-top: 14px; border-top: 1px solid var(--borda); padding-top: 10px; }
+
+.entregues summary {
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: var(--creme-suave);
+}
+
+.entregues summary:hover { color: var(--creme-forte); }
+
+/* Entregue continua legível, mas recuado: o que importa é a fila. */
+.registro--entregue { opacity: 0.55; }
+.registro--atrasado .registro__entrega { color: #fab219; }
+
+.registro__entregue {
+  flex-shrink: 0;
+  width: 32px;
+  height: 28px;
+  border: 1px solid var(--borda);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--creme-suave);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.registro__entregue:hover { border-color: var(--verde-zap); color: var(--verde-zap); }
+.registro__entregue--feito { border-color: rgba(37, 211, 102, 0.5); color: var(--verde-zap); }
+
 .registro__receber { color: #fab219; letter-spacing: 0.5px; }
 .registro__recibo { color: var(--verde-zap); text-decoration: none; }
 .registro__recibo:hover { text-decoration: underline; }

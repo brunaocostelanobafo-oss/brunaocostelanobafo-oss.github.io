@@ -605,14 +605,54 @@
     const alvo = document.getElementById('lista-vendas');
     alvo.innerHTML = '';
 
-    const vendas = [...Store.dados.vendas].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 60);
-    if (!vendas.length) {
+    if (!Store.dados.vendas.length) {
       alvo.appendChild(vazio('Nenhuma venda lançada ainda.'));
       return;
     }
 
+    const chave = (v) => String(Store.dataDeEntrega(v));
+
+    /* A fila sai na ordem em que as coisas saem para a rua: sábado antes
+       de domingo. Assim o próximo a entregar está sempre no topo, e
+       pedido novo de sábado entra acima dos de domingo sozinho. */
+    const fila = Store.dados.vendas
+      .filter((v) => !v.entregue)
+      .sort((a, b) => chave(a).localeCompare(chave(b)));
+
+    const entregues = Store.dados.vendas
+      .filter((v) => v.entregue)
+      .sort((a, b) => chave(b).localeCompare(chave(a)))
+      .slice(0, 40);
+
+    if (fila.length) {
+      alvo.appendChild(cabecalhoLista(`A entregar · ${fila.length}`, 'fila'));
+      montarLinhas(alvo, fila);
+    }
+
+    if (entregues.length) {
+      const detalhes = document.createElement('details');
+      detalhes.className = 'entregues';
+      const resumo = document.createElement('summary');
+      resumo.textContent = `Entregues · ${Store.dados.vendas.filter((v) => v.entregue).length}`;
+      detalhes.appendChild(resumo);
+      const corpo = el('div');
+      montarLinhas(corpo, entregues);
+      detalhes.appendChild(corpo);
+      alvo.appendChild(detalhes);
+    }
+  }
+
+  function cabecalhoLista(texto, tom) {
+    return el('div', `lista-cabecalho lista-cabecalho--${tom}`, texto);
+  }
+
+  function montarLinhas(alvo, vendas) {
+    const hoje = Store.hojeISO();
+
     for (const v of vendas) {
-      const linha = el('div', 'registro');
+      const atrasado = !v.entregue && String(Store.dataDeEntrega(v)) < hoje;
+      const linha = el('div', 'registro' + (v.entregue ? ' registro--entregue' : '') +
+        (atrasado ? ' registro--atrasado' : ''));
       const texto = el('div', 'registro__texto');
 
       const cliente = v.clienteNome || 'Sem cliente';
@@ -626,9 +666,10 @@
       if (entrega) {
         const hora = textoHora(v.horaAgendada);
         const linhaEntrega = el('div', 'registro__entrega');
-        linhaEntrega.textContent = v.retirada
+        linhaEntrega.textContent = (v.retirada
           ? `📦 Retirada — ${entrega}`
-          : `🚚 Entrega ${entrega}${hora ? ` · ${hora}` : ''}`;
+          : `🚚 Entrega ${entrega}${hora ? ` · ${hora}` : ''}`)
+          + (atrasado ? '  ⚠ atrasado' : '');
         texto.appendChild(linhaEntrega);
       }
       const detalhe = v.itens.map((i) => `${i.qtd}x ${i.nome}`).join(', ');
@@ -649,6 +690,19 @@
       linha.appendChild(texto);
 
       linha.appendChild(el('strong', 'registro__valor', reais(Store.totalVenda(v))));
+
+      const concluir = el('button',
+        'registro__entregue' + (v.entregue ? ' registro__entregue--feito' : ''),
+        v.entregue ? '↩' : '✓');
+      concluir.type = 'button';
+      concluir.title = v.entregue ? 'Devolver para a fila' : 'Marcar como entregue';
+      concluir.setAttribute('aria-label',
+        `${v.entregue ? 'Devolver para a fila' : 'Marcar como entregue'} — ${v.clienteNome || 'venda'}`);
+      concluir.addEventListener('click', () => {
+        Store.marcarEntregue(v.id, !v.entregue);
+        renderTudo();
+      });
+      linha.appendChild(concluir);
 
       const editar = el('button', 'registro__imprimir', '✏️');
       editar.type = 'button';
