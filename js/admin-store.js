@@ -111,6 +111,22 @@ const Store = (function () {
       base._precisaSalvar = true;
     }
 
+    /* A primeira versão da fila lia a data errada nas vendas do site e
+       deu por entregues pedidos que ainda nem tinham saído. Esta passada
+       devolve à fila o que tem entrega marcada para hoje ou depois.
+       `entregueEm` só existe em quem foi marcado à mão, então quem você
+       mesma deu por entregue não é mexido. */
+    if (!base.config.corrigiuFilaEntrega) {
+      const hoje = hojeISO();
+      for (const venda of base.vendas) {
+        if (venda.entregue && !venda.entregueEm && dataDeEntrega(venda) >= hoje) {
+          venda.entregue = false;
+        }
+      }
+      base.config.corrigiuFilaEntrega = true;
+      base._precisaSalvar = true;
+    }
+
     for (const venda of base.vendas) {
       if (!venda.obs) continue;
 
@@ -287,9 +303,31 @@ const Store = (function () {
    * então é ele que impede a mesma venda de entrar duas vezes quando
    * você aperta "Puxar vendas" de novo.
    */
-  /** A data que manda na fila da expedição é a da entrega, não a do pedido. */
+  /**
+   * A data que manda na fila é a da ENTREGA, nunca a do pedido.
+   *
+   * As vendas trazidas do site antes de existir o campo de data guardam
+   * a entrega só por extenso ("domingo, 02/08"). Cair direto na data do
+   * pedido fazia um pedido de sexta para entregar no domingo parecer
+   * vencido — e a fila o escondia como se já tivesse saído.
+   */
   function dataDeEntrega(venda) {
-    return venda.entregaISO || venda.data;
+    if (venda.entregaISO) return venda.entregaISO;
+
+    /* A expressão fica aqui dentro de propósito: esta função é chamada
+       pela migração, que roda enquanto o módulo ainda está carregando.
+       Uma constante declarada mais abaixo no arquivo ainda não existe
+       nesse momento, e a leitura inteira falhava — o painel abria vazio. */
+    const m = String(venda.entregaTexto || '').match(/(\d{2})\/(\d{2})/);
+    if (m && venda.data) {
+      const [, dia, mes] = m;
+      let ano = Number(String(venda.data).slice(0, 4));
+      // Pedido em dezembro para entregar em janeiro vira o ano.
+      if (mes < String(venda.data).slice(5, 7)) ano++;
+      return `${ano}-${mes}-${dia}`;
+    }
+
+    return venda.data;
   }
 
   function marcarEntregue(idVenda, entregue) {
