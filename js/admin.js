@@ -1458,6 +1458,47 @@
    *   configurou não precisa levar erro na cara toda vez que abre) e
    *   avisa discretamente na barra em vez de ocupar a tela.
    */
+  /**
+   * Completa a data de entrega de um pedido que já está no painel.
+   *
+   * Os primeiros pedidos entraram antes de a planilha ganhar as colunas
+   * de entrega, e ficaram sem esse dado. Como a sincronização só
+   * acrescentava pedido novo, esses registros seguiam incompletos — e a
+   * fila, sem data de entrega, caía na data do pedido e os escondia como
+   * se já tivessem saído.
+   *
+   * Só preenche o que está faltando. Nada que você tenha corrigido à mão
+   * é sobrescrito.
+   */
+  function completarEntrega(bruta) {
+    const venda = Store.dados.vendas.find((v) => v.orderNsu === bruta.order_nsu);
+    if (!venda) return false;
+
+    const texto = textoEntrega(bruta.entrega_texto);
+    const iso = entregaParaISO(bruta.entrega_texto, bruta.data);
+    const hora = textoHora(bruta.hora_agendada);
+
+    const campos = {};
+    if (texto && !venda.entregaTexto) campos.entregaTexto = texto;
+    if (iso && !venda.entregaISO) campos.entregaISO = iso;
+    if (hora && !venda.horaAgendada) campos.horaAgendada = hora;
+    if (bruta.recibo && !venda.recibo) campos.recibo = bruta.recibo;
+
+    if (!Object.keys(campos).length) return false;
+
+    Object.assign(venda, campos);
+
+    /* Ganhou data de entrega para hoje ou depois: o pedido ainda não
+       saiu, então volta para a fila — a menos que você já tenha dito
+       que ele saiu, e nesse caso `entregueEm` está preenchido. */
+    if (venda.entregue && !venda.entregueEm && Store.dataDeEntrega(venda) >= Store.hojeISO()) {
+      venda.entregue = false;
+    }
+
+    Store.atualizarVenda(venda.id, venda);
+    return true;
+  }
+
   function sincronizarVendas(automatico) {
     const alvo = document.getElementById('resultado-sinc');
     const botao = document.getElementById('btn-sincronizar');
@@ -1480,7 +1521,16 @@
     const endereco = `${url}?acao=vendas&token=${encodeURIComponent(token)}`;
 
     fetch(endereco)
-      .then((r) => r.json())
+      .then((r) => r.text())
+      .then((texto) => {
+        /* De vez em quando o Google devolve uma página em vez dos dados,
+           em vez de um erro limpo. Sem este tratamento a mensagem que
+           chegava era "Unexpected token '<'", que não ajuda ninguém. */
+        if (!texto.trim().startsWith('{')) {
+          throw new Error('O Google não respondeu direito agora. Tente de novo em alguns segundos.');
+        }
+        return JSON.parse(texto);
+      })
       .then((resposta) => {
         if (!resposta.ok) throw new Error(resposta.erro || 'A planilha recusou o pedido.');
 
@@ -1488,8 +1538,14 @@
         let repetidas = 0;
         let clientesNovos = 0;
 
+        let completadas = 0;
+
         for (const bruta of (resposta.vendas || [])) {
-          if (Store.vendaJaImportada(bruta.order_nsu)) { repetidas++; continue; }
+          if (Store.vendaJaImportada(bruta.order_nsu)) {
+            repetidas++;
+            if (completarEntrega(bruta)) completadas++;
+            continue;
+          }
 
           const { itens, taxa } = converterVendaDoSite(bruta);
           if (!itens.length && !taxa) continue;
@@ -1539,8 +1595,11 @@
         // Na busca automática, silêncio quando não há novidade — só o que
         // mudou merece interromper quem abriu o painel.
         if (automatico) {
-          if (novas) {
-            avisoBarra(`✓ ${novas} venda(s) nova(s) do site`, 'bom');
+          if (novas || completadas) {
+            const partes = [];
+            if (novas) partes.push(`${novas} venda(s) nova(s)`);
+            if (completadas) partes.push(`${completadas} com data de entrega recuperada`);
+            avisoBarra('✓ ' + partes.join(' · '), 'bom');
             renderTudo();
           } else {
             avisoBarra('');
@@ -1556,6 +1615,10 @@
           }
         } else {
           caixa.appendChild(el('strong', null, 'Nenhuma venda nova.'));
+        }
+        if (completadas) {
+          caixa.appendChild(el('p', 'sinc__linha',
+            `${completadas} pedido(s) tiveram a data de entrega recuperada da planilha.`));
         }
         if (repetidas) {
           caixa.appendChild(el('p', 'sinc__linha', `${repetidas} já estavam aqui e foram ignoradas.`));
