@@ -67,6 +67,7 @@ function doPost(e) {
     var corpo = JSON.parse(e.postData.contents);
 
     if (corpo.acao === 'criar-link') return json(criarLink(corpo));
+    if (corpo.acao === 'esgotar') return json(salvarEsgotados(corpo));
 
     // Sem 'acao' e com slug de fatura: é a InfinitePay avisando.
     if (corpo.invoice_slug || corpo.transaction_nsu) return json(receberWebhook(corpo));
@@ -85,6 +86,12 @@ function doPost(e) {
 function doGet(e) {
   try {
     var p = e.parameter || {};
+
+    /* Quais itens estão esgotados é a única coisa que o cardápio precisa
+       ler, e ele é uma página pública — não tem onde guardar um token
+       sem deixá-lo à vista. Também não há o que proteger: é a mesma
+       informação que qualquer cliente vê na tela. */
+    if (p.acao === 'esgotados') return json({ ok: true, esgotados: lerEsgotados() });
 
     if (p.token !== CONFIG.TOKEN_PAINEL) {
       return json({ ok: false, erro: 'Token inválido.' });
@@ -380,6 +387,66 @@ function lerVendas(desde) {
     });
   }
   return vendas;
+}
+
+// ===========================================================================
+// Itens esgotados
+//
+// O cardápio é um arquivo estático: o painel não tem como alterar o que
+// o cliente vê. A lista de esgotados fica aqui no meio, onde os dois
+// alcançam — o painel grava, o cardápio lê.
+// ===========================================================================
+
+var ABA_ESGOTADOS = 'Esgotados';
+
+function abaEsgotados() {
+  var planilha = SpreadsheetApp.getActiveSpreadsheet();
+  var folha = planilha.getSheetByName(ABA_ESGOTADOS);
+
+  if (!folha) {
+    folha = planilha.insertSheet(ABA_ESGOTADOS);
+    folha.appendRow(['produto', 'esgotado_em']);
+    folha.setFrozenRows(1);
+  }
+  return folha;
+}
+
+function lerEsgotados() {
+  var valores = abaEsgotados().getDataRange().getValues();
+  var lista = [];
+
+  for (var i = 1; i < valores.length; i++) {
+    var nome = String(valores[i][0] || '').trim();
+    if (nome) lista.push(nome);
+  }
+  return lista;
+}
+
+/**
+ * Substitui a lista inteira pela que o painel mandou.
+ *
+ * Gravar a lista completa em vez de marcar item a item evita ficar com
+ * um produto esgotado esquecido: o que não vier na lista volta a ser
+ * vendido, e o painel manda sempre o estado inteiro.
+ */
+function salvarEsgotados(dados) {
+  if (dados.token !== CONFIG.TOKEN_PAINEL) return { ok: false, erro: 'Token inválido.' };
+
+  var lista = (dados.esgotados || []).map(function (n) { return String(n).trim(); })
+    .filter(function (n) { return n; });
+
+  var folha = abaEsgotados();
+  if (folha.getLastRow() > 1) {
+    folha.getRange(2, 1, folha.getLastRow() - 1, 2).clearContent();
+  }
+
+  var agora = new Date();
+  for (var i = 0; i < lista.length; i++) {
+    folha.getRange(i + 2, 1).setValue(lista[i]);
+    folha.getRange(i + 2, 2).setValue(agora);
+  }
+
+  return { ok: true, esgotados: lista };
 }
 
 // ===========================================================================

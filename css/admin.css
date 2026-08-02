@@ -744,6 +744,34 @@
 
 .custo__campo:focus { outline: none; border-color: var(--vermelho); }
 
+/* ---------- Esgotados ---------- */
+
+.cartao--esgotados { border-color: rgba(250, 178, 25, 0.45); }
+
+.esgotado {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  cursor: pointer;
+}
+
+.esgotado:last-child { border-bottom: none; }
+.esgotado input { width: 18px; height: 18px; accent-color: #fab219; flex-shrink: 0; }
+.esgotado__nome { flex: 1; font-size: 14px; }
+
+.esgotado__estado {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--creme-suave);
+}
+
+.esgotado--sim .esgotado__nome { color: var(--creme-suave); text-decoration: line-through; }
+.esgotado--sim .esgotado__estado { color: #fab219; }
+
 /* ---------- Ficha técnica ---------- */
 
 .rendimento { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }

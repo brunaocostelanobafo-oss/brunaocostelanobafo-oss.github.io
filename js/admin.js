@@ -1048,6 +1048,105 @@
 
   // ---------------------------------------------------------------- custos
 
+  /* Itens esgotados. Vivem na planilha, não no aparelho: o cardápio é uma
+     página estática e precisa ler isso de algum lugar que o painel
+     alcance. */
+  let esgotadosAtuais = [];
+
+  function renderEsgotados() {
+    const alvo = document.getElementById('lista-esgotados');
+    alvo.innerHTML = '';
+
+    for (const categoria of CARDAPIO) {
+      for (const item of categoria.itens) {
+        const marcado = esgotadosAtuais.some(
+          (e) => e.toLowerCase() === item.nome.toLowerCase()
+        );
+
+        const linha = document.createElement('label');
+        linha.className = 'esgotado' + (marcado ? ' esgotado--sim' : '');
+
+        const marca = document.createElement('input');
+        marca.type = 'checkbox';
+        marca.checked = marcado;
+        marca.addEventListener('change', () => {
+          esgotadosAtuais = marca.checked
+            ? [...esgotadosAtuais.filter((e) => e.toLowerCase() !== item.nome.toLowerCase()), item.nome]
+            : esgotadosAtuais.filter((e) => e.toLowerCase() !== item.nome.toLowerCase());
+          renderEsgotados();
+        });
+
+        linha.appendChild(marca);
+        linha.appendChild(el('span', 'esgotado__nome', item.nome));
+        linha.appendChild(el('span', 'esgotado__estado', marcado ? 'esgotado' : 'à venda'));
+        alvo.appendChild(linha);
+      }
+    }
+  }
+
+  function buscarEsgotados() {
+    const { url } = lerIntegracao();
+    if (!url) {
+      renderEsgotados();
+      return;
+    }
+
+    fetch(`${url}?acao=esgotados`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) return;
+        const r = JSON.parse(texto);
+        if (r.ok && Array.isArray(r.esgotados)) esgotadosAtuais = r.esgotados;
+      })
+      .catch(() => { /* sem conexão: mostra a lista vazia */ })
+      .finally(renderEsgotados);
+  }
+
+  function salvarEsgotados() {
+    const alvo = document.getElementById('resultado-esgotados');
+    const botao = document.getElementById('btn-salvar-esgotados');
+    const { url, token } = lerIntegracao();
+
+    alvo.innerHTML = '';
+    if (!url || !token) {
+      alvo.appendChild(el('p', 'erro-adm',
+        'Configure a conexão na aba Vendas antes de mexer no cardápio.'));
+      return;
+    }
+
+    botao.disabled = true;
+    botao.textContent = 'Aplicando…';
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ acao: 'esgotar', token, esgotados: esgotadosAtuais }),
+    })
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) {
+          throw new Error('O Google não respondeu direito agora. Tente de novo.');
+        }
+        const r = JSON.parse(texto);
+        if (!r.ok) throw new Error(r.erro || 'A planilha recusou.');
+
+        const caixa = el('div', 'sinc__resultado');
+        caixa.appendChild(el('strong', null, esgotadosAtuais.length
+          ? `✓ ${esgotadosAtuais.length} item(ns) travado(s) no cardápio`
+          : '✓ Tudo liberado no cardápio'));
+        caixa.appendChild(el('p', 'sinc__linha',
+          'Quem estiver com o cardápio aberto vê a mudança ao recarregar.'));
+        alvo.appendChild(caixa);
+      })
+      .catch((erro) => {
+        alvo.appendChild(el('p', 'erro-adm', `Não consegui aplicar: ${erro.message}`));
+      })
+      .finally(() => {
+        botao.disabled = false;
+        botao.textContent = 'Aplicar no cardápio';
+      });
+  }
+
   function renderCustos() {
     const campoRend = document.getElementById('campo-rendimento');
     if (campoRend && document.activeElement !== campoRend) {
@@ -2127,6 +2226,9 @@
       renderTudo();
       avisoBarra('Os dados mudaram em outra aba do painel — esta tela foi atualizada.', 'bom');
     });
+
+    document.getElementById('btn-salvar-esgotados').addEventListener('click', salvarEsgotados);
+    buscarEsgotados();
 
     document.getElementById('data-expedicao').value = Store.hojeISO();
     document.getElementById('btn-imprimir-dia').addEventListener('click', imprimirDoDia);

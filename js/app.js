@@ -329,8 +329,70 @@
     }
   }
 
+  const CHAVE_ESGOTADOS = 'brunao:esgotados';
+
+  /** Última lista conhecida. Vale enquanto a nova não chega. */
+  function esgotadosSalvos() {
+    try {
+      return JSON.parse(localStorage.getItem(CHAVE_ESGOTADOS) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  let esgotados = esgotadosSalvos();
+
+  /**
+   * Busca a lista de esgotados sem segurar a página.
+   *
+   * O cardápio abre na hora com a última lista conhecida e se corrige
+   * quando a resposta chega. Esperar o Apps Script — que leva segundos —
+   * deixaria o cliente olhando tela vazia.
+   *
+   * Se a busca falhar, a lista antiga continua valendo. É melhor manter
+   * um item esgotado do que voltar a vendê-lo por causa de uma falha de
+   * rede.
+   */
+  function buscarEsgotados() {
+    if (!pagamentoOnlineLigado()) return;
+
+    fetch(`${LOJA.pagamentoOnline.urlScript}?acao=esgotados`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) return;
+        const resposta = JSON.parse(texto);
+        if (!resposta.ok || !Array.isArray(resposta.esgotados)) return;
+
+        esgotados = resposta.esgotados;
+        try {
+          localStorage.setItem(CHAVE_ESGOTADOS, JSON.stringify(esgotados));
+        } catch { /* modo privado */ }
+
+        montarCardapio();
+        limparCarrinhoDeEsgotados();
+      })
+      .catch(() => { /* sem internet: vale a lista antiga */ });
+  }
+
+  /** Item que esgotou enquanto o cliente montava o pedido sai do carrinho. */
+  function limparCarrinhoDeEsgotados() {
+    const removidos = Object.keys(carrinho).filter((nome) => estaEsgotado(nome));
+    if (!removidos.length) return;
+
+    for (const nome of removidos) delete carrinho[nome];
+    salvarCarrinho();
+    atualizarBarra();
+    if (!document.getElementById('modal-pedido').hidden) montarModal();
+
+    alert(`Acabou ${removidos.join(', ')}. Tiramos do seu pedido.`);
+  }
+
+  function estaEsgotado(nome) {
+    return esgotados.some((e) => e.toLowerCase() === String(nome).toLowerCase());
+  }
+
   function montarItem(item) {
-    const esgotado = item.disponivel === false;
+    const esgotado = item.disponivel === false || estaEsgotado(item.nome);
 
     const cartao = document.createElement('article');
     cartao.className = 'item';
@@ -602,6 +664,13 @@
 
     if (quantidadeTotal() === 0) return falhar('Adicione pelo menos um item ao pedido.');
 
+    // Última barreira: item que esgotou depois de entrar no carrinho.
+    const acabaram = Object.keys(carrinho).filter((nome) => estaEsgotado(nome));
+    if (acabaram.length) {
+      limparCarrinhoDeEsgotados();
+      return falhar(`Acabou ${acabaram.join(', ')}. Confira seu pedido antes de pagar.`);
+    }
+
     if (!dados.nome || !dados.nome.trim()) {
       return falhar('Precisamos do seu nome para identificar o pedido.', 'nome');
     }
@@ -835,6 +904,11 @@
     montarFormulario();
     atualizarBarra();
 
+    /* O carrinho sobrevive ao fechamento do navegador. Se um item
+       esgotou nesse meio-tempo, ele precisa sair já na abertura — não só
+       quando a lista nova chega pela rede. */
+    limparCarrinhoDeEsgotados();
+
     document.getElementById('barra-carrinho').addEventListener('click', abrirModal);
     document.getElementById('form-pedido').addEventListener('submit', enviarPedido);
 
@@ -845,6 +919,8 @@
     document.addEventListener('keydown', (evento) => {
       if (evento.key === 'Escape') fecharModal();
     });
+
+    buscarEsgotados();
   }
 
   document.addEventListener('DOMContentLoaded', iniciar);

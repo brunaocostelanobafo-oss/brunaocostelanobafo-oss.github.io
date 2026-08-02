@@ -375,6 +375,22 @@
 
     <!-- ============================ CUSTOS ============================ -->
     <section class="secao" id="secao-custos">
+      <div class="cartao cartao--esgotados">
+        <h2 class="cartao__titulo">🚫 Esgotado hoje</h2>
+        <p class="cartao__texto">
+          Marque o que acabou. O item continua aparecendo no cardápio, mas
+          <strong>sem o botão de adicionar</strong> — e sai do carrinho de quem
+          já tinha colocado. Desmarque quando repuser.
+        </p>
+        <div id="lista-esgotados"></div>
+        <div class="botoes-linha">
+          <button type="button" class="botao botao--principal" id="btn-salvar-esgotados">
+            Aplicar no cardápio
+          </button>
+        </div>
+        <div id="resultado-esgotados"></div>
+      </div>
+
       <div class="cartao">
         <h2 class="cartao__titulo">Rendimento da carne</h2>
         <p class="cartao__texto">
