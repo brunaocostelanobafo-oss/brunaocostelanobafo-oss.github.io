@@ -49,6 +49,7 @@ const Store = (function () {
        { 'Costela no Bafo — 1kg': {
            componentes: [{ insumoId, quantidade, aplicarRendimento }],
            extras: [{ nome, valor }],
+           produtos: [{ nome, quantidade }],  // ex.: um combo feito de outros itens
        } } */
     fichas: {},
 
@@ -497,21 +498,70 @@ const Store = (function () {
 
   function temFicha(produto) {
     const f = dados.fichas[produto];
-    return !!(f && ((f.componentes && f.componentes.length) || (f.extras && f.extras.length)));
+    return !!(f && (
+      (f.componentes && f.componentes.length) ||
+      (f.extras && f.extras.length) ||
+      (f.produtos && f.produtos.length)
+    ));
+  }
+
+  /**
+   * Reduz a ficha de um produto à lista de insumos crus que ela consome,
+   * descendo por dentro dos produtos que ela referencia.
+   *
+   * Um combo não tem ficha própria de carne e tempero — ele reaproveita a
+   * ficha da Costela, da Mandioca, da Farofa. Resolver aqui em vez de
+   * copiar os componentes para dentro do combo significa que, se a carne
+   * subir de preço, o custo do combo sobe junto sozinho.
+   *
+   * `visitados` corta o caminho se alguém montar uma referência circular
+   * (A contém B, B contém A) — sem isso a função nunca pararia.
+   */
+  function resolverInsumos(produto, multiplicador, visitados) {
+    if (visitados && visitados[produto]) return [];
+    const vistos = Object.assign({}, visitados, { [produto]: true });
+
+    const ficha = dados.fichas[produto];
+    if (!ficha) return [];
+
+    let resultado = [];
+    for (const c of (ficha.componentes || [])) {
+      resultado.push({ insumoId: c.insumoId, quantidade: quantidadeBruta(c) * multiplicador });
+    }
+    for (const p of (ficha.produtos || [])) {
+      resultado = resultado.concat(
+        resolverInsumos(p.nome, (p.quantidade || 0) * multiplicador, vistos)
+      );
+    }
+    return resultado;
+  }
+
+  /** Mesma descida, somando os custos fechados (gás, tempero) em vez de insumos. */
+  function resolverExtras(produto, multiplicador, visitados) {
+    if (visitados && visitados[produto]) return 0;
+    const vistos = Object.assign({}, visitados, { [produto]: true });
+
+    const ficha = dados.fichas[produto];
+    if (!ficha) return 0;
+
+    let total = 0;
+    for (const e of (ficha.extras || [])) total += (e.valor || 0) * multiplicador;
+    for (const p of (ficha.produtos || [])) {
+      total += resolverExtras(p.nome, (p.quantidade || 0) * multiplicador, vistos);
+    }
+    return total;
   }
 
   /** Custo calculado pela ficha, ou null se o produto não tem ficha. */
   function custoDaFicha(produto) {
     if (!temFicha(produto)) return null;
-    const ficha = dados.fichas[produto];
-    let total = 0;
 
-    for (const c of (ficha.componentes || [])) {
-      const insumo = dados.insumos.find((i) => i.id === c.insumoId);
-      if (!insumo) continue;
-      total += Math.round(quantidadeBruta(c) * (insumo.custoUnitario || 0));
+    let total = 0;
+    for (const item of resolverInsumos(produto, 1)) {
+      const insumo = dados.insumos.find((i) => i.id === item.insumoId);
+      if (insumo) total += Math.round(item.quantidade * (insumo.custoUnitario || 0));
     }
-    for (const e of (ficha.extras || [])) total += e.valor || 0;
+    total += resolverExtras(produto, 1);
 
     return total;
   }
@@ -533,7 +583,7 @@ const Store = (function () {
   }
 
   function fichaDe(produto) {
-    return dados.fichas[produto] || { componentes: [], extras: [] };
+    return dados.fichas[produto] || { componentes: [], extras: [], produtos: [] };
   }
 
   function definirRendimento(fator) {
@@ -559,11 +609,15 @@ const Store = (function () {
     for (const item of venda.itens) {
       if (!temFicha(item.nome)) continue;
 
-      for (const c of (dados.fichas[item.nome].componentes || [])) {
-        const insumo = dados.insumos.find((i) => i.id === c.insumoId);
+      // Um combo desce pela ficha dos produtos que ele referencia e baixa
+      // o insumo cru de cada um — a mesma carne que sairia se a costela e
+      // os acompanhamentos fossem vendidos separados.
+      for (const r of resolverInsumos(item.nome, item.qtd)) {
+        const insumo = dados.insumos.find((i) => i.id === r.insumoId);
         if (!insumo) continue;
 
-        const consumo = Number((quantidadeBruta(c) * item.qtd).toFixed(3));
+        const consumo = Number(r.quantidade.toFixed(3));
+        if (consumo <= 0) continue;
         insumo.quantidade = Math.max(0, Number((insumo.quantidade - consumo).toFixed(3)));
 
         dados.movimentos.push({

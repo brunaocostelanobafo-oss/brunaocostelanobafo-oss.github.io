@@ -155,6 +155,26 @@ const CARDAPIO = [
     ],
   },
   {
+    id: 'combos',
+    nome: 'Combos',
+    emoji: '🎉',
+    descricao: 'Costela com os acompanhamentos, por um preço melhor.',
+    itens: [
+      {
+        nome: 'Combo Bafo Completo',
+        descricao: 'Costela no Bafo 1kg + Mandioca + Farofa + Creme de Alho.',
+        preco: 11990,
+      },
+      {
+        nome: 'Combo Bafo Família',
+        descricao: 'Costela no Bafo 1,5kg + 2 Mandiocas + 2 Farofas + 2 Cremes de Alho.',
+        preco: 19990,
+        destaque: true,
+        selo: 'Para compartilhar',
+      },
+    ],
+  },
+  {
     id: 'acompanhamentos',
     nome: 'Acompanhamentos',
     emoji: '🍽️',

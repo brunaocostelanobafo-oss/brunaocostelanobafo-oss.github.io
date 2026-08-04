@@ -1208,6 +1208,13 @@
 
     corpo.appendChild(formNovoComponente(item.nome, ficha));
 
+    // Produtos do cardápio (para combos: costela + acompanhamentos)
+    corpo.appendChild(el('div', 'ficha__titulo', 'Produtos do cardápio (para combos)'));
+    for (const [indice, p] of (ficha.produtos || []).entries()) {
+      corpo.appendChild(linhaComponenteProduto(item.nome, ficha, indice, p));
+    }
+    corpo.appendChild(formNovoComponenteProduto(item.nome, ficha));
+
     // Custos extras (gás, lenha, rateios)
     corpo.appendChild(el('div', 'ficha__titulo', 'Outros custos por unidade'));
     for (const [indice, e] of (ficha.extras || []).entries()) {
@@ -1285,6 +1292,77 @@
     });
     linha.appendChild(x);
     return linha;
+  }
+
+  /** Uma linha "1x Costela no Bafo — 1kg — R$ 49,77" dentro da ficha de um combo. */
+  function linhaComponenteProduto(produtoPai, ficha, indice, p) {
+    const linha = el('div', 'ficha__linha');
+    const custoUnit = Store.custoDe(p.nome);
+
+    const desc = el('div', 'ficha__desc');
+    desc.appendChild(el('strong', null, `${p.quantidade}x ${p.nome}`));
+    desc.appendChild(el('span', null, custoUnit
+      ? `${reais(custoUnit)} cada`
+      : 'sem custo cadastrado ainda'));
+    linha.appendChild(desc);
+    linha.appendChild(el('strong', 'ficha__valor', reais(custoUnit * p.quantidade)));
+
+    const x = el('button', 'registro__excluir', '×');
+    x.type = 'button';
+    x.setAttribute('aria-label', `Remover ${p.nome} do combo`);
+    x.addEventListener('click', () => {
+      ficha.produtos.splice(indice, 1);
+      Store.salvarFicha(produtoPai, ficha);
+      renderTudo();
+    });
+    linha.appendChild(x);
+    return linha;
+  }
+
+  /**
+   * Formulário para montar um combo a partir de outros produtos do
+   * cardápio, em vez de repetir a ficha de carne e tempero de cada um.
+   * O próprio produto fica de fora da lista, para não referenciar a si
+   * mesmo.
+   */
+  function formNovoComponenteProduto(produtoPai, ficha) {
+    const form = el('div', 'ficha__form');
+
+    const select = document.createElement('select');
+    select.className = 'ficha__select';
+    select.setAttribute('aria-label', 'Produto do cardápio');
+    select.appendChild(new Option('Escolha o produto…', ''));
+    for (const categoria of CARDAPIO) {
+      for (const i of categoria.itens) {
+        if (i.nome === produtoPai) continue;
+        select.appendChild(new Option(i.nome, i.nome));
+      }
+    }
+    form.appendChild(select);
+
+    const qtd = document.createElement('input');
+    qtd.type = 'text';
+    qtd.inputMode = 'decimal';
+    qtd.className = 'ficha__qtd';
+    qtd.placeholder = 'Qtd';
+    qtd.value = '1';
+    form.appendChild(qtd);
+
+    const botao = el('button', 'botao botao--pequeno', 'Adicionar');
+    botao.type = 'button';
+    botao.addEventListener('click', () => {
+      const q = paraNumero(qtd.value);
+      if (!select.value) return alert('Escolha o produto.');
+      if (q <= 0) return alert('Informe a quantidade.');
+
+      ficha.produtos = ficha.produtos || [];
+      ficha.produtos.push({ nome: select.value, quantidade: q });
+      Store.salvarFicha(produtoPai, ficha);
+      renderTudo();
+    });
+    form.appendChild(botao);
+
+    return form;
   }
 
   function formNovoComponente(produto, ficha) {
