@@ -164,6 +164,7 @@ const CARDAPIO = [
         nome: 'Combo Bafo Completo',
         descricao: 'Costela no Bafo 1kg + Mandioca + Farofa + Creme de Alho.',
         preco: 11990,
+        imagem: 'assets/combo-completo.jpg',
       },
       {
         nome: 'Combo Bafo Família',
@@ -171,6 +172,7 @@ const CARDAPIO = [
         preco: 19990,
         destaque: true,
         selo: 'Para compartilhar',
+        imagem: 'assets/combo-familia.jpg',
       },
     ],
   },
