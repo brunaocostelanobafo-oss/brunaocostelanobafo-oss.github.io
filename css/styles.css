@@ -234,19 +234,41 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .categoria__descricao { margin: 0 0 14px; font-size: 13px; color: var(--creme-suave); }
 
-/* Banner de destaque dentro de uma seção — hoje só a de Combos usa,
-   mas qualquer categoria pode ganhar um preenchendo `banner` em
-   menu-data.js. Mesma linguagem visual do destaque de frete grátis,
-   um degrau abaixo em intensidade. */
+/* Banner de destaque dentro de uma seção — hoje só a de Combos usa, mas
+   qualquer categoria pode ganhar um preenchendo `banner` em
+   menu-data.js. Mesmo tratamento visual do destaque de frete grátis:
+   gradiente vermelho, ícone grande e a chamada em caixa alta. */
 .categoria__banner {
+  display: flex;
+  align-items: center;
+  gap: 13px;
   margin: 0 0 16px;
-  padding: 11px 14px;
+  padding: 15px 17px;
   border-radius: var(--raio);
-  background: rgba(193, 18, 31, 0.14);
-  border: 1px solid rgba(193, 18, 31, 0.4);
+  background: linear-gradient(135deg, var(--vermelho) 0%, #8f0d17 100%);
+  border: 1px solid var(--vermelho-claro);
+  box-shadow: 0 4px 18px rgba(193, 18, 31, 0.35);
+}
+
+.categoria__banner__icone { font-size: 30px; line-height: 1; flex-shrink: 0; }
+
+.categoria__banner__texto {
+  margin: 0;
   color: var(--creme-forte);
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 600;
+  line-height: 1.35;
+}
+
+.categoria__banner__texto strong {
+  display: block;
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.05;
+  margin-top: 2px;
 }
 
 .itens { display: grid; gap: 10px; }
@@ -307,13 +329,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 
 .item__esgotado-txt { margin: 7px 0 0; font-size: 13px; font-weight: 700; color: var(--creme-suave); }
-
-.item__economia {
-  margin: 3px 0 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--verde-zap);
-}
 
 .item__add {
   flex-shrink: 0;

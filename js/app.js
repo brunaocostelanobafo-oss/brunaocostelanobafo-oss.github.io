@@ -322,7 +322,10 @@
       if (categoria.banner) {
         const banner = document.createElement('div');
         banner.className = 'categoria__banner';
-        banner.textContent = categoria.banner;
+        banner.innerHTML =
+          `<span class="categoria__banner__icone">${categoria.banner.icone}</span>` +
+          `<p class="categoria__banner__texto">${categoria.banner.texto}` +
+          `<strong>${categoria.banner.destaque}</strong></p>`;
         secao.appendChild(banner);
       }
 
@@ -398,22 +401,6 @@
     return esgotados.some((e) => e.toLowerCase() === String(nome).toLowerCase());
   }
 
-  /**
-   * Quanto custaria pedir os itens do combo avulsos, um a um.
-   *
-   * Item que não é mais encontrado no cardápio (nome mudou, saiu do
-   * menu) simplesmente não entra na soma, em vez de quebrar a conta —
-   * mas nesse caso a economia mostrada fica menor do que a real, então
-   * vale manter os nomes em `combo` iguais aos do item de verdade.
-   */
-  function precoAvulso(item) {
-    if (!item.combo) return null;
-    return item.combo.reduce((soma, c) => {
-      const original = acharItem(c.nome);
-      return original ? soma + original.preco * c.qtd : soma;
-    }, 0);
-  }
-
   function montarItem(item) {
     const esgotado = item.disponivel === false || estaEsgotado(item.nome);
 
@@ -461,19 +448,6 @@
       preco.textContent = precoBR(item.preco);
     }
     texto.appendChild(preco);
-
-    // "Economize R$X": calculado ao vivo contra o preço avulso de cada
-    // item do combo, nunca escrito à mão — se um preço mudar, este
-    // número muda sozinho, sem risco de ficar desatualizado.
-    if (!esgotado) {
-      const avulso = precoAvulso(item);
-      if (avulso && avulso > item.preco) {
-        const economia = document.createElement('p');
-        economia.className = 'item__economia';
-        economia.textContent = `Economize ${precoBR(avulso - item.preco)}`;
-        texto.appendChild(economia);
-      }
-    }
 
     cartao.appendChild(texto);
 
