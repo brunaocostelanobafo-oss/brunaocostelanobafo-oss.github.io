@@ -234,6 +234,21 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .categoria__descricao { margin: 0 0 14px; font-size: 13px; color: var(--creme-suave); }
 
+/* Banner de destaque dentro de uma seção — hoje só a de Combos usa,
+   mas qualquer categoria pode ganhar um preenchendo `banner` em
+   menu-data.js. Mesma linguagem visual do destaque de frete grátis,
+   um degrau abaixo em intensidade. */
+.categoria__banner {
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border-radius: var(--raio);
+  background: rgba(193, 18, 31, 0.14);
+  border: 1px solid rgba(193, 18, 31, 0.4);
+  color: var(--creme-forte);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
 .itens { display: grid; gap: 10px; }
 
 .item {
@@ -292,6 +307,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 
 .item__esgotado-txt { margin: 7px 0 0; font-size: 13px; font-weight: 700; color: var(--creme-suave); }
+
+.item__economia {
+  margin: 3px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--verde-zap);
+}
 
 .item__add {
   flex-shrink: 0;

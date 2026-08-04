@@ -158,13 +158,29 @@ const CARDAPIO = [
     id: 'combos',
     nome: 'Combos',
     emoji: '🎉',
-    descricao: 'Costela com os acompanhamentos, por um preço melhor.',
+    descricao: 'Costela com os acompanhamentos, com desconto.',
+
+    /* Aparece em destaque no topo da seção. Texto puro — edite à vontade.
+       O valor da economia NÃO fica escrito aqui: ele é calculado sozinho
+       a partir do preço de cada item, então nunca fica desatualizado se
+       um preço mudar (veja `combo` em cada item abaixo). */
+    banner: '🎉 Peça em combo e economize — sai mais em conta que pedir os itens separados.',
+
     itens: [
       {
         nome: 'Combo Bafo Completo',
         descricao: 'Costela no Bafo 1kg + Mandioca + Farofa + Creme de Alho.',
         preco: 11990,
         imagem: 'assets/combo-completo.jpg',
+        /* O que entra no combo, para calcular "economize R$X" comparando
+           com o preço de cada item avulso. Mantenha os nomes idênticos
+           aos itens do cardápio, senão aquela peça não entra na conta. */
+        combo: [
+          { nome: 'Costela no Bafo — 1kg', qtd: 1 },
+          { nome: 'Mandioca', qtd: 1 },
+          { nome: 'Farofa', qtd: 1 },
+          { nome: 'Creme de Alho', qtd: 1 },
+        ],
       },
       {
         nome: 'Combo Bafo Família',
@@ -173,6 +189,12 @@ const CARDAPIO = [
         destaque: true,
         selo: 'Para compartilhar',
         imagem: 'assets/combo-familia.jpg',
+        combo: [
+          { nome: 'Costela no Bafo — 1,5kg', qtd: 1 },
+          { nome: 'Mandioca', qtd: 2 },
+          { nome: 'Farofa', qtd: 2 },
+          { nome: 'Creme de Alho', qtd: 2 },
+        ],
       },
     ],
   },
