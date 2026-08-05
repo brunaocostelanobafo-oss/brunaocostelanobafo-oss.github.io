@@ -440,6 +440,15 @@
 
 .cartao--sincronizar { border-color: rgba(57, 135, 229, 0.45); }
 
+/* ---------- Relatório de vendas ---------- */
+
+.cartao--relatorio { border-color: rgba(37, 211, 102, 0.4); }
+
+.relatorio-datas { display: flex; gap: 11px; flex-wrap: wrap; margin-bottom: 13px; }
+.relatorio-datas .campo-adm { flex: 1; min-width: 130px; }
+
+.relatorio-resumo { margin-top: 9px; }
+
 .config-integracao {
   margin-bottom: 13px;
   padding: 12px 14px;

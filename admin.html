@@ -96,6 +96,31 @@
 
     <!-- ============================ VENDAS ============================ -->
     <section class="secao" id="secao-vendas">
+      <div class="cartao cartao--relatorio">
+        <h2 class="cartao__titulo">📄 Relatório de vendas</h2>
+        <p class="cartao__texto">
+          Uma linha por produto vendido, para abrir no Excel ou no Google Sheets.
+          O período filtra pela <strong>data de entrega</strong> — a mesma lógica
+          do "Resultado por operação": o que essa semana vai entregar.
+        </p>
+        <div class="relatorio-datas">
+          <label class="campo-adm">
+            <span>De</span>
+            <input type="date" id="relatorio-de">
+          </label>
+          <label class="campo-adm">
+            <span>Até</span>
+            <input type="date" id="relatorio-ate">
+          </label>
+        </div>
+        <div class="botoes-linha">
+          <button type="button" class="botao botao--principal" id="btn-baixar-relatorio">
+            Baixar CSV
+          </button>
+        </div>
+        <p class="dica relatorio-resumo" id="relatorio-resumo"></p>
+      </div>
+
       <div class="cartao cartao--sincronizar">
         <h2 class="cartao__titulo">💳 Vendas pagas pelo site</h2>
         <p class="cartao__texto">

@@ -1885,6 +1885,106 @@
       });
   }
 
+  // ------------------------------------------------------ relatório de vendas
+
+  /**
+   * Escapa um campo para CSV: entre aspas se tiver o separador, aspas ou
+   * quebra de linha, dobrando aspas internas — regra padrão do formato.
+   */
+  function csvCampo(valor) {
+    const texto = String(valor ?? '');
+    if (/[;"\n]/.test(texto)) return '"' + texto.replace(/"/g, '""') + '"';
+    return texto;
+  }
+
+  /**
+   * Uma linha por produto vendido, não por pedido — um pedido com 3
+   * itens vira 3 linhas. Sem isso, "Valor" seria ambíguo (preço de qual
+   * item, de quantos?). O período filtra pela DATA DE ENTREGA, a mesma
+   * lógica do "Resultado por operação": o que aquela semana entregou,
+   * não quando foi vendido.
+   */
+  function gerarLinhasRelatorio(de, ate) {
+    const linhas = [];
+    for (const venda of Store.dados.vendas) {
+      const entrega = Store.dataDeEntrega(venda);
+      if (entrega < de || entrega > ate) continue;
+
+      const origem = venda.origem === 'site' ? 'Online' : 'Manual';
+      for (const item of venda.itens) {
+        linhas.push({
+          dataPedido: dataBR(venda.data),
+          dataEntrega: dataBR(entrega),
+          origem,
+          produto: item.nome,
+          quantidade: item.qtd,
+          valor: item.preco * item.qtd,
+        });
+      }
+    }
+    // Mais recente primeiro, igual à lista de vendas.
+    return linhas.sort((a, b) => b.dataEntrega.localeCompare(a.dataEntrega));
+  }
+
+  function baixarRelatorioCSV() {
+    const de = document.getElementById('relatorio-de').value;
+    const ate = document.getElementById('relatorio-ate').value;
+    const resumo = document.getElementById('relatorio-resumo');
+
+    if (!de || !ate) {
+      resumo.textContent = 'Escolha as duas datas.';
+      return;
+    }
+
+    const linhas = gerarLinhasRelatorio(de, ate);
+    if (!linhas.length) {
+      resumo.textContent = 'Nenhuma venda com entrega nesse período.';
+      return;
+    }
+
+    /* Ponto e vírgula como separador, não vírgula: é o que o Excel em
+       português espera ao abrir um CSV com duplo clique — com vírgula,
+       ele jogaria tudo numa coluna só. Valor sai com vírgula decimal
+       (formato brasileiro) em vez de ponto, para abrir já pronto para
+       somar, sem precisar trocar a configuração regional do Excel. */
+    const cabecalho = ['Data pedido', 'Data entrega', 'Origem', 'Produto', 'Quantidade', 'Valor'];
+    const corpo = linhas.map((l) => [
+      l.dataPedido, l.dataEntrega, l.origem, l.produto, l.quantidade,
+      (l.valor / 100).toFixed(2).replace('.', ','),
+    ].map(csvCampo).join(';'));
+
+    const csv = [cabecalho.join(';'), ...corpo].join('\r\n');
+
+    // BOM no início: sem ele, o Excel no Windows lê acentos (ç, ã, é)
+    // como caracteres errados, mesmo o arquivo estando em UTF-8 correto.
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vendas-${de}-a-${ate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    const totalValor = linhas.reduce((s, l) => s + l.valor, 0);
+    resumo.textContent = `${linhas.length} linha(s) · total ${reais(totalValor)}`;
+  }
+
+  function configurarRelatorio() {
+    const hoje = new Date();
+    const seteDiasAtras = new Date(hoje);
+    seteDiasAtras.setDate(hoje.getDate() - 6);
+
+    const paraISO = (d) => {
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${mes}-${dia}`;
+    };
+
+    document.getElementById('relatorio-de').value = paraISO(seteDiasAtras);
+    document.getElementById('relatorio-ate').value = paraISO(hoje);
+    document.getElementById('btn-baixar-relatorio').addEventListener('click', baixarRelatorioCSV);
+  }
+
   function configurarSincronizacao() {
     const { url, token } = lerIntegracao();
     document.getElementById('sinc-url').value = url || '';
@@ -2295,6 +2395,7 @@
     configurarAbas();
     configurarFormularios();
     configurarColar();
+    configurarRelatorio();
     configurarSincronizacao();
     configurarBackup();
 
