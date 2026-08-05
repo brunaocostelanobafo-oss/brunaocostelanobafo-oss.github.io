@@ -230,6 +230,31 @@ const Store = (function () {
     return itens + (venda.taxaEntrega || 0) - (venda.desconto || 0);
   }
 
+  function ehFimDeSemana(dataISO) {
+    const [a, m, d] = String(dataISO).split('-').map(Number);
+    if (!a || !m || !d) return false;
+    const dia = new Date(a, m - 1, d).getDay();
+    return dia === 0 || dia === 6;
+  }
+
+  /* A taxa de entrega só é receita de verdade quando o cliente paga por
+     ela: pedido de sábado/domingo, ou pedido com horário marcado (nesse
+     caso cobra mesmo sendo dia de semana). Pedido de segunda a sexta sem
+     horário marcado ganha a entrega de cortesia — a taxa não é venda,
+     é custo que a casa absorve com o motoboy. */
+  function taxaEntregaContaComoReceita(venda) {
+    if (venda.horaAgendada) return true;
+    return ehFimDeSemana(venda.data);
+  }
+
+  /** Receita reconhecida da venda para os relatórios financeiros — como
+      totalVenda, mas tira a taxa de entrega quando ela foi cortesia. */
+  function receitaReconhecidaVenda(venda) {
+    const total = totalVenda(venda);
+    if (!venda.taxaEntrega || taxaEntregaContaComoReceita(venda)) return total;
+    return total - venda.taxaEntrega;
+  }
+
   /**
    * Custo do item dentro de uma venda.
    *
@@ -666,7 +691,7 @@ const Store = (function () {
     const vendas = dados.vendas.filter((v) => dentroDoPeriodo(v.data, periodo));
     const lancamentos = dados.lancamentos.filter((l) => dentroDoPeriodo(l.data, periodo));
 
-    const receita = vendas.reduce((s, v) => s + totalVenda(v), 0);
+    const receita = vendas.reduce((s, v) => s + receitaReconhecidaVenda(v), 0);
     const cmv = vendas.reduce((s, v) => s + custoVenda(v), 0);
     const lucroBruto = receita - cmv;
 
@@ -752,7 +777,7 @@ const Store = (function () {
     for (const venda of dados.vendas) {
       const entrega = dataDeEntrega(venda);
       const s = daSemana(segundaDaSemana(entrega));
-      s.receita += totalVenda(venda);
+      s.receita += receitaReconhecidaVenda(venda);
       s.cmv += custoVenda(venda);
       s.pedidos++;
       s.itens += venda.itens.reduce((soma, i) => soma + i.qtd, 0);
@@ -793,13 +818,13 @@ const Store = (function () {
 
     if (!dias) {
       const mapa = new Map();
-      for (const v of vendas) mapa.set(v.data, (mapa.get(v.data) || 0) + totalVenda(v));
+      for (const v of vendas) mapa.set(v.data, (mapa.get(v.data) || 0) + receitaReconhecidaVenda(v));
       return [...mapa.entries()].sort().map(([data, valor]) => ({ data, valor }));
     }
 
     return dias.map((data) => ({
       data,
-      valor: vendas.filter((v) => v.data === data).reduce((s, v) => s + totalVenda(v), 0),
+      valor: vendas.filter((v) => v.data === data).reduce((s, v) => s + receitaReconhecidaVenda(v), 0),
     }));
   }
 
