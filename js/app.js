@@ -636,6 +636,7 @@
     linhas.push(`*Total: ${precoBR(sub + taxa)}*`, '');
 
     linhas.push(`*Cliente:* ${dados.nome}`);
+    linhas.push(`*WhatsApp:* ${dados.telefone}`);
     linhas.push(`*${entrega ? 'Entregar' : 'Retirar'} em:* ${dados.data}`);
     linhas.push(`*Janela:* ${LOJA.entrega.horario.abre} às ${LOJA.entrega.horario.fecha}`);
 
@@ -683,6 +684,10 @@
 
     if (!dados.nome || !dados.nome.trim()) {
       return falhar('Precisamos do seu nome para identificar o pedido.', 'nome');
+    }
+
+    if (!dados.telefone || dados.telefone.replace(/\D/g, '').length < 10) {
+      return falhar('Informe um WhatsApp válido, com DDD.', 'telefone');
     }
 
     if (!dados.data) {
@@ -747,6 +752,7 @@
       itens: itens.map((i) => ({ nome: i.description, qtd: i.quantity, preco: i.price })),
       total: totalGeral(),
       nome: dados.nome,
+      telefone: dados.telefone,
       entrega,
       endereco: entrega ? dados.endereco : '',
       data: dados.data,
@@ -767,7 +773,7 @@
       body: JSON.stringify({
         acao: 'criar-link',
         itens,
-        cliente: { nome: dados.nome },
+        cliente: { nome: dados.nome, telefone: dados.telefone },
         enderecoTexto: entrega ? dados.endereco : 'Retirada no local',
         // Vão para a planilha e daí para o ticket de expedição: quem
         // separa o pedido precisa saber a data e o horário, não a data
