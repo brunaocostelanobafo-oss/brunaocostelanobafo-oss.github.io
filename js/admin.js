@@ -1911,11 +1911,22 @@
       if (entrega < de || entrega > ate) continue;
 
       const origem = venda.origem === 'site' ? 'Online' : 'Manual';
+      const cliente = venda.clienteId
+        ? Store.dados.clientes.find((c) => c.id === venda.clienteId)
+        : null;
+      const endereco = venda.retirada
+        ? 'Retirada no local'
+        : ((cliente && cliente.endereco) || venda.enderecoTexto || '');
+      const horario = textoHora(venda.horaAgendada);
+
       for (const item of venda.itens) {
         linhas.push({
           dataPedido: dataBR(venda.data),
           dataEntrega: dataBR(entrega),
           origem,
+          cliente: venda.clienteNome || 'Não identificado',
+          endereco,
+          horario,
           produto: item.nome,
           quantidade: item.qtd,
           valor: item.preco * item.qtd,
@@ -1947,10 +1958,13 @@
        ele jogaria tudo numa coluna só. Valor sai com vírgula decimal
        (formato brasileiro) em vez de ponto, para abrir já pronto para
        somar, sem precisar trocar a configuração regional do Excel. */
-    const cabecalho = ['Data pedido', 'Data entrega', 'Origem', 'Produto', 'Quantidade', 'Valor'];
+    const cabecalho = [
+      'Data pedido', 'Data entrega', 'Origem', 'Cliente', 'Endereço', 'Horário',
+      'Produto', 'Quantidade', 'Valor',
+    ];
     const corpo = linhas.map((l) => [
-      l.dataPedido, l.dataEntrega, l.origem, l.produto, l.quantidade,
-      (l.valor / 100).toFixed(2).replace('.', ','),
+      l.dataPedido, l.dataEntrega, l.origem, l.cliente, l.endereco, l.horario,
+      l.produto, l.quantidade, (l.valor / 100).toFixed(2).replace('.', ','),
     ].map(csvCampo).join(';'));
 
     const csv = [cabecalho.join(';'), ...corpo].join('\r\n');
