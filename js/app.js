@@ -21,6 +21,38 @@
   /** Carrinho: { [nomeDoItem]: quantidade } */
   let carrinho = carregarCarrinho();
 
+  // -------------------------------------------------------------- Meta Pixel
+
+  /** fbq pode não existir (bloqueador de anúncios, script ainda carregando). */
+  function rastrear(evento, dados) {
+    if (typeof fbq === 'function') fbq('track', evento, dados);
+  }
+
+  const itensJaVistos = new Set();
+  /** Primeiro "+" de cada item conta como interesse real no produto. */
+  function rastrearVisualizacaoItem(item) {
+    if (itensJaVistos.has(item.nome)) return;
+    itensJaVistos.add(item.nome);
+    rastrear('ViewContent', {
+      content_name: item.nome,
+      content_type: 'product',
+      value: item.preco / 100,
+      currency: 'BRL',
+    });
+  }
+
+  let checkoutJaRastreado = false;
+  /** Uma vez por sessão: abrir o carrinho várias vezes não é um novo início de compra. */
+  function rastrearInicioCheckout() {
+    if (checkoutJaRastreado) return;
+    checkoutJaRastreado = true;
+    rastrear('InitiateCheckout', {
+      value: totalGeral() / 100,
+      currency: 'BRL',
+      num_items: quantidadeTotal(),
+    });
+  }
+
   // ---------------------------------------------------------------- utilidades
 
   /** 8990 -> "R$ 89,90" */
@@ -473,6 +505,10 @@
     } else {
       carrinho[nome] = nova;
     }
+    if (delta > 0) {
+      const item = acharItem(nome);
+      if (item) rastrearVisualizacaoItem(item);
+    }
     salvarCarrinho();
     atualizarBarra();
     if (!document.getElementById('modal-pedido').hidden) montarModal();
@@ -601,6 +637,7 @@
     document.getElementById('modal-pedido').hidden = false;
     document.body.style.overflow = 'hidden';
     document.body.classList.add('pedido-aberto');
+    rastrearInicioCheckout();
   }
 
   function fecharModal() {

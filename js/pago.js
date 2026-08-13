@@ -110,12 +110,36 @@
     document.getElementById('pago-zap').href =
       `https://wa.me/${LOJA.whatsapp}?text=${encodeURIComponent(mensagem(pedido, dados))}`;
 
+    rastrearCompra(dados, pedido);
+
     // O pedido já foi usado; limpar evita que uma visita futura a esta
     // página mostre um pedido antigo como se fosse novo.
     try {
       localStorage.removeItem(CHAVE);
       localStorage.removeItem('brunao:carrinho');
     } catch { /* sem problema */ }
+  }
+
+  /**
+   * Só dispara com pagamento de verdade confirmado pela InfinitePay
+   * (order_nsu + recibo, que só existem depois da aprovação — nunca na
+   * criação do link) e só uma vez por pedido, mesmo que a página seja
+   * recarregada.
+   */
+  function rastrearCompra(dados, pedido) {
+    if (typeof fbq !== 'function') return;
+    if (!dados.orderNsu || !dados.recibo || !pedido || !pedido.total) return;
+
+    const chaveJaEnviado = 'brunao:purchase-enviado:' + dados.orderNsu;
+    try {
+      if (localStorage.getItem(chaveJaEnviado)) return;
+      localStorage.setItem(chaveJaEnviado, '1');
+    } catch { /* sem localStorage, segue e aceita o risco de reenviar */ }
+
+    fbq('track', 'Purchase', {
+      value: pedido.total / 100,
+      currency: 'BRL',
+    }, { eventID: dados.orderNsu });
   }
 
   function mensagem(pedido, dados) {
