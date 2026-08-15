@@ -753,6 +753,18 @@
 
 .custo__campo:focus { outline: none; border-color: var(--vermelho); }
 
+/* ---------- Status do cardápio (ligar/desligar) ---------- */
+
+.cartao--status-loja { border-color: rgba(193, 18, 31, 0.4); }
+
+.status-loja {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 /* ---------- Esgotados ---------- */
 
 .cartao--esgotados { border-color: rgba(250, 178, 25, 0.45); }

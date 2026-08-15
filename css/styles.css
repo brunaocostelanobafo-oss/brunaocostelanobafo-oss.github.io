@@ -180,6 +180,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .aviso--entregando strong { color: var(--verde-zap); }
 .aviso--regra { font-size: 12.5px; color: var(--creme-suave); }
 .aviso--regra strong { color: var(--creme-forte); }
+.aviso--fechado { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.18); }
+.aviso--fechado strong { color: var(--vermelho-claro); }
+
+/* Cardápio fechado manualmente: some com quem levaria a pedir. */
+.loja-fechada .item__add,
+.loja-fechada .barra-carrinho { display: none !important; }
 
 /* Destaque da entrega grátis — o argumento de venda mais forte da casa,
    com o mesmo peso que ele tem no folder impresso. */

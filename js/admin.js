@@ -1084,6 +1084,63 @@
     }
   }
 
+  let lojaAbertaAtual = true;
+
+  function renderStatusLoja() {
+    const texto = document.getElementById('status-loja-texto');
+    const botao = document.getElementById('btn-status-loja');
+    texto.textContent = lojaAbertaAtual ? 'aberto' : 'fechado';
+    botao.textContent = lojaAbertaAtual ? 'Fechar cardápio' : 'Abrir cardápio';
+    botao.classList.toggle('botao--perigo', lojaAbertaAtual);
+    botao.disabled = false;
+  }
+
+  function buscarStatusLoja() {
+    const { url } = lerIntegracao();
+    if (!url) { renderStatusLoja(); return; }
+
+    fetch(`${url}?acao=status`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) return;
+        const r = JSON.parse(texto);
+        if (r.ok) lojaAbertaAtual = r.aberto !== false;
+      })
+      .catch(() => { /* sem conexão: mostra o último estado conhecido */ })
+      .finally(renderStatusLoja);
+  }
+
+  function alternarStatusLoja() {
+    const botao = document.getElementById('btn-status-loja');
+    const { url, token } = lerIntegracao();
+
+    if (!url || !token) {
+      alert('Configure a conexão na aba Vendas antes de mexer no cardápio.');
+      return;
+    }
+
+    const novoEstado = !lojaAbertaAtual;
+    botao.disabled = true;
+    botao.textContent = 'Aplicando…';
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ acao: 'status', token, aberto: novoEstado }),
+    })
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) {
+          throw new Error('O Google não respondeu direito agora. Tente de novo.');
+        }
+        const r = JSON.parse(texto);
+        if (!r.ok) throw new Error(r.erro || 'Não deu para mudar agora.');
+        lojaAbertaAtual = r.aberto;
+      })
+      .catch((erro) => alert(erro.message))
+      .finally(renderStatusLoja);
+  }
+
   function buscarEsgotados() {
     const { url } = lerIntegracao();
     if (!url) {
@@ -2422,6 +2479,9 @@
 
     document.getElementById('btn-salvar-esgotados').addEventListener('click', salvarEsgotados);
     buscarEsgotados();
+
+    document.getElementById('btn-status-loja').addEventListener('click', alternarStatusLoja);
+    buscarStatusLoja();
 
     document.getElementById('data-expedicao').value = Store.hojeISO();
     document.getElementById('btn-imprimir-dia').addEventListener('click', imprimirDoDia);

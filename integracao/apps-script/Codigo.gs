@@ -68,6 +68,7 @@ function doPost(e) {
 
     if (corpo.acao === 'criar-link') return json(criarLink(corpo));
     if (corpo.acao === 'esgotar') return json(salvarEsgotados(corpo));
+    if (corpo.acao === 'status') return json(salvarStatusLoja(corpo));
 
     // Sem 'acao' e com slug de fatura: é a InfinitePay avisando.
     if (corpo.invoice_slug || corpo.transaction_nsu) return json(receberWebhook(corpo));
@@ -92,6 +93,12 @@ function doGet(e) {
        sem deixá-lo à vista. Também não há o que proteger: é a mesma
        informação que qualquer cliente vê na tela. */
     if (p.acao === 'esgotados') return json({ ok: true, esgotados: lerEsgotados() });
+
+    /* Se o cardápio está aceitando pedido agora — controle manual do
+       dono, independente do dia/horário programado. Pública pelo mesmo
+       motivo do esgotados: é a mesma informação que qualquer cliente vê
+       na tela, só que decidindo se mostra o cardápio ou um aviso. */
+    if (p.acao === 'status') return json({ ok: true, aberto: lerStatusLoja() });
 
     /* A página de confirmação de pagamento também é pública, e não pode
        depender do que ficou guardado no navegador do cliente — alguns
@@ -428,6 +435,27 @@ function lerPedido(orderNsu) {
     };
   }
   return null;
+}
+
+// ===========================================================================
+// Ligar/desligar o cardápio
+//
+// Controle manual, separado do dia/horário programado no site — para
+// estender o expediente num teste ou fechar de repente sem precisar
+// mexer em código. Fica guardado nas propriedades do script, não numa
+// aba: é um valor só, não uma lista.
+// ===========================================================================
+
+function lerStatusLoja() {
+  var valor = PropertiesService.getScriptProperties().getProperty('cardapio_aberto');
+  // Sem valor gravado ainda = aberto, o padrão de sempre.
+  return valor !== 'false';
+}
+
+function salvarStatusLoja(dados) {
+  if (dados.token !== CONFIG.TOKEN_PAINEL) return { ok: false, erro: 'Token inválido.' };
+  PropertiesService.getScriptProperties().setProperty('cardapio_aberto', dados.aberto ? 'true' : 'false');
+  return { ok: true, aberto: !!dados.aberto };
 }
 
 // ===========================================================================

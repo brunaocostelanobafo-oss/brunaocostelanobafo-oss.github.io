@@ -385,6 +385,35 @@
   let esgotados = esgotadosSalvos();
 
   /**
+   * Se o cardápio está aceitando pedido agora — controle manual, para
+   * estender o expediente num teste ou fechar de repente. Começa
+   * aberto: uma falha de rede não pode travar o site sozinha.
+   */
+  function buscarStatusLoja() {
+    if (!pagamentoOnlineLigado()) return;
+
+    fetch(`${LOJA.pagamentoOnline.urlScript}?acao=status`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) return;
+        const r = JSON.parse(texto);
+        if (r.ok && r.aberto === false) aplicarLojaFechada();
+      })
+      .catch(() => { /* sem conexão: mantém o cardápio aberto */ });
+  }
+
+  function aplicarLojaFechada() {
+    document.body.classList.add('loja-fechada');
+
+    const aviso = document.createElement('div');
+    aviso.className = 'aviso aviso--fechado';
+    aviso.innerHTML =
+      '<span class="aviso__icone">🚫</span>' +
+      '<span><strong>Estamos fechados no momento.</strong> Volte em breve!</span>';
+    document.getElementById('avisos').prepend(aviso);
+  }
+
+  /**
    * Busca a lista de esgotados sem segurar a página.
    *
    * O cardápio abre na hora com a última lista conhecida e se corrige
@@ -974,6 +1003,7 @@
     });
 
     buscarEsgotados();
+    buscarStatusLoja();
   }
 
   document.addEventListener('DOMContentLoaded', iniciar);
