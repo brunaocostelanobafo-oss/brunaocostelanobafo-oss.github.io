@@ -150,16 +150,31 @@
   }
 
   /** As próximas datas em que a loja entrega, a partir de hoje. */
+  /**
+   * As próprias datas oferecidas pertencem sempre ao mesmo ciclo — o
+   * fim de semana vigente, nunca um fim de semana futuro. Por isso a
+   * busca para assim que encontra um dia sem entrega depois de já ter
+   * incluído algum: não completa a cota pulando pro próximo ciclo.
+   */
   function proximasDatasDeEntrega(quantas, hoje = new Date()) {
     quantas = quantas || LOJA.entrega.datasOferecidas || 6;
     const datas = [];
+    let ultimaIncluida = null;
 
     for (let i = 0; datas.length < quantas && i <= 90; i++) {
       const data = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
-      if (!ehDiaDeEntrega(data)) continue;
+
+      if (!ehDiaDeEntrega(data)) {
+        if (ultimaIncluida) break;
+        continue;
+      }
       // Hoje só entra na lista se ainda dá tempo de entregar.
       if (i === 0 && minutosAgora(hoje) >= emMinutos(janelaDoDia(data).fecha)) continue;
+
+      if (ultimaIncluida && Math.round((data - ultimaIncluida) / 86400000) > 1) break;
+
       datas.push(data);
+      ultimaIncluida = data;
     }
     return datas;
   }
