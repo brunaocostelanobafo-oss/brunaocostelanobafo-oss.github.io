@@ -765,6 +765,11 @@
   flex-wrap: wrap;
 }
 
+.cartao--horario-extra { border-color: rgba(57, 135, 229, 0.4); }
+
+.horario-extra-campos { display: flex; gap: 11px; flex-wrap: wrap; margin: 13px 0; }
+.horario-extra-campos .campo-adm { flex: 1; min-width: 130px; }
+
 /* ---------- Esgotados ---------- */
 
 .cartao--esgotados { border-color: rgba(250, 178, 25, 0.45); }

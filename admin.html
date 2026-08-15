@@ -53,6 +53,38 @@
         </div>
       </div>
 
+      <div class="cartao cartao--horario-extra">
+        <h2 class="cartao__titulo">Estender atendimento num dia</h2>
+        <p class="cartao__texto">
+          Exceção pontual — vale só para a data escolhida, sem mexer no
+          horário padrão do site. Útil pra testar um dia fora do sábado e
+          domingo, ou abrir mais cedo/tarde num dia específico.
+        </p>
+        <div class="horario-extra-campos">
+          <label class="campo-adm">
+            <span>Data</span>
+            <input type="date" id="horario-extra-data">
+          </label>
+          <label class="campo-adm">
+            <span>Abre</span>
+            <input type="time" id="horario-extra-abre">
+          </label>
+          <label class="campo-adm">
+            <span>Fecha</span>
+            <input type="time" id="horario-extra-fecha">
+          </label>
+        </div>
+        <div class="botoes-linha">
+          <button type="button" class="botao botao--principal" id="btn-aplicar-horario-extra">
+            Aplicar
+          </button>
+          <button type="button" class="botao botao--perigo" id="btn-remover-horario-extra">
+            Remover exceção
+          </button>
+        </div>
+        <p class="dica" id="horario-extra-status"></p>
+      </div>
+
       <div class="filtros">
         <label class="filtro">
           <span>Período</span>

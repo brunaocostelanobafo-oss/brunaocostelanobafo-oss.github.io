@@ -1141,6 +1141,87 @@
       .finally(renderStatusLoja);
   }
 
+  let horarioExtraAtual = null;
+
+  function renderHorarioExtra() {
+    const status = document.getElementById('horario-extra-status');
+    if (horarioExtraAtual) {
+      const [ano, mes, dia] = horarioExtraAtual.data.split('-');
+      status.textContent =
+        `Exceção ativa: ${dia}/${mes}/${ano}, das ${horarioExtraAtual.abre} às ${horarioExtraAtual.fecha}.`;
+      document.getElementById('horario-extra-data').value = horarioExtraAtual.data;
+      document.getElementById('horario-extra-abre').value = horarioExtraAtual.abre;
+      document.getElementById('horario-extra-fecha').value = horarioExtraAtual.fecha;
+    } else {
+      status.textContent = 'Nenhuma exceção ativa no momento.';
+    }
+  }
+
+  function buscarHorarioExtra() {
+    const { url } = lerIntegracao();
+    if (!url) { renderHorarioExtra(); return; }
+
+    fetch(`${url}?acao=horario`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) return;
+        const r = JSON.parse(texto);
+        if (r.ok) horarioExtraAtual = r.horario;
+      })
+      .catch(() => { /* sem conexão: mostra o último estado conhecido */ })
+      .finally(renderHorarioExtra);
+  }
+
+  function salvarHorarioExtra(dados) {
+    const { url, token } = lerIntegracao();
+    if (!url || !token) {
+      alert('Configure a conexão na aba Vendas antes de mexer no horário.');
+      return;
+    }
+
+    const botaoAplicar = document.getElementById('btn-aplicar-horario-extra');
+    const botaoRemover = document.getElementById('btn-remover-horario-extra');
+    botaoAplicar.disabled = true;
+    botaoRemover.disabled = true;
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ acao: 'horario', token, ...dados }),
+    })
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) {
+          throw new Error('O Google não respondeu direito agora. Tente de novo.');
+        }
+        const r = JSON.parse(texto);
+        if (!r.ok) throw new Error(r.erro || 'Não deu para mudar agora.');
+        horarioExtraAtual = r.horario;
+      })
+      .catch((erro) => alert(erro.message))
+      .finally(() => {
+        botaoAplicar.disabled = false;
+        botaoRemover.disabled = false;
+        renderHorarioExtra();
+      });
+  }
+
+  function aplicarHorarioExtra() {
+    const data = document.getElementById('horario-extra-data').value;
+    const abre = document.getElementById('horario-extra-abre').value;
+    const fecha = document.getElementById('horario-extra-fecha').value;
+
+    if (!data || !abre || !fecha) {
+      alert('Preencha data, horário de abertura e de fechamento.');
+      return;
+    }
+    salvarHorarioExtra({ data, abre, fecha });
+  }
+
+  function removerHorarioExtra() {
+    salvarHorarioExtra({ data: '', abre: '', fecha: '' });
+  }
+
   function buscarEsgotados() {
     const { url } = lerIntegracao();
     if (!url) {
@@ -2482,6 +2563,10 @@
 
     document.getElementById('btn-status-loja').addEventListener('click', alternarStatusLoja);
     buscarStatusLoja();
+
+    document.getElementById('btn-aplicar-horario-extra').addEventListener('click', aplicarHorarioExtra);
+    document.getElementById('btn-remover-horario-extra').addEventListener('click', removerHorarioExtra);
+    buscarHorarioExtra();
 
     document.getElementById('data-expedicao').value = Store.hojeISO();
     document.getElementById('btn-imprimir-dia').addEventListener('click', imprimirDoDia);

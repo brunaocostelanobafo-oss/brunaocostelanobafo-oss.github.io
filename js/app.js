@@ -108,8 +108,23 @@
     return LOJA.feriados.includes(iso(data));
   }
 
-  /** Sábado, domingo ou feriado. */
+  /**
+   * Janela extra de horário: controle manual do painel para estender o
+   * atendimento num dia específico (um teste, uma exceção), sem mexer
+   * no horário padrão do site. Vale só para a data exata que ela cobre.
+   */
+  let horarioExtra = null;
+
+  function janelaDoDia(data) {
+    if (horarioExtra && horarioExtra.data === iso(data)) {
+      return { abre: horarioExtra.abre, fecha: horarioExtra.fecha };
+    }
+    return { abre: LOJA.entrega.horario.abre, fecha: LOJA.entrega.horario.fecha };
+  }
+
+  /** Sábado, domingo, feriado — ou um dia com janela extra aplicada. */
   function ehDiaDeEntrega(data) {
+    if (horarioExtra && horarioExtra.data === iso(data)) return true;
     return LOJA.entrega.diasSemana.includes(data.getDay()) || ehFeriado(data);
   }
 
@@ -138,13 +153,12 @@
   function proximasDatasDeEntrega(quantas, hoje = new Date()) {
     quantas = quantas || LOJA.entrega.datasOferecidas || 6;
     const datas = [];
-    const { fecha } = LOJA.entrega.horario;
 
     for (let i = 0; datas.length < quantas && i <= 90; i++) {
       const data = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
       if (!ehDiaDeEntrega(data)) continue;
       // Hoje só entra na lista se ainda dá tempo de entregar.
-      if (i === 0 && minutosAgora(hoje) >= emMinutos(fecha)) continue;
+      if (i === 0 && minutosAgora(hoje) >= emMinutos(janelaDoDia(data).fecha)) continue;
       datas.push(data);
     }
     return datas;
@@ -166,7 +180,7 @@
    * 'fechado'    — dia de entrega, mas fora do horário
    */
   function estadoDaLoja(agora = new Date()) {
-    const { abre, fecha } = LOJA.entrega.horario;
+    const { abre, fecha } = janelaDoDia(agora);
 
     if (ehDiaDeEntrega(agora)) {
       const dentro = minutosAgora(agora) >= emMinutos(abre) && minutosAgora(agora) < emMinutos(fecha);
@@ -400,6 +414,40 @@
         if (r.ok && r.aberto === false) aplicarLojaFechada();
       })
       .catch(() => { /* sem conexão: mantém o cardápio aberto */ });
+  }
+
+  function buscarHorarioExtra() {
+    if (!pagamentoOnlineLigado()) return;
+
+    fetch(`${LOJA.pagamentoOnline.urlScript}?acao=horario`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) return;
+        const r = JSON.parse(texto);
+        if (!r.ok || !r.horario) return;
+
+        horarioExtra = r.horario;
+        // Já apareceu com a lista de datas e o aviso montados sem essa
+        // janela — refaz os dois pra ela valer sem precisar recarregar.
+        montarAvisos();
+        atualizarDatasNoFormulario();
+      })
+      .catch(() => { /* sem conexão: segue com o horário padrão */ });
+  }
+
+  function atualizarDatasNoFormulario() {
+    const select = document.getElementById('select-data');
+    if (!select) return;
+    const valorAtual = select.value;
+    select.innerHTML = '';
+    for (const data of proximasDatasDeEntrega()) {
+      const opcao = document.createElement('option');
+      opcao.value = rotuloData(data);
+      opcao.textContent = rotuloData(data);
+      select.appendChild(opcao);
+    }
+    // Mantém a escolha do cliente se ela ainda existir na lista nova.
+    if ([...select.options].some((o) => o.value === valorAtual)) select.value = valorAtual;
   }
 
   function aplicarLojaFechada() {
@@ -1004,6 +1052,7 @@
 
     buscarEsgotados();
     buscarStatusLoja();
+    buscarHorarioExtra();
   }
 
   document.addEventListener('DOMContentLoaded', iniciar);

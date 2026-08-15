@@ -69,6 +69,7 @@ function doPost(e) {
     if (corpo.acao === 'criar-link') return json(criarLink(corpo));
     if (corpo.acao === 'esgotar') return json(salvarEsgotados(corpo));
     if (corpo.acao === 'status') return json(salvarStatusLoja(corpo));
+    if (corpo.acao === 'horario') return json(salvarHorarioExtra(corpo));
 
     // Sem 'acao' e com slug de fatura: é a InfinitePay avisando.
     if (corpo.invoice_slug || corpo.transaction_nsu) return json(receberWebhook(corpo));
@@ -99,6 +100,11 @@ function doGet(e) {
        motivo do esgotados: é a mesma informação que qualquer cliente vê
        na tela, só que decidindo se mostra o cardápio ou um aviso. */
     if (p.acao === 'status') return json({ ok: true, aberto: lerStatusLoja() });
+
+    /* Janela extra de horário: estende o atendimento numa data específica
+       sem mexer no horário padrão do site. Pública pelo mesmo motivo dos
+       outros — é a mesma informação que já aparece na tela do cliente. */
+    if (p.acao === 'horario') return json({ ok: true, horario: lerHorarioExtra() });
 
     /* A página de confirmação de pagamento também é pública, e não pode
        depender do que ficou guardado no navegador do cliente — alguns
@@ -456,6 +462,30 @@ function salvarStatusLoja(dados) {
   if (dados.token !== CONFIG.TOKEN_PAINEL) return { ok: false, erro: 'Token inválido.' };
   PropertiesService.getScriptProperties().setProperty('cardapio_aberto', dados.aberto ? 'true' : 'false');
   return { ok: true, aberto: !!dados.aberto };
+}
+
+/**
+ * Estende o atendimento numa data específica (uma exceção, um teste),
+ * sem mexer no horário padrão do site. Guarda só uma janela por vez —
+ * a de agora substitui a anterior, e mandar sem data/horário limpa.
+ */
+function lerHorarioExtra() {
+  var bruto = PropertiesService.getScriptProperties().getProperty('horario_extra');
+  if (!bruto) return null;
+  try { return JSON.parse(bruto); } catch (ignorado) { return null; }
+}
+
+function salvarHorarioExtra(dados) {
+  if (dados.token !== CONFIG.TOKEN_PAINEL) return { ok: false, erro: 'Token inválido.' };
+
+  if (!dados.data || !dados.abre || !dados.fecha) {
+    PropertiesService.getScriptProperties().deleteProperty('horario_extra');
+    return { ok: true, horario: null };
+  }
+
+  var horario = { data: dados.data, abre: dados.abre, fecha: dados.fecha };
+  PropertiesService.getScriptProperties().setProperty('horario_extra', JSON.stringify(horario));
+  return { ok: true, horario: horario };
 }
 
 // ===========================================================================
