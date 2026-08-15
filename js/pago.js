@@ -30,12 +30,30 @@
     };
   }
 
-  function lerPedido() {
+  function lerPedidoLocal() {
     try {
       return JSON.parse(localStorage.getItem(CHAVE) || 'null');
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Busca o pedido direto da planilha, pelo order_nsu — fonte confiável,
+   * que não depende do navegador do cliente ter guardado nada. Alguns
+   * navegadores internos (Instagram, Facebook) perdem o que ficou salvo
+   * no aparelho quando o cliente sai para pagar na InfinitePay e volta;
+   * a planilha não tem esse problema.
+   */
+  function buscarPedidoServidor(orderNsu) {
+    if (!orderNsu || !LOJA.pagamentoOnline || !LOJA.pagamentoOnline.urlScript) {
+      return Promise.resolve(null);
+    }
+    const url = `${LOJA.pagamentoOnline.urlScript}?acao=pedido&order_nsu=${encodeURIComponent(orderNsu)}`;
+    return fetch(url)
+      .then((r) => r.json())
+      .then((resposta) => (resposta.ok ? resposta.pedido : null))
+      .catch(() => null);
   }
 
   function nomeDoMetodo(metodo) {
@@ -45,9 +63,9 @@
     return '';
   }
 
-  function montar() {
+  async function montar() {
     const dados = parametros();
-    const pedido = lerPedido();
+    const pedido = (await buscarPedidoServidor(dados.orderNsu)) || lerPedidoLocal();
 
     // Subtítulo
     const metodo = nomeDoMetodo(dados.metodo);

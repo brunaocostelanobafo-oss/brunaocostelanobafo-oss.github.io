@@ -93,6 +93,16 @@ function doGet(e) {
        informação que qualquer cliente vê na tela. */
     if (p.acao === 'esgotados') return json({ ok: true, esgotados: lerEsgotados() });
 
+    /* A página de confirmação de pagamento também é pública, e não pode
+       depender do que ficou guardado no navegador do cliente — alguns
+       navegadores internos (Instagram, Facebook) perdem esse dado na
+       ida e volta até a InfinitePay. O order_nsu já funciona como uma
+       senha de fato: é longo, único e só quem pagou o tem. Só devolve
+       pedido com status 'pago', nunca um pendente. */
+    if (p.acao === 'pedido' && p.order_nsu) {
+      return json({ ok: true, pedido: lerPedido(p.order_nsu) });
+    }
+
     if (p.token !== CONFIG.TOKEN_PAINEL) {
       return json({ ok: false, erro: 'Token inválido.' });
     }
@@ -387,6 +397,37 @@ function lerVendas(desde) {
     });
   }
   return vendas;
+}
+
+/** Um único pedido pago, pelo order_nsu — para a página de confirmação. */
+function lerPedido(orderNsu) {
+  var valores = aba().getDataRange().getValues();
+
+  for (var i = 1; i < valores.length; i++) {
+    var linha = {};
+    for (var c = 0; c < COLUNAS.length; c++) linha[COLUNAS[c]] = valores[i][c];
+
+    if (String(linha.order_nsu) !== String(orderNsu)) continue;
+    if (linha.status !== 'pago') return null;
+
+    var itensBrutos = [];
+    try { itensBrutos = JSON.parse(linha.itens || '[]'); } catch (ignorado) {}
+    var itens = itensBrutos.map(function (i) {
+      return { nome: i.description, qtd: i.quantity, preco: i.price };
+    });
+
+    return {
+      nome: linha.cliente,
+      itens: itens,
+      total: Number(linha.pago_centavos || linha.valor_centavos || 0),
+      entrega: linha.retirada !== 'sim',
+      endereco: linha.endereco,
+      data: formatarEntrega(linha.entrega_texto),
+      hora: formatarHora(linha.hora_agendada),
+      observacoes: linha.observacoes || '',
+    };
+  }
+  return null;
 }
 
 // ===========================================================================
