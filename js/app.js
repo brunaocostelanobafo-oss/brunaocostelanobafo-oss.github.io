@@ -275,7 +275,7 @@
     const texto = {
       entregando: `Entregando até ${fecha}`,
       reserva: 'Reservas abertas',
-      fechado: 'Fora do horário',
+      fechado: 'Reservas abertas',
     };
     status.hidden = false;
     status.classList.add(`topo__status--${modo}`);
@@ -318,9 +318,8 @@
         `<span><strong>Estamos entregando agora,</strong> até as ${fecha}.</span>`;
     } else {
       aviso.innerHTML =
-        '<span class="aviso__icone">🕒</span>' +
-        '<span><strong>Fora do horário de entrega.</strong> ' +
-        'Monte seu pedido e reserve para a próxima data — respondemos assim que abrirmos.</span>';
+        '<span class="aviso__icone">📅</span>' +
+        '<span><strong>Reservas abertas.</strong> Escolha a data na hora do pedido.</span>';
     }
     if (!destaqueJaAnuncia) alvo.appendChild(aviso);
 
@@ -454,7 +453,7 @@
     document.body.classList.add('loja-fechada');
 
     const aviso = document.createElement('div');
-    aviso.className = 'aviso aviso--fechado';
+    aviso.className = 'aviso aviso--loja-fechada';
     aviso.innerHTML =
       '<span class="aviso__icone">🚫</span>' +
       '<span><strong>Estamos fechados no momento.</strong> Volte em breve!</span>';

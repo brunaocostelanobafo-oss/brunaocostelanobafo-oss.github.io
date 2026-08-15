@@ -180,8 +180,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .aviso--entregando strong { color: var(--verde-zap); }
 .aviso--regra { font-size: 12.5px; color: var(--creme-suave); }
 .aviso--regra strong { color: var(--creme-forte); }
-.aviso--fechado { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.18); }
-.aviso--fechado strong { color: var(--vermelho-claro); }
+.aviso--loja-fechada { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.18); }
+.aviso--loja-fechada strong { color: var(--vermelho-claro); }
 
 /* Cardápio fechado manualmente: some com quem levaria a pedir. */
 .loja-fechada .item__add,
