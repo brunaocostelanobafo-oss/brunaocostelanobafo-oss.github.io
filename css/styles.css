@@ -232,13 +232,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .categoria__titulo {
   margin: 0 0 3px;
   font-family: var(--display);
-  font-size: 27px;
+  font-size: 31px;
   font-weight: 400;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
-.categoria__descricao { margin: 0 0 14px; font-size: 13px; color: var(--creme-suave); }
+.categoria__descricao { margin: 0 0 14px; font-size: 14.5px; color: var(--creme-suave); }
 
 /* Banner de destaque dentro de uma seção — hoje só a de Combos usa, mas
    qualquer categoria pode ganhar um preenchendo `banner` em
@@ -293,8 +293,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .item--esgotado { opacity: 0.45; }
 
 .item__foto {
-  width: 82px;
-  height: 82px;
+  width: 128px;
+  height: 128px;
   flex-shrink: 0;
   border-radius: 9px;
   object-fit: cover;
@@ -305,7 +305,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .item__nome {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 17.5px;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -324,14 +324,26 @@ button, input, select, textarea { font: inherit; color: inherit; }
   vertical-align: 2px;
 }
 
-.item__descricao { margin: 4px 0 0; font-size: 12.5px; color: var(--creme-suave); }
+.item__descricao { margin: 4px 0 0; font-size: 13.5px; color: var(--creme-suave); }
+
+.item__rendimento { margin: 3px 0 0; font-size: 12px; font-weight: 700; color: var(--creme); }
+.item__rendimento::before { content: '🍽️ '; }
 
 .item__preco {
   margin: 7px 0 0;
   font-family: var(--display);
-  font-size: 22px;
+  font-size: 24px;
   letter-spacing: 0.5px;
   color: var(--creme-forte);
+}
+
+.item__preco-de {
+  font-family: var(--texto);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--creme-suave);
+  text-decoration: line-through;
+  margin-right: 6px;
 }
 
 .item__esgotado-txt { margin: 7px 0 0; font-size: 13px; font-weight: 700; color: var(--creme-suave); }
@@ -356,6 +368,51 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .item__add:active { transform: scale(0.9); }
 
 /* ---------- Rodapé ---------- */
+
+.depoimentos {
+  max-width: var(--largura);
+  margin: 8px auto 0;
+  padding: 20px 16px 0;
+}
+
+.depoimentos__titulo {
+  margin: 0 0 13px;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--creme-forte);
+}
+
+.depoimentos__lista {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+.depoimento {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--raio);
+  background: var(--preto-carta);
+  border: 1px solid var(--borda);
+}
+
+.depoimento__texto {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--creme);
+}
+
+.depoimento__autor {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--creme-suave);
+}
+.depoimento__autor::before { content: '— '; }
 
 .rodape {
   max-width: var(--largura);
@@ -697,7 +754,21 @@ body.pedido-aberto .zap-flutuante { display: none; }
 @media (min-width: 640px) {
   .topo__selo { width: 66px; height: 66px; }
   .topo__nome { font-size: 31px; }
-  .itens { grid-template-columns: 1fr 1fr; }
   .modal { align-items: center; }
   .modal__caixa { border-radius: 18px; max-height: 88vh; }
+  .depoimentos__lista { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Telas de desktop têm espaço de sobra: usa mais largura em vez de
+   deixar o cardápio espremido numa coluna estreita — mas 1 produto por
+   linha, texto maior e mais fácil de ler, não 3 colunas apertadas. */
+@media (min-width: 960px) {
+  :root { --largura: 1080px; }
+  .item__foto { width: 176px; height: 176px; }
+  .categoria__titulo { font-size: 34px; }
+  .categoria__descricao { font-size: 16px; }
+  .item__nome { font-size: 20px; }
+  .item__descricao { font-size: 15px; }
+  .item__rendimento { font-size: 13.5px; }
+  .item__preco { font-size: 26px; }
 }

@@ -562,13 +562,28 @@
       texto.appendChild(desc);
     }
 
+    if (item.rendimento) {
+      const rendimento = document.createElement('p');
+      rendimento.className = 'item__rendimento';
+      rendimento.textContent = item.rendimento;
+      texto.appendChild(rendimento);
+    }
+
     const preco = document.createElement('p');
     if (esgotado) {
       preco.className = 'item__esgotado-txt';
       preco.textContent = 'Esgotado hoje';
     } else {
       preco.className = 'item__preco';
-      preco.textContent = precoBR(item.preco);
+      if (item.precoDe) {
+        const de = document.createElement('span');
+        de.className = 'item__preco-de';
+        de.textContent = precoBR(item.precoDe);
+        preco.appendChild(de);
+        preco.appendChild(document.createTextNode(' ' + precoBR(item.preco)));
+      } else {
+        preco.textContent = precoBR(item.preco);
+      }
     }
     texto.appendChild(preco);
 

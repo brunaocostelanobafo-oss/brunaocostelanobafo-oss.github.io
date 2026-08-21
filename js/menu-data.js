@@ -133,56 +133,76 @@ const LOJA = {
 
 const CARDAPIO = [
   {
+    id: 'combos',
+    nome: 'Combos',
+    emoji: '🎉',
+    descricao: 'PORÇÃO DE COSTELA + ACOMPANHAMENTOS = DESCONTO!',
+
+    /* Sem banner de propósito: o banner de frete grátis das reservas já
+       disputa espaço visual no topo, e dois banners grandes competindo
+       cansavam a tela antes do cliente ver qualquer produto. */
+
+    /* Ordem de propósito: o Família (maior valor) primeiro ancora a
+       percepção de preço — o Completo em seguida parece "o equilibrado".
+       O Casal fica por último: é uma alternativa mais em conta pra não
+       perder cliente sensível a preço, não o produto que queremos
+       destacar, por isso também não leva selo. */
+    itens: [
+      {
+        nome: 'Combo Bafo Família',
+        descricao: 'Costela no Bafo 1,5kg + 2 Mandiocas + 2 Farofas + 2 Cremes de Alho.',
+        rendimento: 'Até 6 pessoas',
+        preco: 19990,
+        destaque: true,
+        selo: 'Para compartilhar',
+        imagem: 'assets/combo-familia.jpg',
+      },
+      {
+        nome: 'Combo Bafo Completo',
+        descricao: 'Costela no Bafo 1kg + Mandioca + Farofa + Creme de Alho.',
+        rendimento: 'Até 4 pessoas',
+        preco: 11990,
+        imagem: 'assets/combo-completo.jpg',
+      },
+      {
+        nome: 'Combo Casal',
+        descricao: 'Costela no Bafo 500g + Mandioca + Farofa.',
+        rendimento: 'Até 2 pessoas',
+        precoDe: 9770,
+        preco: 8990,
+        imagem: 'assets/combo-casal.jpg',
+      },
+    ],
+  },
+  {
     id: 'costelas',
     nome: 'Costela no Bafo',
     emoji: '🔥',
     descricao: 'Assada na lenha, no bafo. A especialidade da casa.',
+    /* Mesma lógica de ancoragem dos combos: maior valor primeiro. */
     itens: [
-      {
-        nome: 'Costela no Bafo — 1kg',
-        descricao: 'Porção G. Assada na hora, na lenha.',
-        preco: 8990,
-        imagem: 'assets/costela-1kg.jpg',
-      },
       {
         nome: 'Costela no Bafo — 1,5kg',
         descricao: 'Porção GG. Assada na hora, na lenha.',
+        rendimento: 'Até 6 pessoas',
         preco: 13490,
         imagem: 'assets/costela-15kg.jpg',
         destaque: true,
         selo: 'A mais vendida',
       },
-    ],
-  },
-  {
-    id: 'combos',
-    nome: 'Combos',
-    emoji: '🎉',
-    descricao: 'Costela com os acompanhamentos, com desconto.',
-
-    /* Banner grande no topo da seção, no mesmo peso visual do destaque
-       de frete grátis. `texto` é a linha pequena de cima, `destaque` é
-       a chamada grande embaixo. */
-    banner: {
-      icone: '🎉',
-      texto: 'Peça a costela com os acompanhamentos',
-      destaque: 'No combo sai mais em conta',
-    },
-
-    itens: [
       {
-        nome: 'Combo Bafo Completo',
-        descricao: 'Costela no Bafo 1kg + Mandioca + Farofa + Creme de Alho.',
-        preco: 11990,
-        imagem: 'assets/combo-completo.jpg',
+        nome: 'Costela no Bafo — 1kg',
+        descricao: 'Porção G. Assada na hora, na lenha.',
+        rendimento: 'Até 4 pessoas',
+        preco: 8990,
+        imagem: 'assets/costela-1kg.jpg',
       },
       {
-        nome: 'Combo Bafo Família',
-        descricao: 'Costela no Bafo 1,5kg + 2 Mandiocas + 2 Farofas + 2 Cremes de Alho.',
-        preco: 19990,
-        destaque: true,
-        selo: 'Para compartilhar',
-        imagem: 'assets/combo-familia.jpg',
+        nome: 'Costela no Bafo — 500g',
+        descricao: 'Porção P. Assada na hora, na lenha.',
+        rendimento: 'Até 2 pessoas',
+        preco: 6990,
+        imagem: 'assets/costela-500g.jpg',
       },
     ],
   },
