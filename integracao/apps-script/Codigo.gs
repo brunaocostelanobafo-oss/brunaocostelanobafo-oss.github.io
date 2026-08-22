@@ -431,6 +431,7 @@ function lerPedido(orderNsu) {
 
     return {
       nome: linha.cliente,
+      telefone: String(linha.telefone || ''),
       itens: itens,
       total: Number(linha.pago_centavos || linha.valor_centavos || 0),
       entrega: linha.retirada !== 'sim',

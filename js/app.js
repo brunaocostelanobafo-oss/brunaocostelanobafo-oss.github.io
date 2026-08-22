@@ -53,6 +53,38 @@
     });
   }
 
+  const PIXEL_ID = '4433696376853064';
+
+  /** SHA-256 em hexadecimal — formato que o Meta exige pra correspondência
+      avançada (nunca manda telefone em texto puro). */
+  async function sha256Hex(texto) {
+    const bytes = new TextEncoder().encode(texto);
+    const buffer = await crypto.subtle.digest('SHA-256', bytes);
+    return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /** O Meta espera só dígitos, com código do país — sem espaço, +, ( ) ou -. */
+  function telefoneNormalizado(tel) {
+    let digitos = String(tel || '').replace(/\D/g, '');
+    if (digitos && !digitos.startsWith('55')) digitos = '55' + digitos;
+    return digitos;
+  }
+
+  /**
+   * Reforça a correspondência avançada assim que o telefone é conhecido,
+   * no envio do checkout — ajuda o Meta a ligar essa sessão ao clique do
+   * anúncio que a originou, mesmo que o Purchase só confirme depois, na
+   * volta da InfinitePay.
+   */
+  async function reforcarCorrespondencia(telefone) {
+    const digitos = telefoneNormalizado(telefone);
+    if (!digitos || typeof fbq !== 'function') return;
+    try {
+      const hash = await sha256Hex(digitos);
+      fbq('init', PIXEL_ID, { ph: hash });
+    } catch { /* sem Web Crypto (http, navegador antigo): segue sem reforço */ }
+  }
+
   // ---------------------------------------------------------------- utilidades
 
   /** 8990 -> "R$ 89,90" */
@@ -874,6 +906,8 @@
     const rotuloOriginal = botao.textContent;
     botao.disabled = true;
     botao.textContent = 'Gerando o pagamento…';
+
+    reforcarCorrespondencia(dados.telefone);
 
     const itens = Object.entries(carrinho).map(([nome, qtd]) => {
       const item = acharItem(nome);

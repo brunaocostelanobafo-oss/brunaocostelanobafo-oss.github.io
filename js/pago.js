@@ -128,7 +128,7 @@
     document.getElementById('pago-zap').href =
       `https://wa.me/${LOJA.whatsapp}?text=${encodeURIComponent(mensagem(pedido, dados))}`;
 
-    rastrearCompra(dados, pedido);
+    await rastrearCompra(dados, pedido);
 
     // O pedido já foi usado; limpar evita que uma visita futura a esta
     // página mostre um pedido antigo como se fosse novo.
@@ -138,13 +138,45 @@
     } catch { /* sem problema */ }
   }
 
+  const PIXEL_ID = '4433696376853064';
+
+  /** SHA-256 em hexadecimal — formato que o Meta exige pra correspondência
+      avançada (nunca manda telefone/nome em texto puro). */
+  async function sha256Hex(texto) {
+    const bytes = new TextEncoder().encode(texto);
+    const buffer = await crypto.subtle.digest('SHA-256', bytes);
+    return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /** O Meta espera só dígitos, com código do país — sem espaço, +, ( ) ou -. */
+  function telefoneNormalizado(tel) {
+    let digitos = String(tel || '').replace(/\D/g, '');
+    if (digitos && !digitos.startsWith('55')) digitos = '55' + digitos;
+    return digitos;
+  }
+
+  /**
+   * Reforça a correspondência avançada com o telefone do cliente antes do
+   * Purchase — o Meta usa isso pra ligar a compra ao clique do anúncio que
+   * a originou. Sem esse reforço, a correspondência fica fraca e algumas
+   * vendas que vieram de anúncio real acabam sem crédito na campanha.
+   */
+  async function reforcarCorrespondencia(pedido) {
+    const digitos = telefoneNormalizado(pedido && pedido.telefone);
+    if (!digitos) return;
+    try {
+      const hash = await sha256Hex(digitos);
+      fbq('init', PIXEL_ID, { ph: hash });
+    } catch { /* sem Web Crypto (http, navegador antigo): segue sem reforço */ }
+  }
+
   /**
    * Só dispara com pagamento de verdade confirmado pela InfinitePay
    * (order_nsu + recibo, que só existem depois da aprovação — nunca na
    * criação do link) e só uma vez por pedido, mesmo que a página seja
    * recarregada.
    */
-  function rastrearCompra(dados, pedido) {
+  async function rastrearCompra(dados, pedido) {
     if (typeof fbq !== 'function') return;
     if (!dados.orderNsu || !dados.recibo || !pedido || !pedido.total) return;
 
@@ -153,6 +185,8 @@
       if (localStorage.getItem(chaveJaEnviado)) return;
       localStorage.setItem(chaveJaEnviado, '1');
     } catch { /* sem localStorage, segue e aceita o risco de reenviar */ }
+
+    await reforcarCorrespondencia(pedido);
 
     fbq('track', 'Purchase', {
       value: pedido.total / 100,
