@@ -76,12 +76,14 @@ const LOJA = {
     diasSemana: [0, 6],
     horario: { abre: '11:00', fecha: '14:00' },
 
-    /* Quantas datas de entrega o cliente pode escolher.
-       2 = só o fim de semana vigente (sábado e domingo).
-       4 = também o fim de semana seguinte.
-       Quanto mais longe, mais tempo o preço da carne tem para mudar
-       depois que o pedido já foi pago. */
-    datasOferecidas: 2,
+    /* Teto de quantas datas mostrar — não "quantas sempre aparecem".
+       A lista para sozinha assim que a sequência de dias de entrega
+       quebra (ex.: sábado e domingo normais nunca chegam a 3, porque
+       segunda não é dia de entrega). Esse teto só importa quando a
+       sequência é mais longa que o normal, como um feriado colado no
+       fim de semana — por isso 3, para caber sábado + domingo + a
+       segunda de feriado (07/09) nessa semana específica. */
+    datasOferecidas: 3,
   },
 
   /* ---------------------------------------------------------------------
@@ -108,9 +110,7 @@ const LOJA = {
    * ------------------------------------------------------------------- */
   feriados: [
     // 2026
-    // '2026-09-07' (Independência) fica de fora de propósito: esse ano
-    // a casa optou por manter segunda como dia de reserva normal, não
-    // de entrega — só quem reservou de segunda a sexta ganha o benefício.
+    '2026-09-07', // Independência
     '2026-10-12', // Nossa Senhora Aparecida
     '2026-11-02', // Finados
     '2026-11-15', // Proclamação da República
