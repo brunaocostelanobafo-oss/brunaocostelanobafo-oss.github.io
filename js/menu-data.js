@@ -22,7 +22,7 @@ const LOJA = {
   // Deixe vazio para não aparecer no rodapé.
   endereco: '',
 
-  taxaEntrega: 800,
+  taxaEntrega: 1000,
 
   /* Agendar um horário certo dentro da janela de entrega, em vez de
      esperar a rota chegar. Custa à parte. Deixe `ativo: false` para
