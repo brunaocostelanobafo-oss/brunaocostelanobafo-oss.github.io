@@ -108,7 +108,9 @@ const LOJA = {
    * ------------------------------------------------------------------- */
   feriados: [
     // 2026
-    '2026-09-07', // Independência
+    // '2026-09-07' (Independência) fica de fora de propósito: esse ano
+    // a casa optou por manter segunda como dia de reserva normal, não
+    // de entrega — só quem reservou de segunda a sexta ganha o benefício.
     '2026-10-12', // Nossa Senhora Aparecida
     '2026-11-02', // Finados
     '2026-11-15', // Proclamação da República
