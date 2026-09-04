@@ -1689,7 +1689,13 @@
 
     via.appendChild(regua());
     via.appendChild(rotulo(venda.retirada ? 'RETIRAR NO LOCAL' : 'ENDEREÇO'));
-    const endereco = (cliente && cliente.endereco) || venda.enderecoTexto || '';
+    /* O endereço DESTE pedido vem primeiro — é o que o cliente confirmou
+       na hora de pagar. O cadastro só serve de reserva para pedidos
+       antigos que nunca guardaram o próprio endereço. Inverter essa
+       ordem já causou entrega errada: pedido novo com endereço certo
+       sendo substituído pelo endereço genérico de um cliente casado
+       (às vezes errado) pelo nome. */
+    const endereco = venda.enderecoTexto || (cliente && cliente.endereco) || '';
     via.appendChild(el('div', null, venda.retirada ? '—' : (endereco || 'Endereço não informado')));
 
     via.appendChild(regua());
@@ -1930,10 +1936,18 @@
           const { itens, taxa } = converterVendaDoSite(bruta);
           if (!itens.length && !taxa) continue;
 
-          // Cliente: reaproveita o cadastro se já existir pelo nome.
-          let cliente = Store.dados.clientes.find(
-            (c) => c.nome.toLowerCase() === String(bruta.cliente || '').toLowerCase()
-          );
+          /* Cliente: casa pelo TELEFONE primeiro — é único de verdade.
+             Duas pessoas com o mesmo nome (ex.: dois "Cristiano") já
+             causaram entrega errada quando o casamento era só pelo nome:
+             o pedido de um foi vinculado ao cadastro do outro, e o
+             endereço errado foi pro ticket. Nome só entra como reserva
+             quando o pedido não trouxe telefone nenhum. */
+          let cliente = bruta.telefone ? Store.acharClientePorTelefone(bruta.telefone) : null;
+          if (!cliente && !bruta.telefone) {
+            cliente = Store.dados.clientes.find(
+              (c) => c.nome.toLowerCase() === String(bruta.cliente || '').toLowerCase()
+            );
+          }
           if (!cliente && bruta.cliente) {
             cliente = Store.addCliente({
               nome: bruta.cliente,
@@ -2054,7 +2068,7 @@
         : null;
       const endereco = venda.retirada
         ? 'Retirada no local'
-        : ((cliente && cliente.endereco) || venda.enderecoTexto || '');
+        : (venda.enderecoTexto || (cliente && cliente.endereco) || '');
       const horario = textoHora(venda.horaAgendada);
 
       for (const item of venda.itens) {
