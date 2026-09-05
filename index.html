@@ -174,11 +174,26 @@
             <select name="data" id="select-data"></select>
           </label>
 
-          <label class="campo" id="campo-endereco">
-            <span class="campo__label">Endereço completo</span>
-            <input type="text" name="endereco" autocomplete="street-address"
-                   placeholder="Rua, número, bairro e ponto de referência">
-          </label>
+          <div class="campo" id="campo-endereco">
+            <label class="campo">
+              <span class="campo__label">Rua</span>
+              <input type="text" name="rua" autocomplete="address-line1" placeholder="Nome da rua">
+            </label>
+            <div class="campo-linha">
+              <label class="campo">
+                <span class="campo__label">Número</span>
+                <input type="text" name="numero" inputmode="numeric" placeholder="Nº">
+              </label>
+              <label class="campo">
+                <span class="campo__label">Bairro</span>
+                <input type="text" name="bairro" autocomplete="address-level2" placeholder="Bairro">
+              </label>
+            </div>
+            <label class="campo">
+              <span class="campo__label">Ponto de referência (opcional)</span>
+              <input type="text" name="referencia" placeholder="Ex.: perto do mercado, casa do portão azul">
+            </label>
+          </div>
 
           <div class="campo" id="campo-agendar" hidden>
             <label class="agendar">

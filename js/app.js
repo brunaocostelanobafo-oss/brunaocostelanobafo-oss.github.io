@@ -787,6 +787,17 @@
 
   // ----------------------------------------------------------------- WhatsApp
 
+  /** Rua, número e bairro em campos separados -> uma linha só para o ticket,
+      a mensagem e a planilha. Ponto de referência é opcional. */
+  function montarEndereco(dados) {
+    const partes = [dados.rua, dados.numero, dados.bairro]
+      .map((p) => (p || '').trim())
+      .filter(Boolean)
+      .join(', ');
+    const referencia = (dados.referencia || '').trim();
+    return referencia ? `${partes} — ${referencia}` : partes;
+  }
+
   function montarMensagem(dados) {
     const linhas = [`*Novo pedido — ${LOJA.nome}*`, ''];
 
@@ -861,7 +872,11 @@
       return falhar('Precisamos do seu nome para identificar o pedido.', 'nome');
     }
 
-    if (!dados.telefone || dados.telefone.replace(/\D/g, '').length < 10) {
+    // 10 dígitos = fixo (DDD + 8); 11 = celular (DDD + 9 dígitos). Fora
+    // dessa faixa é número incompleto ou com dígito a mais, e depois
+    // ninguém consegue chamar esse cliente no WhatsApp para confirmar.
+    const digitosTelefone = (dados.telefone || '').replace(/\D/g, '').length;
+    if (digitosTelefone < 10 || digitosTelefone > 11) {
       return falhar('Informe um WhatsApp válido, com DDD.', 'telefone');
     }
 
@@ -869,9 +884,21 @@
       return falhar('Escolha a data da entrega ou da retirada.', 'data');
     }
 
-    if (dados.entrega === 'entrega' && (!dados.endereco || dados.endereco.trim().length < 8)) {
-      return falhar('Informe o endereço completo para a entrega.', 'endereco');
+    if (dados.entrega === 'entrega') {
+      if (!dados.rua || !dados.rua.trim()) {
+        return falhar('Informe o nome da rua.', 'rua');
+      }
+      if (!dados.numero || !dados.numero.trim()) {
+        return falhar('Informe o número da casa.', 'numero');
+      }
+      if (!dados.bairro || !dados.bairro.trim()) {
+        return falhar('Informe o bairro.', 'bairro');
+      }
     }
+
+    // Um único texto para o ticket, a mensagem e a planilha — o resto do
+    // código sempre trabalhou com `dados.endereco` como string pronta.
+    dados.endereco = dados.entrega === 'entrega' ? montarEndereco(dados) : '';
 
     if (LOJA.pedidoMinimo > 0 && subtotal() < LOJA.pedidoMinimo) {
       return falhar(`O pedido mínimo é ${precoBR(LOJA.pedidoMinimo)}. Adicione mais um item.`);

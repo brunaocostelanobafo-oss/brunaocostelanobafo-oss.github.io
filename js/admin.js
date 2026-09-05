@@ -2226,6 +2226,7 @@
     }
 
     pedido.cliente = pegar(/\*Cliente:\*\s*(.+)/);
+    pedido.telefone = pegar(/\*WhatsApp:\*\s*(.+)/);
     pedido.endereco = pegar(/\*Endereço:\*\s*(.+)/);
     pedido.pagamento = pegar(/\*Pagamento:\*\s*(.+)/);
     pedido.observacoes = pegar(/\*Observações:\*\s*(.+)/);
@@ -2280,10 +2281,16 @@
       if (campo) campo.value = String(item.qtd);
     }
 
-    // Cliente: liga no cadastro se já existir pelo nome.
-    const existente = Store.dados.clientes.find(
-      (c) => c.nome.toLowerCase() === (pedido.cliente || '').toLowerCase()
-    );
+    /* Cliente: casa pelo TELEFONE primeiro — é único de verdade. Nome
+       sozinho já vinculou pedido de uma pessoa ao cadastro de outra
+       com o mesmo nome, e o endereço errado foi pro ticket. Nome só
+       entra como reserva quando a mensagem não trouxe telefone nenhum. */
+    let existente = pedido.telefone ? Store.acharClientePorTelefone(pedido.telefone) : null;
+    if (!existente && !pedido.telefone) {
+      existente = Store.dados.clientes.find(
+        (c) => c.nome.toLowerCase() === (pedido.cliente || '').toLowerCase()
+      );
+    }
     form.elements.clienteId.value = existente ? existente.id : '';
 
     atualizarTotalVenda();
@@ -2340,6 +2347,7 @@
 
         caixa.dataset.clienteNovo = pedido.cliente;
         caixa.dataset.enderecoNovo = pedido.endereco || '';
+        caixa.dataset.telefoneNovo = pedido.telefone || '';
       } else if (existente) {
         caixa.appendChild(el('p', 'colar__ok', `Cliente "${existente.nome}" já cadastrado — vinculado à venda.`));
       }
@@ -2364,7 +2372,7 @@
 
     const novo = Store.addCliente({
       nome: caixa.dataset.clienteNovo,
-      whatsapp: '',
+      whatsapp: caixa.dataset.telefoneNovo || '',
       endereco: caixa.dataset.enderecoNovo || '',
       obs: '',
     });

@@ -306,6 +306,13 @@ function aba() {
     var col = indiceDe('entrega_texto') + 1;
     folha.getRange(1, col, folha.getMaxRows(), 2).setNumberFormat('@');
 
+  /* Telefone com "+" na frente (ex.: "+55 35 9...") também sofre esse
+     problema: o Sheets acha que é fórmula e grava #ERROR! no lugar do
+     número. Isso já aconteceu e quebrou o casamento por telefone e a
+     correspondência avançada do Pixel daquela venda. */
+    var colTel = indiceDe('telefone') + 1;
+    folha.getRange(1, colTel, folha.getMaxRows(), 1).setNumberFormat('@');
+
   return folha;
 }
 

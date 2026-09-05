@@ -646,6 +646,10 @@ body.pedido-aberto .zap-flutuante { display: none; }
 .campo--opcoes { display: flex; gap: 9px; flex-wrap: wrap; }
 .campo--opcoes .campo__label { width: 100%; margin-bottom: 0; }
 
+#campo-endereco { display: grid; gap: 10px; }
+.campo-linha { display: flex; gap: 10px; }
+.campo-linha .campo { flex: 1; min-width: 0; }
+
 .opcao {
   flex: 1;
   min-width: 130px;
