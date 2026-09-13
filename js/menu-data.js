@@ -28,7 +28,7 @@ const LOJA = {
      esperar a rota chegar. Custa à parte. Deixe `ativo: false` para
      não oferecer. */
   agendamentoHorario: {
-    ativo: true,
+    ativo: false,
     taxa: 800,
 
     // De quantos em quantos minutos os horários são oferecidos.
