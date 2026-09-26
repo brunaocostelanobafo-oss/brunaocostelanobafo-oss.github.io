@@ -302,16 +302,26 @@ function aba() {
   /* "Domingo, 02/08" e "11:30" são texto, mas o Sheets acha que são data
      e hora e converte sozinho ao gravar. Depois disso o texto original se
      perde e o ticket sai com 1899-12-30T14:36:28Z no lugar do horário.
-     Marcar as colunas como texto impede a conversão. */
+     Marcar as colunas como texto impede a conversão.
+
+     `getMaxRows()` pode ser bem maior que o que a aba realmente usa (o
+     Sheets começa com 1000 linhas em branco), e formatar tudo isso de
+     novo em toda chamada — inclusive só para ler uma venda — é o que
+     estava deixando a sincronização lenta à medida que a aba cresce.
+     200 linhas de folga além do que já foi usado já cobrem meses de
+     pedidos futuros sem precisar varrer a aba inteira toda vez. */
+    var folga = folha.getLastRow() + 200;
+    var linhas = Math.min(folga, folha.getMaxRows());
+
     var col = indiceDe('entrega_texto') + 1;
-    folha.getRange(1, col, folha.getMaxRows(), 2).setNumberFormat('@');
+    folha.getRange(1, col, linhas, 2).setNumberFormat('@');
 
   /* Telefone com "+" na frente (ex.: "+55 35 9...") também sofre esse
      problema: o Sheets acha que é fórmula e grava #ERROR! no lugar do
      número. Isso já aconteceu e quebrou o casamento por telefone e a
      correspondência avançada do Pixel daquela venda. */
     var colTel = indiceDe('telefone') + 1;
-    folha.getRange(1, colTel, folha.getMaxRows(), 1).setNumberFormat('@');
+    folha.getRange(1, colTel, linhas, 1).setNumberFormat('@');
 
   return folha;
 }
@@ -394,7 +404,13 @@ function lerVendas(desde) {
     for (var c = 0; c < COLUNAS.length; c++) linha[COLUNAS[c]] = valores[i][c];
 
     if (linha.status !== 'pago') continue;
-    if (desde && String(linha.data) < String(desde)) continue;
+
+    /* `linha.data` às vezes chega como Date de verdade (o Sheets converte
+       sozinho, e essa coluna não está protegida como texto). Comparando
+       direto contra `desde` — uma string 'AAAA-MM-DD' — o filtro nunca
+       batia e a busca sempre trazia a aba inteira, mesmo pedindo só os
+       dias recentes. Passar pelo formatarData() antes resolve. */
+    if (desde && formatarData(linha.data) < String(desde)) continue;
 
     var itens = [];
     try { itens = JSON.parse(linha.itens || '[]'); } catch (ignorado) {}

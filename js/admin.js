@@ -1885,6 +1885,27 @@
     return true;
   }
 
+  /**
+   * Data a partir da qual vale buscar vendas do site — evita reler e
+   * reprocessar meses de pedidos antigos a cada sincronização, que é o
+   * que ia deixando isso mais lento conforme a planilha cresce. Um
+   * pedido de verdade fica velho rápido, então alguns dias de folga
+   * antes do mais recente já conhecido cobrem qualquer atraso de fuso
+   * ou pedido que chegou fora de ordem.
+   */
+  function ultimaDataSiteConhecida() {
+    const datas = Store.dados.vendas
+      .filter((v) => v.origem === 'site' && v.data)
+      .map((v) => v.data);
+    if (!datas.length) return '';
+
+    const maisRecente = datas.reduce((a, b) => (b > a ? b : a));
+    const [ano, mes, dia] = maisRecente.split('-').map(Number);
+    const folga = new Date(ano, mes - 1, dia - 3);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${folga.getFullYear()}-${pad(folga.getMonth() + 1)}-${pad(folga.getDate())}`;
+  }
+
   function sincronizarVendas(automatico) {
     const alvo = document.getElementById('resultado-sinc');
     const botao = document.getElementById('btn-sincronizar');
@@ -1904,7 +1925,9 @@
     botao.disabled = true;
     botao.textContent = 'Buscando…';
 
-    const endereco = `${url}?acao=vendas&token=${encodeURIComponent(token)}`;
+    const desde = ultimaDataSiteConhecida();
+    const endereco = `${url}?acao=vendas&token=${encodeURIComponent(token)}` +
+      (desde ? `&desde=${desde}` : '');
 
     fetch(endereco)
       .then((r) => r.text())
