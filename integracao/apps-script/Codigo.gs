@@ -36,7 +36,14 @@ var CONFIG = {
 
   // Nome da aba da planilha onde as vendas são gravadas.
   ABA: 'Vendas',
+
+  // Pixel "Brunão" na Meta. O TOKEN da API de Conversões NÃO fica aqui:
+  // este arquivo vai para um repositório público. Ele fica em
+  // Configurações do projeto > Propriedades do script (META_CAPI_TOKEN).
+  META_PIXEL_ID: '4433696376853064',
 };
+
+var META_GRAPH_VERSAO = 'v23.0';
 
 var API = 'https://api.checkout.infinitepay.io';
 
@@ -251,7 +258,124 @@ function receberWebhook(aviso) {
 
   // O valor que vale é o que a InfinitePay confirmou, não o do aviso.
   registrarVenda(aviso, confere);
+
+  // Avisar a Meta nunca pode derrubar o registro da venda.
+  try {
+    enviarCompraMeta(orderNsu);
+  } catch (erro) {
+    registrarErro('meta-capi', erro);
+  }
+
   return { ok: true };
+}
+
+// ===========================================================================
+// META — API de Conversões (Purchase pelo servidor)
+//
+// O Pixel do navegador só vê a compra se o cliente voltar para pago.html.
+// Aqui o servidor avisa a Meta direto quando a InfinitePay confirma. O
+// event_id é o order_nsu, o mesmo eventID que o navegador já usa, então a
+// Meta junta os dois avisos e conta a venda uma vez só.
+//
+// Propriedades do script (Configurações do projeto):
+//   META_CAPI_TOKEN  — token gerado no Gerenciador de Eventos (obrigatória)
+//   META_TEST_CODE   — código de "Testar eventos" (opcional; apague depois)
+// ===========================================================================
+
+function hashMeta(texto) {
+  var bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256, texto, Utilities.Charset.UTF_8);
+  return bytes.map(function (b) {
+    return ('0' + (b < 0 ? b + 256 : b).toString(16)).slice(-2);
+  }).join('');
+}
+
+function telefoneMeta(tel) {
+  var digitos = String(tel || '').replace(/\D/g, '');
+  if (!digitos) return '';
+  return digitos.indexOf('55') === 0 ? digitos : '55' + digitos;
+}
+
+function enviarCompraMeta(orderNsu) {
+  var props = PropertiesService.getScriptProperties();
+  var token = props.getProperty('META_CAPI_TOKEN');
+  if (!token) return;
+
+  var pedido = lerPedido(orderNsu);
+  if (!pedido || !pedido.total) return;
+
+  var usuario = { country: [hashMeta('br')] };
+  var tel = telefoneMeta(pedido.telefone);
+  if (tel) usuario.ph = [hashMeta(tel)];
+
+  var partes = String(pedido.nome || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (partes.length) usuario.fn = [hashMeta(partes[0])];
+  if (partes.length > 1) usuario.ln = [hashMeta(partes[partes.length - 1])];
+
+  var corpo = {
+    data: [{
+      event_name: 'Purchase',
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: String(orderNsu),
+      action_source: 'website',
+      event_source_url: CONFIG.URL_SITE + '/pago.html',
+      user_data: usuario,
+      custom_data: { value: pedido.total / 100, currency: 'BRL' },
+    }],
+  };
+
+  var codigoTeste = props.getProperty('META_TEST_CODE');
+  if (codigoTeste) corpo.test_event_code = codigoTeste;
+
+  var resposta = UrlFetchApp.fetch(
+    'https://graph.facebook.com/' + META_GRAPH_VERSAO + '/' + CONFIG.META_PIXEL_ID +
+      '/events?access_token=' + encodeURIComponent(token),
+    {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(corpo),
+      muteHttpExceptions: true,
+    });
+
+  var codigo = resposta.getResponseCode();
+  var texto = resposta.getContentText();
+
+  if (codigo < 200 || codigo >= 300) {
+    registrarErro('meta-capi', 'HTTP ' + codigo + ' — ' + texto);
+  } else if (codigoTeste) {
+    registrarErro('meta-capi (teste ok)', orderNsu + ' — ' + texto);
+  }
+}
+
+/**
+ * Rode uma vez pelo editor, com META_CAPI_TOKEN e META_TEST_CODE
+ * preenchidos: manda uma compra de mentira para a aba "Testar eventos"
+ * do Gerenciador de Eventos, sem precisar vender nada.
+ */
+function testarMetaCapi() {
+  var props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('META_CAPI_TOKEN')) {
+    console.log('Falta a propriedade META_CAPI_TOKEN.');
+    return;
+  }
+  if (!props.getProperty('META_TEST_CODE')) {
+    console.log('Falta a propriedade META_TEST_CODE (código de "Testar eventos").');
+    return;
+  }
+
+  var folha = aba();
+  var ultima = folha.getLastRow();
+  var orderNsu = '';
+  for (var i = ultima; i > 1; i--) {
+    if (folha.getRange(i, indiceDe('status') + 1).getValue() === 'pago') {
+      orderNsu = String(folha.getRange(i, indiceDe('order_nsu') + 1).getValue());
+      break;
+    }
+  }
+  if (!orderNsu) { console.log('Nenhuma venda paga para usar no teste.'); return; }
+
+  enviarCompraMeta(orderNsu);
+  console.log('Teste enviado com o pedido ' + orderNsu + '. Confira em "Testar eventos".');
 }
 
 /** Pergunta para a InfinitePay se aquele pagamento existe mesmo. */
