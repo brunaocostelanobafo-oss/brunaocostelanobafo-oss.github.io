@@ -100,7 +100,7 @@ const LOJA = {
    * ------------------------------------------------------------------- */
   reserva: {
     ativa: true,
-    freteGratis: true,
+    freteGratis: false,
     diasSemana: [1, 2, 3, 4, 5],
   },
 
