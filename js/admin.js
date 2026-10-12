@@ -582,15 +582,44 @@
     document.getElementById('venda-total').textContent = 'Total: ' + reais(total);
   }
 
+  const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+  /** Esvazia a busca para que qualquer cliente possa ser escolhido de novo. */
+  function limparBuscaCliente() {
+    const busca = document.getElementById('venda-cliente-busca');
+    if (busca && busca.value) {
+      busca.value = '';
+      renderClientesNoSelect();
+    }
+  }
+
+  /* Lista em ordem alfabética e filtrada pelo que foi digitado — por
+     qualquer parte do nome ou do WhatsApp, não só pelo começo. Com busca
+     ativa a lista abre aberta para escolher com o clique; nada é
+     selecionado sozinho, para não vincular o pedido ao cliente errado. */
   function renderClientesNoSelect() {
     const select = document.getElementById('venda-cliente');
+    const busca = document.getElementById('venda-cliente-busca');
     const atual = select.value;
+    const termo = semAcento(busca ? busca.value : '').trim();
+    const termoDigitos = termo.replace(/\D/g, '');
+
+    const lista = [...Store.dados.clientes]
+      .sort((a, b) => semAcento(a.nome).localeCompare(semAcento(b.nome), 'pt'))
+      .filter((c) => {
+        if (!termo || c.id === atual) return true;
+        if (semAcento(c.nome).includes(termo)) return true;
+        return termoDigitos.length >= 3 &&
+          Store.normalizarTelefone(c.whatsapp).includes(termoDigitos);
+      });
+
     select.innerHTML = '';
     select.appendChild(new Option('Sem cliente identificado', ''));
-    for (const c of Store.dados.clientes) {
+    for (const c of lista) {
       select.appendChild(new Option(`${c.nome}${c.whatsapp ? ' · ' + c.whatsapp : ''}`, c.id));
     }
     select.value = atual;
+    select.size = termo ? Math.min(lista.length + 1, 7) : 1;
   }
 
   /* Id da venda em edição, ou null quando o formulário está criando uma
@@ -606,6 +635,7 @@
     form.elements.dataEntrega.value = venda.entregaISO || '';
     form.elements.horaAgendada.value = textoHora(venda.horaAgendada);
     form.elements.retirada.checked = !!venda.retirada;
+    limparBuscaCliente();
     form.elements.clienteId.value = venda.clienteId || '';
     form.elements.taxaEntrega.value = venda.taxaEntrega ? (venda.taxaEntrega / 100).toFixed(2).replace('.', ',') : '';
     form.elements.desconto.value = venda.desconto ? (venda.desconto / 100).toFixed(2).replace('.', ',') : '';
@@ -2314,6 +2344,7 @@
         (c) => c.nome.toLowerCase() === (pedido.cliente || '').toLowerCase()
       );
     }
+    limparBuscaCliente();
     form.elements.clienteId.value = existente ? existente.id : '';
 
     atualizarTotalVenda();
@@ -2418,6 +2449,8 @@
     // --- venda
     const formVenda = document.getElementById('form-venda');
     formVenda.elements.data.value = Store.hojeISO();
+    document.getElementById('venda-cliente-busca').addEventListener('input', renderClientesNoSelect);
+    formVenda.addEventListener('reset', () => setTimeout(renderClientesNoSelect, 0));
     formVenda.elements.taxaEntrega.addEventListener('input', atualizarTotalVenda);
     formVenda.elements.desconto.addEventListener('input', atualizarTotalVenda);
 
