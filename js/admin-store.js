@@ -40,6 +40,8 @@ const Store = (function () {
     versao: VERSAO,
     clientes: [],
     vendas: [],
+    // order_nsu de pedidos do site que você excluiu: a sincronização não traz de volta.
+    vendasExcluidas: [],
     lancamentos: [],
     insumos: [],
     movimentos: [],
@@ -283,6 +285,16 @@ const Store = (function () {
   }
 
   function removerVenda(idVenda) {
+    const venda = dados.vendas.find((v) => v.id === idVenda);
+
+    /* Pedido do site continua "pago" na planilha mesmo cancelado e
+       estornado. Sem lembrar que foi excluído, a próxima sincronização
+       o traria de volta como venda nova. */
+    if (venda && venda.orderNsu) {
+      if (!Array.isArray(dados.vendasExcluidas)) dados.vendasExcluidas = [];
+      if (!dados.vendasExcluidas.includes(venda.orderNsu)) dados.vendasExcluidas.push(venda.orderNsu);
+    }
+
     devolverEstoqueDaVenda(idVenda);
     dados.vendas = dados.vendas.filter((v) => v.id !== idVenda);
     salvar();
@@ -368,6 +380,7 @@ const Store = (function () {
 
   function vendaJaImportada(orderNsu) {
     if (!orderNsu) return false;
+    if ((dados.vendasExcluidas || []).includes(orderNsu)) return true;
     return dados.vendas.some((v) => v.orderNsu === orderNsu);
   }
 
