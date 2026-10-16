@@ -87,59 +87,52 @@ button, input, select, textarea { font: inherit; color: inherit; }
   line-height: 1.05;
 }
 
-.loja__local { margin: 3px 0 0; font-size: 13px; color: var(--suave); }
+.loja__local { margin: 3px 0 0; font-size: 13.5px; color: var(--suave); }
 
-.loja__status {
+/* Duas tags, uma embaixo da outra: a verde diz que dá para pedir agora,
+   a neutra diz quando a rota sai. */
+.loja__tags { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 11px; }
+
+.loja__status,
+.loja__tag {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin: 10px 0 0;
+  margin: 0;
   padding: 5px 11px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--marca);
-  background: var(--marca-clara);
 }
 
+.loja__status { color: var(--ok); background: var(--ok-clara); }
 .loja__status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.loja__status--entregando { color: var(--ok); background: var(--ok-clara); }
+.loja__tag { color: var(--tinta); background: var(--entorno); }
+.loja__tag::before { content: '🛵'; font-size: 12px; }
 
-.loja__chips { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
-
-.chip {
-  font-size: 13px;
-  padding: 7px 11px;
-  border-radius: 10px;
-  background: var(--entorno);
-}
-
-.chip b {
-  display: block;
-  font-size: 10.5px;
-  color: var(--suave);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
+/* "Informações da loja" em destaque: é onde estão as regras de reserva,
+   retirada e pagamento que evitam dúvida no WhatsApp. */
 .loja__info {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  margin-top: 12px;
-  padding: 12px 13px;
-  border: 1px solid var(--linha);
-  border-radius: 12px;
-  background: var(--fundo);
-  font-size: 14px;
+  margin-top: 14px;
+  padding: 13px 14px;
+  border: 1.5px solid var(--marca);
+  border-radius: 14px;
+  background: var(--marca-clara);
   text-align: left;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
-.loja__info:hover { border-color: var(--marca); }
-.loja__info-ver { color: var(--marca); font-weight: 700; white-space: nowrap; }
+.loja__info:hover { background: #fbdde0; }
+.loja__info-icone { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.loja__info-texto { flex: 1; min-width: 0; }
+.loja__info-texto strong { display: block; font-size: 15.5px; color: var(--marca-escura); text-transform: uppercase; letter-spacing: 0.4px; }
+.loja__info-texto small { display: block; font-size: 12.5px; color: var(--suave); }
+.loja__info-ver { color: var(--marca); font-size: 26px; font-weight: 700; line-height: 1; }
 
 /* ---------- Navegação de categorias ---------- */
 
@@ -560,9 +553,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .folha__adicionar:hover { background: var(--marca-escura); }
 
-.info { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; padding: 13px 0; border-top: 1px solid var(--linha); font-size: 14px; }
+.info { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; padding: 14px 0; border-top: 1px solid var(--linha); font-size: 14px; }
+.info > div { display: grid; gap: 6px; }
+.info__icone { font-size: 18px; line-height: 1.3; }
+.info__destaque { color: var(--tinta) !important; font-weight: 600; }
+.info__contatos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 14px; border-top: 1px solid var(--linha); }
+.info__contato { display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 1px solid var(--linha); border-radius: 12px; color: var(--tinta); font-weight: 700; text-decoration: none; }
+.info__contato small { font-weight: 500; color: var(--marca); }
+.info__contato:hover { border-color: var(--marca); }
 .info:first-of-type { border-top: 0; }
-.info b { display: block; margin-bottom: 2px; }
+.info b { display: block; font-size: 15px; }
 .info p { margin: 0; color: var(--suave); line-height: 1.45; }
 .info a { color: var(--marca); font-weight: 700; text-decoration: none; }
 

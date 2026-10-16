@@ -22,8 +22,9 @@ const LOJA = {
   // Aparece na capa do cardápio e nas informações da loja.
   cidade: 'Varginha · MG',
 
-  // Deixe vazio para não aparecer no rodapé.
-  endereco: '',
+  // Endereço de retirada. Aparece no rodapé e em "Informações da loja".
+  // Deixe vazio para esconder.
+  endereco: 'Rua Adelina Garcia Chagas, 425 — Rio Verde',
 
   taxaEntrega: 1000,
 

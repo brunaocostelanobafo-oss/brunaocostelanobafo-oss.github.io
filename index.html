@@ -35,14 +35,17 @@
       <div class="loja__conteudo">
         <h1 class="loja__nome" id="loja-nome"></h1>
         <p class="loja__local" id="loja-local"></p>
-        <p class="loja__status" id="status-loja"></p>
-        <div class="loja__chips">
-          <span class="chip"><b>Entrega</b><span id="chip-horario"></span></span>
-          <span class="chip"><b>Taxa</b><span id="chip-taxa"></span></span>
-          <span class="chip"><b>Pagamento</b>Pix ou cartão</span>
+        <div class="loja__tags">
+          <p class="loja__status" id="status-loja"></p>
+          <p class="loja__tag" id="tag-entregas"></p>
         </div>
         <button type="button" class="loja__info" id="abrir-info-loja">
-          <span>Informações da loja, horários e pagamento</span><span class="loja__info-ver">Ver ›</span>
+          <span class="loja__info-icone" aria-hidden="true">📋</span>
+          <span class="loja__info-texto">
+            <strong>Informações da loja</strong>
+            <small>Reservas, entregas, retirada e pagamento</small>
+          </span>
+          <span class="loja__info-ver" aria-hidden="true">›</span>
         </button>
       </div>
     </header>

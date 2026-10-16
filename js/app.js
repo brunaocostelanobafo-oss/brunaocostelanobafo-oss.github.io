@@ -330,20 +330,10 @@
 
   // -------------------------------------------------------------- renderização
 
-  function textoStatus() {
-    const { modo, fecha } = estadoDaLoja();
-    if (modo === 'entregando') return { modo, texto: `Entregando agora · até ${fecha}` };
-    return { modo, texto: 'Reservas abertas · entregas sáb, dom e feriados' };
-  }
-
   function montarTopo() {
     document.getElementById('loja-nome').textContent = LOJA.nome;
-    document.getElementById('loja-local').textContent = `${LOJA.cidade} · Feito na lenha desde ${LOJA.desde}`;
+    document.getElementById('loja-local').textContent = `${LOJA.cidade} · Desde ${LOJA.desde}`;
     document.getElementById('loja-desde').textContent = `Desde ${LOJA.desde}`;
-
-    const { abre, fecha } = LOJA.entrega.horario;
-    document.getElementById('chip-horario').textContent = `${abre.replace(':00', 'h')} às ${fecha.replace(':00', 'h')}`;
-    document.getElementById('chip-taxa').textContent = precoBR(LOJA.taxaEntrega);
 
     montarAvisos();
 
@@ -377,11 +367,12 @@
   }
 
   /** Status da loja na capa. Refeito quando chega uma janela extra de horário. */
+  /* Tags da capa. As reservas ficam abertas a semana toda, então a
+     primeira é fixa; a segunda diz quando a rota sai. Também é chamada
+     de novo quando chega uma janela extra de horário. */
   function montarAvisos() {
-    const { modo, texto } = textoStatus();
-    const status = document.getElementById('status-loja');
-    status.className = `loja__status loja__status--${modo}`;
-    status.textContent = texto;
+    document.getElementById('status-loja').textContent = 'Reservas abertas';
+    document.getElementById('tag-entregas').textContent = 'Entregas sáb, dom e feriados';
   }
 
   function montarBanners() {
@@ -826,22 +817,45 @@
 
   function abrirInfoLoja() {
     const { abre, fecha } = LOJA.entrega.horario;
-    const janela = `${abre} às ${fecha}`;
+    const hora = (h) => h.replace(':00', 'h');
     const raiz = document.createElement('div');
     raiz.className = 'folha__corpo folha__corpo--info';
     raiz.innerHTML =
-      '<button type="button" class="folha__fechar folha__fechar--fixo" aria-label="Fechar">×</button>' +
+      '<button type="button" class="folha__fechar" aria-label="Fechar">×</button>' +
       '<h2 class="folha__nome">Informações da loja</h2>' +
-      '<div class="info"><span class="info__icone">🕚</span><div><b>Entregas</b>' +
-      `<table class="horarios"><tbody><tr><td>Sábado</td><td>${janela}</td></tr>` +
-      `<tr><td>Domingo</td><td>${janela}</td></tr><tr><td>Feriados</td><td>${janela}</td></tr>` +
-      '<tr><td>Segunda a sexta</td><td>Só reservas</td></tr></tbody></table></div></div>' +
-      '<div class="info"><span class="info__icone">📅</span><div><b>Reservas</b><p>Abertas a semana toda. Você escolhe a data de entrega no pedido. A rota é única e segue a ordem das reservas.</p></div></div>' +
-      `<div class="info"><span class="info__icone">🛵</span><div><b>Entrega</b><p>Taxa de ${precoBR(LOJA.taxaEntrega)} em ${LOJA.cidade.split(' ·')[0]}. Também dá para retirar no local, sem taxa.</p></div></div>` +
-      '<div class="info"><span class="info__icone">💳</span><div><b>Pagamento</b><p>Pix ou cartão de crédito, pelo pagamento seguro da InfinitePay.</p></div></div>' +
-      `<div class="info"><span class="info__icone">💬</span><div><b>WhatsApp</b><p><a href="https://wa.me/${LOJA.whatsapp}" target="_blank" rel="noopener">${LOJA.whatsappVisivel}</a></p></div></div>` +
-      `<div class="info"><span class="info__icone">📷</span><div><b>Instagram</b><p><a href="https://instagram.com/${LOJA.instagram}" target="_blank" rel="noopener">@${LOJA.instagram}</a></p></div></div>` +
-      (LOJA.endereco ? '<div class="info"><span class="info__icone">📍</span><div><b>Endereço</b><p class="info__endereco"></p></div></div>' : '');
+
+      '<section class="info"><span class="info__icone">📲</span><div>' +
+      '<b>Reservas abertas a semana toda!</b>' +
+      '<p>Escolha a data de entrega, confirme o pagamento e receba seu pedido quentinho, pronto para servir!</p>' +
+      '<p>As reservas antecipadas têm prioridade nas entregas da data escolhida, e a rota segue a ordem de confirmação das reservas.</p>' +
+      '<p class="info__destaque">Antecipe seu pedido e deixe o almoço por nossa conta! 😋</p>' +
+      '</div></section>' +
+
+      '<section class="info"><span class="info__icone">🚚</span><div>' +
+      '<b>Entregas</b>' +
+      `<p>Aos sábados, domingos e feriados, das ${hora(abre)} às ${hora(fecha)}.</p>` +
+      `<p>📦 Taxa de entrega: ${precoBR(LOJA.taxaEntrega)}.</p>` +
+      '</div></section>' +
+
+      (LOJA.endereco
+        ? '<section class="info"><span class="info__icone">📍</span><div>' +
+          '<b>Retirada no local</b><p class="info__endereco"></p>' +
+          '<p>🥩 As retiradas são exclusivas para pedidos previamente confirmados.</p>' +
+          '<p>Nossa produção é limitada e pode se esgotar com as reservas. Por isso, não garantimos disponibilidade à pronta entrega.</p>' +
+          '<p class="info__destaque">Confirme seu pedido antes de vir buscar, para garantir seu almoço e evitar uma viagem perdida! 😋</p>' +
+          '</div></section>'
+        : '') +
+
+      '<section class="info"><span class="info__icone">💳</span><div>' +
+      '<b>Pagamento</b>' +
+      '<p>Pague com Pix ou cartão de crédito diretamente pelo nosso cardápio digital, no ambiente seguro da InfinitePay. Não recebemos na entrega.</p>' +
+      '<p>💵 Pagamento em dinheiro somente para retiradas em nosso estabelecimento.</p>' +
+      '</div></section>' +
+
+      '<div class="info__contatos">' +
+      `<a class="info__contato" href="https://wa.me/${LOJA.whatsapp}" target="_blank" rel="noopener"><span aria-hidden="true">💬</span> WhatsApp <small>${LOJA.whatsappVisivel}</small></a>` +
+      `<a class="info__contato" href="https://instagram.com/${LOJA.instagram}" target="_blank" rel="noopener"><span aria-hidden="true">📷</span> Instagram <small>@${LOJA.instagram}</small></a>` +
+      '</div>';
     if (LOJA.endereco) raiz.querySelector('.info__endereco').textContent = LOJA.endereco;
     raiz.querySelector('.folha__fechar').addEventListener('click', fecharFolha);
     abrirFolha(raiz);
