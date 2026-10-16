@@ -64,7 +64,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .loja__capa {
   height: 160px;
-  background: #2a1810 url('../assets/embalagem.jpg') center / cover no-repeat;
+  background: #2a1810 url('../assets/capa-topo.jpg') center / cover no-repeat;
   position: relative;
 }
 
