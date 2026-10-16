@@ -92,8 +92,27 @@
     return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
+  /** Itens vendáveis: cada variante (com osso / desossada) conta como um. */
   function todosOsItens() {
-    return CARDAPIO.flatMap((categoria) => categoria.itens);
+    return itensVendaveis();
+  }
+
+  function acharProduto(id) {
+    for (const categoria of CARDAPIO) {
+      const produto = categoria.itens.find((p) => p.id === id);
+      if (produto) return produto;
+    }
+    return null;
+  }
+
+  /** Variantes do produto, ou ele mesmo quando não tem escolha. */
+  function opcoesDe(produto) {
+    return produto.variantes ? produto.variantes : [produto];
+  }
+
+  /** O menor preço — é o que aparece como "A partir de". */
+  function precoInicial(produto) {
+    return Math.min(...opcoesDe(produto).map((o) => o.preco));
   }
 
   function acharItem(nome) {
@@ -311,83 +330,117 @@
 
   // -------------------------------------------------------------- renderização
 
+  function textoStatus() {
+    const { modo, fecha } = estadoDaLoja();
+    if (modo === 'entregando') return { modo, texto: `Entregando agora · até ${fecha}` };
+    return { modo, texto: 'Reservas abertas · entregas sáb, dom e feriados' };
+  }
+
   function montarTopo() {
     document.getElementById('loja-nome').textContent = LOJA.nome;
-    document.getElementById('loja-tagline').textContent = LOJA.tagline;
-    document.getElementById('loja-selo').textContent = LOJA.selo;
+    document.getElementById('loja-local').textContent = `${LOJA.cidade} · Feito na lenha desde ${LOJA.desde}`;
     document.getElementById('loja-desde').textContent = `Desde ${LOJA.desde}`;
 
-    const { modo, fecha } = estadoDaLoja();
-    const status = document.getElementById('status-loja');
-    const texto = {
-      entregando: `Entregando até ${fecha}`,
-      reserva: 'Reservas abertas',
-      fechado: 'Reservas abertas',
-    };
-    status.hidden = false;
-    status.classList.add(`topo__status--${modo}`);
-    status.querySelector('.status__texto').textContent = texto[modo];
+    const { abre, fecha } = LOJA.entrega.horario;
+    document.getElementById('chip-horario').textContent = `${abre.replace(':00', 'h')} às ${fecha.replace(':00', 'h')}`;
+    document.getElementById('chip-taxa').textContent = precoBR(LOJA.taxaEntrega);
+
+    montarAvisos();
 
     const nav = document.getElementById('nav-categorias');
     nav.innerHTML = '';
-    for (const categoria of CARDAPIO) {
+    CARDAPIO.forEach((categoria, i) => {
       const link = document.createElement('a');
-      link.className = 'categorias__link';
+      link.className = 'categorias__link' + (i === 0 ? ' categorias__link--ativa' : '');
       link.href = `#cat-${categoria.id}`;
-      link.textContent = `${categoria.emoji || ''} ${categoria.nome}`.trim();
+      link.textContent = categoria.nome;
       nav.appendChild(link);
-    }
+    });
+    acompanharCategoriaVisivel();
   }
 
+  /** Destaca na barra de categorias a seção que está na tela. */
+  function acompanharCategoriaVisivel() {
+    if (!('IntersectionObserver' in window)) return;
+    const links = [...document.querySelectorAll('.categorias__link')];
+    const observador = new IntersectionObserver((entradas) => {
+      for (const entrada of entradas) {
+        if (!entrada.isIntersecting) continue;
+        const id = entrada.target.id;
+        for (const link of links) {
+          link.classList.toggle('categorias__link--ativa', link.getAttribute('href') === `#${id}`);
+        }
+      }
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    // As seções são montadas depois; observa quando existirem.
+    setTimeout(() => document.querySelectorAll('.categoria').forEach((s) => observador.observe(s)), 0);
+  }
+
+  /** Status da loja na capa. Refeito quando chega uma janela extra de horário. */
   function montarAvisos() {
-    const alvo = document.getElementById('avisos');
+    const { modo, texto } = textoStatus();
+    const status = document.getElementById('status-loja');
+    status.className = `loja__status loja__status--${modo}`;
+    status.textContent = texto;
+  }
+
+  function montarBanners() {
+    const alvo = document.getElementById('banners');
+    const pontos = document.getElementById('banners-pontos');
     alvo.innerHTML = '';
+    pontos.innerHTML = '';
+    const lista = (typeof BANNERS !== 'undefined' ? BANNERS : []).filter((b) => acharProduto(b.abre));
+    if (!lista.length) { alvo.hidden = true; pontos.hidden = true; return; }
 
-    const { modo, abre, fecha } = estadoDaLoja();
+    lista.forEach((b, i) => {
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'banner';
+      botao.style.backgroundImage = `url("${b.imagem}")`;
+      botao.innerHTML = '<span class="banner__tag"></span><span class="banner__titulo"></span><span class="banner__texto"></span>';
+      botao.querySelector('.banner__tag').textContent = b.tag;
+      botao.querySelector('.banner__titulo').textContent = b.titulo;
+      botao.querySelector('.banner__texto').textContent = b.texto;
+      botao.addEventListener('click', () => abrirProduto(acharProduto(b.abre)));
+      alvo.appendChild(botao);
 
-    const aviso = document.createElement('div');
-    aviso.className = `aviso aviso--${modo}`;
+      const ponto = document.createElement('span');
+      if (i === 0) ponto.className = 'ativo';
+      pontos.appendChild(ponto);
+    });
 
-    /* Com a promoção ligada, o bloco de destaque logo abaixo já anuncia a
-       entrega grátis. Repetir aqui só ocupava espaço — e falando em
-       "hoje", o que confunde: no sábado "hoje" não dá direito ao
-       benefício, que é das reservas de segunda a sexta. */
-    const destaqueJaAnuncia = modo === 'reserva' && temFreteGratis();
+    alvo.addEventListener('scroll', () => {
+      const largura = alvo.firstElementChild.offsetWidth + 10;
+      const atual = Math.round(alvo.scrollLeft / largura);
+      [...pontos.children].forEach((p, i) => p.classList.toggle('ativo', i === atual));
+    }, { passive: true });
+  }
 
-    if (modo === 'reserva') {
-      // O horário e os dias já vêm na linha da regra, logo abaixo.
-      aviso.innerHTML =
-        '<span class="aviso__icone">📅</span>' +
-        '<span><strong>Reservas abertas.</strong> Escolha a data na hora do pedido.</span>';
-    } else if (modo === 'entregando') {
-      aviso.innerHTML =
-        '<span class="aviso__icone">🔥</span>' +
-        `<span><strong>Estamos entregando agora,</strong> até as ${fecha}.</span>`;
-    } else {
-      aviso.innerHTML =
-        '<span class="aviso__icone">📅</span>' +
-        '<span><strong>Reservas abertas.</strong> Escolha a data na hora do pedido.</span>';
-    }
-    if (!destaqueJaAnuncia) alvo.appendChild(aviso);
+  function montarVitrine() {
+    const alvo = document.getElementById('vitrine');
+    alvo.innerHTML = '';
+    const produtos = (typeof MAIS_PEDIDOS !== 'undefined' ? MAIS_PEDIDOS : [])
+      .map(acharProduto)
+      .filter((p) => p && !produtoEsgotado(p));
+    document.getElementById('bloco-mais-pedidos').hidden = !produtos.length;
 
-    // A promoção da entrega grátis é o principal argumento de venda da casa,
-    // então ganha destaque próprio em vez de virar mais uma linha de aviso.
-    if (LOJA.reserva.ativa && LOJA.reserva.freteGratis) {
-      const destaque = document.createElement('div');
-      destaque.className = 'destaque-frete';
-      destaque.innerHTML =
-        '<span class="destaque-frete__icone">🎁</span>' +
-        '<p class="destaque-frete__texto">Reservas confirmadas de segunda a sexta ' +
-        '<strong>ganham entrega grátis</strong></p>';
-      alvo.appendChild(destaque);
-    }
-
-    const regra = document.createElement('div');
-    regra.className = 'aviso aviso--regra';
-    regra.innerHTML =
-      '<span class="aviso__icone">🛵</span>' +
-      `<span>Delivery <strong>sábados, domingos e feriados</strong>, das ${abre} às ${fecha}.</span>`;
-    alvo.appendChild(regra);
+    produtos.forEach((produto, i) => {
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'mini';
+      botao.innerHTML =
+        '<span class="mini__foto"></span><span class="mini__nome"></span>' +
+        '<span class="mini__de">A partir de</span><span class="mini__preco"></span>';
+      const foto = botao.querySelector('.mini__foto');
+      if (produto.imagem) foto.style.backgroundImage = `url("${produto.imagem}")`;
+      else foto.classList.add('sem-foto');
+      if (i === 0) foto.innerHTML = '<span class="mini__selo">🔥 O favorito</span>';
+      botao.querySelector('.mini__nome').textContent = produto.nome;
+      botao.querySelector('.mini__preco').textContent = precoBR(precoInicial(produto));
+      if (!produto.variantes) botao.querySelector('.mini__de').hidden = true;
+      botao.addEventListener('click', () => abrirProduto(produto));
+      alvo.appendChild(botao);
+    });
   }
 
   function montarCardapio() {
@@ -411,24 +464,13 @@
         secao.appendChild(desc);
       }
 
-      if (categoria.banner) {
-        const banner = document.createElement('div');
-        banner.className = 'categoria__banner';
-        banner.innerHTML =
-          `<span class="categoria__banner__icone">${categoria.banner.icone}</span>` +
-          `<p class="categoria__banner__texto">${categoria.banner.texto}` +
-          `<strong>${categoria.banner.destaque}</strong></p>`;
-        secao.appendChild(banner);
-      }
-
       const lista = document.createElement('div');
       lista.className = 'itens';
-      for (const item of categoria.itens) {
-        lista.appendChild(montarItem(item));
-      }
+      for (const produto of categoria.itens) lista.appendChild(montarItem(produto));
       secao.appendChild(lista);
       alvo.appendChild(secao);
     }
+    montarVitrine();
   }
 
   const CHAVE_ESGOTADOS = 'brunao:esgotados';
@@ -556,82 +598,208 @@
     return esgotados.some((e) => e.toLowerCase() === String(nome).toLowerCase());
   }
 
-  function montarItem(item) {
-    const esgotado = item.disponivel === false || estaEsgotado(item.nome);
+  /** Esgotado só quando todas as opções do produto acabaram. */
+  function produtoEsgotado(produto) {
+    if (produto.disponivel === false) return true;
+    return opcoesDe(produto).every((o) => o.disponivel === false || estaEsgotado(o.nome));
+  }
 
-    const cartao = document.createElement('article');
-    cartao.className = 'item';
-    if (item.destaque && !esgotado) cartao.classList.add('item--destaque');
-    if (esgotado) cartao.classList.add('item--esgotado');
+  function montarItem(produto) {
+    const esgotado = produtoEsgotado(produto);
 
-    if (item.imagem) {
-      const foto = document.createElement('img');
-      foto.className = 'item__foto';
-      foto.src = item.imagem;
-      foto.alt = item.nome;
-      foto.loading = 'lazy';
-      cartao.appendChild(foto);
-    }
+    const cartao = document.createElement('button');
+    cartao.type = 'button';
+    cartao.className = 'item' + (esgotado ? ' item--esgotado' : '');
+    cartao.disabled = esgotado;
 
     const texto = document.createElement('div');
     texto.className = 'item__texto';
 
-    const nome = document.createElement('h3');
-    nome.className = 'item__nome';
-    nome.textContent = item.nome;
-    if (item.destaque && !esgotado) {
+    if (produto.selo && !esgotado) {
       const selo = document.createElement('span');
       selo.className = 'item__selo';
-      selo.textContent = item.selo || 'Mais pedido';
-      nome.appendChild(selo);
+      selo.textContent = produto.selo;
+      texto.appendChild(selo);
     }
+
+    const nome = document.createElement('h3');
+    nome.className = 'item__nome';
+    nome.textContent = produto.nome;
     texto.appendChild(nome);
 
-    if (item.descricao) {
+    if (produto.descricao) {
       const desc = document.createElement('p');
       desc.className = 'item__descricao';
-      desc.textContent = item.descricao;
+      desc.textContent = produto.descricao;
       texto.appendChild(desc);
     }
 
-    if (item.rendimento) {
-      const rendimento = document.createElement('p');
-      rendimento.className = 'item__rendimento';
-      rendimento.textContent = item.rendimento;
-      texto.appendChild(rendimento);
+    if (produto.tags && produto.tags.length) {
+      const tags = document.createElement('div');
+      tags.className = 'item__tags';
+      for (const t of produto.tags) {
+        const span = document.createElement('span');
+        span.textContent = t;
+        tags.appendChild(span);
+      }
+      texto.appendChild(tags);
     }
 
-    const preco = document.createElement('p');
+    const preco = document.createElement('div');
     if (esgotado) {
       preco.className = 'item__esgotado-txt';
       preco.textContent = 'Esgotado hoje';
     } else {
       preco.className = 'item__preco';
-      if (item.precoDe) {
+      if (produto.variantes) {
         const de = document.createElement('span');
-        de.className = 'item__preco-de';
-        de.textContent = precoBR(item.precoDe);
+        de.className = 'item__de';
+        de.textContent = 'A partir de';
         preco.appendChild(de);
-        preco.appendChild(document.createTextNode(' ' + precoBR(item.preco)));
-      } else {
-        preco.textContent = precoBR(item.preco);
       }
+      preco.appendChild(document.createTextNode(precoBR(precoInicial(produto))));
     }
     texto.appendChild(preco);
-
     cartao.appendChild(texto);
 
-    if (!esgotado) {
-      const botao = document.createElement('button');
-      botao.className = 'item__add';
-      botao.type = 'button';
-      botao.textContent = '+';
-      botao.setAttribute('aria-label', `Adicionar ${item.nome} ao pedido`);
-      botao.addEventListener('click', () => alterarQuantidade(item.nome, 1));
-      cartao.appendChild(botao);
+    const foto = document.createElement('span');
+    foto.className = 'item__foto';
+    if (produto.imagem) {
+      const img = document.createElement('img');
+      img.src = produto.imagem;
+      img.alt = '';
+      img.loading = 'lazy';
+      foto.appendChild(img);
+    } else {
+      foto.classList.add('sem-foto');
+      foto.textContent = '🍽️';
+    }
+    cartao.appendChild(foto);
+
+    cartao.setAttribute('aria-label', `${produto.nome}, ${esgotado ? 'esgotado' : 'a partir de ' + precoBR(precoInicial(produto))}`);
+    if (!esgotado) cartao.addEventListener('click', () => abrirProduto(produto));
+    return cartao;
+  }
+
+  // ------------------------------------------------- folha do produto e da loja
+
+  function abrirFolha(conteudo) {
+    const veu = document.getElementById('folha');
+    const caixa = document.getElementById('folha-caixa');
+    caixa.innerHTML = '';
+    caixa.appendChild(conteudo);
+    veu.hidden = false;
+    caixa.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    const fechar = caixa.querySelector('.folha__fechar');
+    if (fechar) fechar.focus();
+  }
+
+  function fecharFolha() {
+    const veu = document.getElementById('folha');
+    if (veu.hidden) return;
+    veu.hidden = true;
+    document.getElementById('folha-caixa').innerHTML = '';
+    if (document.getElementById('modal-pedido').hidden) document.body.style.overflow = '';
+  }
+
+  /** Escolha da opção (com osso / desossada), quantidade e "Adicionar". */
+  function abrirProduto(produto) {
+    if (!produto || produtoEsgotado(produto)) return;
+
+    const opcoes = opcoesDe(produto);
+    let escolhida = opcoes.find((o) => !estaEsgotado(o.nome) && o.disponivel !== false);
+    let qtd = 1;
+
+    const raiz = document.createElement('div');
+    raiz.innerHTML =
+      `<div class="folha__foto${produto.imagem ? '' : ' sem-foto'}">` +
+      '<button type="button" class="folha__fechar" aria-label="Fechar">×</button></div>' +
+      '<div class="folha__corpo">' +
+      '<h2 class="folha__nome"></h2><p class="folha__desc"></p><div class="item__tags"></div>' +
+      '<div class="opcoes" hidden><div class="opcoes__cab"><span>Escolha o tipo da costela</span><em>Obrigatório</em></div></div>' +
+      '<div class="folha__acao"><div class="contador contador--grande">' +
+      '<button type="button" class="contador__botao" data-passo="-1" aria-label="Diminuir">−</button>' +
+      '<span class="contador__valor">1</span>' +
+      '<button type="button" class="contador__botao" data-passo="1" aria-label="Aumentar">+</button></div>' +
+      '<button type="button" class="folha__adicionar"><span>Adicionar</span><span class="folha__total"></span></button></div>' +
+      '</div>';
+
+    const foto = raiz.querySelector('.folha__foto');
+    if (produto.imagem) foto.style.backgroundImage = `url("${produto.imagem}")`;
+    else foto.insertAdjacentText('afterbegin', '🍽️');
+    raiz.querySelector('.folha__nome').textContent = produto.nome;
+    raiz.querySelector('.folha__desc').textContent = produto.descricao || '';
+    const tags = raiz.querySelector('.item__tags');
+    for (const t of produto.tags || []) {
+      const span = document.createElement('span');
+      span.textContent = t;
+      tags.appendChild(span);
     }
 
-    return cartao;
+    if (produto.variantes) {
+      const bloco = raiz.querySelector('.opcoes');
+      bloco.hidden = false;
+      bloco.setAttribute('role', 'radiogroup');
+      produto.variantes.forEach((v, i) => {
+        const acabou = v.disponivel === false || estaEsgotado(v.nome);
+        const linha = document.createElement('label');
+        linha.className = 'opcao-tipo' + (acabou ? ' opcao-tipo--esgotada' : '');
+        linha.innerHTML = '<span class="opcao-tipo__nome"></span><span class="opcao-tipo__preco"></span>' +
+          `<input type="radio" name="variante" id="variante-${produto.id}-${i}">`;
+        linha.querySelector('.opcao-tipo__nome').textContent = v.rotulo + (acabou ? ' · esgotado' : '');
+        linha.querySelector('.opcao-tipo__preco').textContent = precoBR(v.preco);
+        const radio = linha.querySelector('input');
+        radio.disabled = acabou;
+        radio.checked = v === escolhida;
+        radio.addEventListener('change', () => { escolhida = v; atualizar(); });
+        bloco.appendChild(linha);
+      });
+    }
+
+    const valor = raiz.querySelector('.contador__valor');
+    const total = raiz.querySelector('.folha__total');
+    // A foto acompanha a escolha: a desossada tem foto própria.
+    function atualizar() {
+      valor.textContent = String(qtd);
+      total.textContent = precoBR(escolhida.preco * qtd);
+      const imagem = escolhida.imagem || produto.imagem;
+      if (imagem) foto.style.backgroundImage = `url("${imagem}")`;
+    }
+    for (const b of raiz.querySelectorAll('[data-passo]')) {
+      b.addEventListener('click', () => { qtd = Math.max(1, qtd + Number(b.dataset.passo)); atualizar(); });
+    }
+    raiz.querySelector('.folha__fechar').addEventListener('click', fecharFolha);
+    raiz.querySelector('.folha__adicionar').addEventListener('click', () => {
+      alterarQuantidade(escolhida.nome, qtd);
+      fecharFolha();
+    });
+
+    atualizar();
+    abrirFolha(raiz);
+  }
+
+  function abrirInfoLoja() {
+    const { abre, fecha } = LOJA.entrega.horario;
+    const janela = `${abre} às ${fecha}`;
+    const raiz = document.createElement('div');
+    raiz.className = 'folha__corpo folha__corpo--info';
+    raiz.innerHTML =
+      '<button type="button" class="folha__fechar folha__fechar--fixo" aria-label="Fechar">×</button>' +
+      '<h2 class="folha__nome">Informações da loja</h2>' +
+      '<div class="info"><span class="info__icone">🕚</span><div><b>Entregas</b>' +
+      `<table class="horarios"><tbody><tr><td>Sábado</td><td>${janela}</td></tr>` +
+      `<tr><td>Domingo</td><td>${janela}</td></tr><tr><td>Feriados</td><td>${janela}</td></tr>` +
+      '<tr><td>Segunda a sexta</td><td>Só reservas</td></tr></tbody></table></div></div>' +
+      '<div class="info"><span class="info__icone">📅</span><div><b>Reservas</b><p>Abertas a semana toda. Você escolhe a data de entrega no pedido. A rota é única e segue a ordem das reservas.</p></div></div>' +
+      `<div class="info"><span class="info__icone">🛵</span><div><b>Entrega</b><p>Taxa de ${precoBR(LOJA.taxaEntrega)} em ${LOJA.cidade.split(' ·')[0]}. Também dá para retirar no local, sem taxa.</p></div></div>` +
+      '<div class="info"><span class="info__icone">💳</span><div><b>Pagamento</b><p>Pix ou cartão de crédito, pelo pagamento seguro da InfinitePay.</p></div></div>' +
+      `<div class="info"><span class="info__icone">💬</span><div><b>WhatsApp</b><p><a href="https://wa.me/${LOJA.whatsapp}" target="_blank" rel="noopener">${LOJA.whatsappVisivel}</a></p></div></div>` +
+      `<div class="info"><span class="info__icone">📷</span><div><b>Instagram</b><p><a href="https://instagram.com/${LOJA.instagram}" target="_blank" rel="noopener">@${LOJA.instagram}</a></p></div></div>` +
+      (LOJA.endereco ? '<div class="info"><span class="info__icone">📍</span><div><b>Endereço</b><p class="info__endereco"></p></div></div>' : '');
+    if (LOJA.endereco) raiz.querySelector('.info__endereco').textContent = LOJA.endereco;
+    raiz.querySelector('.folha__fechar').addEventListener('click', fecharFolha);
+    abrirFolha(raiz);
   }
 
   // ---------------------------------------------------------------- carrinho
@@ -1118,7 +1286,7 @@
 
   function iniciar() {
     montarTopo();
-    montarAvisos();
+    montarBanners();
     montarCardapio();
     montarRodape();
     montarFormulario();
@@ -1136,8 +1304,15 @@
       alvo.addEventListener('click', fecharModal);
     }
 
+    document.getElementById('abrir-info-loja').addEventListener('click', abrirInfoLoja);
+    document.getElementById('folha').addEventListener('click', (evento) => {
+      if (evento.target.id === 'folha') fecharFolha();
+    });
+
     document.addEventListener('keydown', (evento) => {
-      if (evento.key === 'Escape') fecharModal();
+      if (evento.key !== 'Escape') return;
+      if (!document.getElementById('folha').hidden) fecharFolha();
+      else fecharModal();
     });
 
     buscarEsgotados();

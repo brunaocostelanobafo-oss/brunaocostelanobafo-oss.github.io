@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Costela no bafo assada na lenha. Delivery aos sábados, domingos e feriados. Reserve de segunda a sexta e ganhe a entrega.">
-  <meta name="theme-color" content="#0d0b0a">
+  <meta name="description" content="Costela no bafo assada na lenha, com osso ou desossada. Delivery em Varginha aos sábados, domingos e feriados. Reservas a semana toda.">
+  <meta name="theme-color" content="#ffffff">
   <title>Brunão Costela no Bafo — Cardápio</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
   <link rel="stylesheet" href="css/styles.css">
@@ -60,27 +60,40 @@
     </symbol>
   </svg>
 
-  <header class="topo">
-    <div class="topo__conteudo">
-      <svg class="topo__selo" role="img" aria-label="Brunão Costela no Bafo"><use href="#selo-brunao"/></svg>
-      <div class="topo__texto">
-        <p class="topo__lenha" id="loja-selo"></p>
-        <h1 class="topo__nome" id="loja-nome"></h1>
-        <p class="topo__tagline" id="loja-tagline"></p>
+  <div class="pagina">
+    <header class="loja">
+      <div class="loja__capa" role="img" aria-label="Costela no bafo embalada para entrega"></div>
+      <div class="loja__conteudo">
+        <svg class="loja__logo" role="img" aria-label="Brunão Costela no Bafo"><use href="#selo-brunao"/></svg>
+        <h1 class="loja__nome" id="loja-nome"></h1>
+        <p class="loja__local" id="loja-local"></p>
+        <p class="loja__status" id="status-loja"></p>
+        <div class="loja__chips">
+          <span class="chip"><b>Entrega</b><span id="chip-horario"></span></span>
+          <span class="chip"><b>Taxa</b><span id="chip-taxa"></span></span>
+          <span class="chip"><b>Pagamento</b>Pix ou cartão</span>
+        </div>
+        <button type="button" class="loja__info" id="abrir-info-loja">
+          <span>Informações da loja, horários e pagamento</span><span class="loja__info-ver">Ver ›</span>
+        </button>
       </div>
-      <div class="topo__status" id="status-loja" hidden>
-        <span class="status__bolinha"></span>
-        <span class="status__texto"></span>
-      </div>
-    </div>
+    </header>
+
     <nav class="categorias" id="nav-categorias" aria-label="Categorias do cardápio"></nav>
-  </header>
 
-  <div class="avisos" id="avisos"></div>
+    <div class="avisos" id="avisos"></div>
 
-  <main id="cardapio" class="cardapio">
-    <p class="carregando">Preparando o cardápio…</p>
-  </main>
+    <div class="banners" id="banners" aria-label="Destaques"></div>
+    <div class="banners__pontos" id="banners-pontos" aria-hidden="true"></div>
+
+    <section class="mais-pedidos" id="bloco-mais-pedidos" aria-label="Mais pedidos">
+      <h2 class="categoria__titulo">Mais pedidos</h2>
+      <div class="vitrine" id="vitrine"></div>
+    </section>
+
+    <main id="cardapio" class="cardapio">
+      <p class="carregando">Preparando o cardápio…</p>
+    </main>
 
   <section class="depoimentos" aria-label="Depoimentos de clientes">
     <h2 class="depoimentos__titulo">Quem já pediu, conta</h2>
@@ -116,6 +129,12 @@
     </p>
     <p class="rodape__credito">Brunão Costela no Bafo · <span id="loja-desde"></span></p>
   </footer>
+  </div>
+
+  <!-- Folha que sobe de baixo: escolha do produto e informações da loja -->
+  <div class="folha" id="folha" hidden>
+    <div class="folha__caixa" id="folha-caixa" role="dialog" aria-modal="true" aria-label="Detalhes"></div>
+  </div>
 
   <!-- Fala com a loja. Some quando o modal do pedido está aberto. -->
   <a class="zap-flutuante" id="zap-flutuante" target="_blank" rel="noopener"

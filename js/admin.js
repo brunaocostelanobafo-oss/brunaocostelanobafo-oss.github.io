@@ -539,26 +539,24 @@
     alvo.innerHTML = '';
     alvo.appendChild(el('span', 'itens-venda__titulo', 'Itens'));
 
-    for (const categoria of CARDAPIO) {
-      for (const item of categoria.itens) {
-        const linha = el('div', 'item-venda');
-        linha.appendChild(el('span', 'item-venda__nome', item.nome));
-        linha.appendChild(el('span', 'item-venda__preco', reais(item.preco)));
+    for (const item of itensVendaveis()) {
+      const linha = el('div', 'item-venda');
+      linha.appendChild(el('span', 'item-venda__nome', item.nome));
+      linha.appendChild(el('span', 'item-venda__preco', reais(item.preco)));
 
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.min = '0';
-        input.step = '1';
-        input.value = '0';
-        input.className = 'item-venda__qtd';
-        input.dataset.produto = item.nome;
-        input.dataset.preco = item.preco;
-        input.setAttribute('aria-label', `Quantidade de ${item.nome}`);
-        input.addEventListener('input', atualizarTotalVenda);
-        linha.appendChild(input);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.step = '1';
+      input.value = '0';
+      input.className = 'item-venda__qtd';
+      input.dataset.produto = item.nome;
+      input.dataset.preco = item.preco;
+      input.setAttribute('aria-label', `Quantidade de ${item.nome}`);
+      input.addEventListener('input', atualizarTotalVenda);
+      linha.appendChild(input);
 
-        alvo.appendChild(linha);
-      }
+      alvo.appendChild(linha);
     }
   }
 
@@ -1087,30 +1085,28 @@
     const alvo = document.getElementById('lista-esgotados');
     alvo.innerHTML = '';
 
-    for (const categoria of CARDAPIO) {
-      for (const item of categoria.itens) {
-        const marcado = esgotadosAtuais.some(
-          (e) => e.toLowerCase() === item.nome.toLowerCase()
-        );
+    for (const item of itensVendaveis()) {
+      const marcado = esgotadosAtuais.some(
+        (e) => e.toLowerCase() === item.nome.toLowerCase()
+      );
 
-        const linha = document.createElement('label');
-        linha.className = 'esgotado' + (marcado ? ' esgotado--sim' : '');
+      const linha = document.createElement('label');
+      linha.className = 'esgotado' + (marcado ? ' esgotado--sim' : '');
 
-        const marca = document.createElement('input');
-        marca.type = 'checkbox';
-        marca.checked = marcado;
-        marca.addEventListener('change', () => {
-          esgotadosAtuais = marca.checked
-            ? [...esgotadosAtuais.filter((e) => e.toLowerCase() !== item.nome.toLowerCase()), item.nome]
-            : esgotadosAtuais.filter((e) => e.toLowerCase() !== item.nome.toLowerCase());
-          renderEsgotados();
-        });
+      const marca = document.createElement('input');
+      marca.type = 'checkbox';
+      marca.checked = marcado;
+      marca.addEventListener('change', () => {
+        esgotadosAtuais = marca.checked
+          ? [...esgotadosAtuais.filter((e) => e.toLowerCase() !== item.nome.toLowerCase()), item.nome]
+          : esgotadosAtuais.filter((e) => e.toLowerCase() !== item.nome.toLowerCase());
+        renderEsgotados();
+      });
 
-        linha.appendChild(marca);
-        linha.appendChild(el('span', 'esgotado__nome', item.nome));
-        linha.appendChild(el('span', 'esgotado__estado', marcado ? 'esgotado' : 'à venda'));
-        alvo.appendChild(linha);
-      }
+      linha.appendChild(marca);
+      linha.appendChild(el('span', 'esgotado__nome', item.nome));
+      linha.appendChild(el('span', 'esgotado__estado', marcado ? 'esgotado' : 'à venda'));
+      alvo.appendChild(linha);
     }
   }
 
@@ -1326,10 +1322,8 @@
     const alvo = document.getElementById('lista-custos');
     alvo.innerHTML = '';
 
-    for (const categoria of CARDAPIO) {
-      for (const item of categoria.itens) {
-        alvo.appendChild(montarCartaoProduto(item));
-      }
+    for (const item of itensVendaveis()) {
+      alvo.appendChild(montarCartaoProduto(item));
     }
   }
 
@@ -1500,11 +1494,9 @@
     select.className = 'ficha__select';
     select.setAttribute('aria-label', 'Produto do cardápio');
     select.appendChild(new Option('Escolha o produto…', ''));
-    for (const categoria of CARDAPIO) {
-      for (const i of categoria.itens) {
-        if (i.nome === produtoPai) continue;
-        select.appendChild(new Option(i.nome, i.nome));
-      }
+    for (const i of itensVendaveis()) {
+      if (i.nome === produtoPai) continue;
+      select.appendChild(new Option(i.nome, i.nome));
     }
     form.appendChild(select);
 
@@ -1850,7 +1842,7 @@
 
     for (const linha of (bruta.itens || [])) {
       const nome = String(linha.description || '').trim();
-      const doCardapio = CARDAPIO.flatMap((c) => c.itens).find((i) => i.nome === nome);
+      const doCardapio = itensVendaveis().find((i) => i.nome === nome);
 
       if (doCardapio) {
         itens.push({
@@ -2255,7 +2247,7 @@
       const nome = m[2].trim();
       const totalLinha = paraCentavos(m[3]);
 
-      const doCardapio = CARDAPIO.flatMap((c) => c.itens).find((i) => i.nome === nome);
+      const doCardapio = itensVendaveis().find((i) => i.nome === nome);
       if (doCardapio) {
         pedido.itens.push({ nome, qtd, preco: doCardapio.preco, encontrado: true });
       } else {

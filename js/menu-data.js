@@ -19,6 +19,9 @@ const LOJA = {
 
   instagram: 'brunaocostelanobafo',
 
+  // Aparece na capa do cardápio e nas informações da loja.
+  cidade: 'Varginha · MG',
+
   // Deixe vazio para não aparecer no rodapé.
   endereco: '',
 
@@ -133,89 +136,144 @@ const LOJA = {
   ],
 };
 
+/* ---------------------------------------------------------------------
+ * CARDÁPIO
+ *
+ * Produto com `variantes` (com osso / desossada) abre a escolha ao ser
+ * tocado. Cada variante é vendida com o próprio `nome` — é ele que vai
+ * para o pagamento, a planilha, o ticket da cozinha e o painel, por isso
+ * diz sempre se é com osso ou desossada.
+ *
+ * `legado` é o nome antigo do produto, de antes das variantes. O painel
+ * usa para levar a ficha técnica e o custo já cadastrados para a variante
+ * com osso. Não apague.
+ *
+ * Variante com `imagem` própria troca a foto quando o cliente a escolhe.
+ *
+ * `tags` aparecem como etiquetas no card (peso, quantas pessoas serve).
+ * Produto sem `imagem` mostra um ícone no lugar da foto.
+ * ------------------------------------------------------------------- */
 const CARDAPIO = [
   {
     id: 'combos',
     nome: 'Combos',
-    emoji: '🎉',
-    descricao: 'PORÇÃO DE COSTELA + ACOMPANHAMENTOS = DESCONTO!',
-
-    /* Sem banner de propósito: o banner de frete grátis das reservas já
-       disputa espaço visual no topo, e dois banners grandes competindo
-       cansavam a tela antes do cliente ver qualquer produto. */
+    descricao: 'Porção de costela + acompanhamentos. Escolha com osso ou desossada.',
 
     /* Ordem de propósito: o Família (maior valor) primeiro ancora a
        percepção de preço — o Completo em seguida parece "o equilibrado".
        O Casal fica por último: é uma alternativa mais em conta pra não
-       perder cliente sensível a preço, não o produto que queremos
-       destacar, por isso também não leva selo. */
+       perder cliente sensível a preço. */
     itens: [
       {
-        nome: 'Combo Bafo Família',
-        descricao: 'Costela no Bafo 1,5kg + 2 Mandiocas + 2 Farofas + 2 Cremes de Alho.',
-        rendimento: 'Até 6 pessoas',
-        preco: 19990,
-        destaque: true,
+        id: 'combo-familia',
+        nome: 'Combo Família',
+        descricao: '1,5 kg de costela no bafo + arroz, mandioca, farofa e creme de alho. Porções tamanho G.',
+        tags: ['1,5 kg de costela', 'Serve até 6 pessoas'],
         selo: 'Para compartilhar',
         imagem: 'assets/combo-familia.jpg',
+        variantes: [
+          { rotulo: 'Com osso', nome: 'Combo Família · Com osso', preco: 24990, legado: 'Combo Bafo Família' },
+          { rotulo: 'Desossada', nome: 'Combo Família · Desossada', preco: 28740, imagem: 'assets/costela-desossada.jpg' },
+        ],
       },
       {
-        nome: 'Combo Bafo Completo',
-        descricao: 'Costela no Bafo 1kg + Mandioca + Farofa + Creme de Alho.',
-        rendimento: 'Até 4 pessoas',
-        preco: 11990,
+        id: 'combo-completo',
+        nome: 'Combo Completo',
+        descricao: '1 kg de costela no bafo + arroz, mandioca e farofa (porções M, 500 g cada) + 150 g de creme de alho.',
+        tags: ['1 kg de costela', 'Serve até 4 pessoas'],
+        selo: 'Recomendado',
         imagem: 'assets/combo-completo.jpg',
+        variantes: [
+          { rotulo: 'Com osso', nome: 'Combo Completo · Com osso', preco: 15990, legado: 'Combo Bafo Completo' },
+          { rotulo: 'Desossada', nome: 'Combo Completo · Desossada', preco: 18490, imagem: 'assets/costela-desossada.jpg' },
+        ],
       },
       {
+        id: 'combo-casal',
         nome: 'Combo Casal',
-        descricao: 'Costela no Bafo 500g + Mandioca + Farofa.',
-        rendimento: 'Até 2 pessoas',
-        precoDe: 9770,
-        preco: 8990,
+        descricao: '500 g de costela no bafo + arroz, mandioca e farofa (porções P, 300 g cada).',
+        tags: ['500 g de costela', 'Serve 2 pessoas'],
         imagem: 'assets/combo-casal.jpg',
+        variantes: [
+          { rotulo: 'Com osso', nome: 'Combo Casal · Com osso', preco: 10990, legado: 'Combo Casal' },
+          { rotulo: 'Desossada', nome: 'Combo Casal · Desossada', preco: 12940, imagem: 'assets/costela-desossada.jpg' },
+        ],
       },
     ],
   },
   {
     id: 'costelas',
     nome: 'Costela no Bafo',
-    emoji: '🔥',
     descricao: 'Assada na lenha, no bafo. A especialidade da casa.',
     /* Mesma lógica de ancoragem dos combos: maior valor primeiro. */
     itens: [
       {
-        nome: 'Costela no Bafo — 1,5kg',
-        descricao: 'Porção GG. Assada na hora, na lenha.',
-        rendimento: 'Até 6 pessoas',
-        preco: 13490,
-        imagem: 'assets/costela-15kg.jpg',
-        destaque: true,
+        id: 'costela-15kg',
+        nome: 'Costela no Bafo · 1,5 kg',
+        descricao: 'Porção GG, assada na hora, na lenha. Escolha com osso ou desossada.',
+        tags: ['1,5 kg', 'Serve até 6 pessoas'],
         selo: 'A mais vendida',
+        imagem: 'assets/costela-15kg.jpg',
+        variantes: [
+          { rotulo: 'Com osso', nome: 'Costela no Bafo 1,5 kg · Com osso', preco: 14990, legado: 'Costela no Bafo — 1,5kg' },
+          { rotulo: 'Desossada', nome: 'Costela no Bafo 1,5 kg · Desossada', preco: 18740, imagem: 'assets/costela-desossada.jpg' },
+        ],
       },
       {
-        nome: 'Costela no Bafo — 1kg',
-        descricao: 'Porção G. Assada na hora, na lenha.',
-        rendimento: 'Até 4 pessoas',
-        preco: 8990,
+        id: 'costela-1kg',
+        nome: 'Costela no Bafo · 1 kg',
+        descricao: 'Porção G, assada na hora, na lenha. Escolha com osso ou desossada.',
+        tags: ['1 kg', 'Serve até 4 pessoas'],
         imagem: 'assets/costela-1kg.jpg',
+        variantes: [
+          { rotulo: 'Com osso', nome: 'Costela no Bafo 1 kg · Com osso', preco: 9990, legado: 'Costela no Bafo — 1kg' },
+          { rotulo: 'Desossada', nome: 'Costela no Bafo 1 kg · Desossada', preco: 12490, imagem: 'assets/costela-desossada.jpg' },
+        ],
       },
       {
-        nome: 'Costela no Bafo — 500g',
-        descricao: 'Porção P. Assada na hora, na lenha.',
-        rendimento: 'Até 2 pessoas',
-        preco: 6990,
+        id: 'costela-500g',
+        nome: 'Costela no Bafo · 500 g',
+        descricao: 'Porção P, assada na hora, na lenha. Escolha com osso ou desossada.',
+        tags: ['500 g', 'Serve 2 pessoas'],
         imagem: 'assets/costela-500g.jpg',
+        variantes: [
+          { rotulo: 'Com osso', nome: 'Costela no Bafo 500 g · Com osso', preco: 7790, legado: 'Costela no Bafo — 500g' },
+          { rotulo: 'Desossada', nome: 'Costela no Bafo 500 g · Desossada', preco: 9740, imagem: 'assets/costela-desossada.jpg' },
+        ],
       },
     ],
   },
   {
     id: 'acompanhamentos',
     nome: 'Acompanhamentos',
-    emoji: '🍽️',
+    descricao: 'Para completar o seu pedido.',
     itens: [
-      { nome: 'Mandioca', preco: 1490, imagem: 'assets/mandioca.jpg' },
-      { nome: 'Farofa', preco: 1290, imagem: 'assets/farofa.jpg' },
-      { nome: 'Creme de Alho', preco: 1290, imagem: 'assets/creme-de-alho.jpg' },
+      { id: 'arroz', nome: 'Arroz', descricao: 'Arroz branco soltinho.', tags: ['900 g'], preco: 1990, selo: 'Novo', imagem: 'assets/arroz.jpg' },
+      { id: 'mandioca', nome: 'Mandioca', descricao: 'Mandioca cozida.', tags: ['Porção'], preco: 1490, imagem: 'assets/mandioca.jpg' },
+      { id: 'farofa', nome: 'Farofa', descricao: 'Farofa da casa.', tags: ['Porção'], preco: 1290, imagem: 'assets/farofa.jpg' },
+      { id: 'creme-de-alho', nome: 'Creme de Alho', descricao: 'Creme de alho da casa.', tags: ['Porção'], preco: 1290, imagem: 'assets/creme-de-alho.jpg' },
     ],
   },
 ];
+
+/* Banners do topo (carrossel). `abre` é o id do produto que o toque abre. */
+const BANNERS = [
+  { tag: 'Novidade', titulo: 'Costela desossada', texto: 'Em todas as porções e combos. Toque e escolha a sua.', imagem: 'assets/costela-desossada.jpg', abre: 'costela-1kg' },
+  { tag: 'Para a família', titulo: 'Combo Família', texto: 'Serve até 6 pessoas. A partir de R$ 249,90.', imagem: 'assets/combo-familia.jpg', abre: 'combo-familia' },
+  { tag: 'Para dois', titulo: 'Combo Casal', texto: 'Costela, arroz, mandioca e farofa. A partir de R$ 109,90.', imagem: 'assets/combo-casal.jpg', abre: 'combo-casal' },
+];
+
+/* Vitrine "Mais pedidos", na ordem em que aparece. O primeiro leva o selo. */
+const MAIS_PEDIDOS = ['costela-1kg', 'combo-completo', 'combo-familia', 'costela-15kg', 'combo-casal'];
+
+/**
+ * Tudo o que pode ser vendido, já com as variantes abertas: cada uma vira
+ * um item com nome e preço próprios. Usado pelo cardápio e pelo painel.
+ */
+function itensVendaveis() {
+  return CARDAPIO.flatMap((categoria) => categoria.itens.flatMap((produto) =>
+    produto.variantes
+      ? produto.variantes.map((v) => ({ ...v, produto, imagem: v.imagem || produto.imagem }))
+      : [{ ...produto, produto }]
+  ));
+}

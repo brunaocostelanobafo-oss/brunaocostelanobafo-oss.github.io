@@ -1,40 +1,56 @@
 /* Brunão Costela no Bafo — cardápio digital
-   Paleta e tipografia tiradas da identidade impressa da marca:
-   preto carvão, vermelho da faixa "COSTELA NO BAFO" e creme do selo. */
+   Layout claro, no estilo de cardápio de marketplace: capa com a loja,
+   banners em carrossel, vitrine de mais pedidos e produtos em lista com
+   descrição e foto. O vermelho da faixa "COSTELA NO BAFO" segue como cor
+   de ação; o selo preto e creme continua sendo o logo. */
 
 :root {
-  --preto: #0d0b0a;
-  --preto-carta: #171310;
-  --borda: #2e2620;
-  --vermelho: #c1121f;
-  --vermelho-claro: #e63946;
-  --creme: #e2d3bb;
-  --creme-forte: #f3ead9;
-  --creme-suave: #9c8f7d;
+  --fundo: #ffffff;
+  --entorno: #f4f2ef;
+  --cartao: #faf8f6;
+  --tinta: #1d1a17;
+  --suave: #6f6860;
+  --linha: #ebe7e2;
+  --marca: #c1121f;
+  --marca-escura: #9e0f19;
+  --marca-clara: #fdecee;
+  --ok: #1f8a4c;
+  --ok-clara: #e7f5ec;
   --verde-zap: #25d366;
 
-  --raio: 12px;
-  --sombra: 0 10px 30px rgba(0, 0, 0, 0.6);
+  /* Nomes antigos, ainda usados pela página de pagamento confirmado
+     (css/pago.css). Apontam para a paleta clara. */
+  --preto: var(--fundo);
+  --preto-carta: var(--cartao);
+  --borda: var(--linha);
+  --vermelho: var(--marca);
+  --vermelho-claro: var(--marca);
+  --creme: #3a332c;
+  --creme-forte: var(--tinta);
+  --creme-suave: var(--suave);
+
+  --raio: 14px;
+  --sombra: 0 8px 24px rgba(29, 26, 23, 0.16);
   --largura: 760px;
 
   /* Condensadas e pesadas, no espírito das artes impressas. */
   --display: 'Haettenschweiler', 'Arial Narrow Bold', 'Oswald', Impact, sans-serif;
   --texto: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
 
 /* O navegador esconde [hidden] com `display: none`, mas qualquer regra de
-   autor com `display` vence essa regra e faz o elemento reaparecer. Como
-   várias classes daqui definem `display` (.modal, .barra-carrinho, .campo),
-   esta linha garante que o atributo hidden continue valendo. */
+   autor com `display` vence essa regra e faz o elemento reaparecer. */
 [hidden] { display: none !important; }
 
 body {
   margin: 0;
   padding-bottom: 96px;
-  background: var(--preto);
-  color: var(--creme-forte);
+  background: var(--fundo);
+  color: var(--tinta);
   font-family: var(--texto);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -50,87 +66,112 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .selo__faixa { font-family: var(--display); font-size: 19px; letter-spacing: 1.6px; }
 .selo__desde { font-family: var(--display); font-size: 11px; letter-spacing: 3px; }
 
-/* ---------- Topo ---------- */
+.pagina { max-width: var(--largura); margin: 0 auto; }
 
-.topo {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--preto);
-  border-bottom: 3px solid var(--vermelho);
+/* ---------- Capa da loja ---------- */
+
+.loja__capa {
+  height: 160px;
+  background: #2a1810 url('../assets/embalagem.jpg') center / cover no-repeat;
+  position: relative;
 }
 
-.topo__conteudo {
-  max-width: var(--largura);
-  margin: 0 auto;
-  padding: 12px 16px 10px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
+.loja__capa::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.35));
 }
 
-.topo__selo { width: 54px; height: 54px; flex-shrink: 0; }
+.loja__conteudo { padding: 0 16px 14px; }
 
-.topo__texto { flex: 1; min-width: 0; }
-
-.topo__lenha {
-  display: inline-block;
-  margin: 0 0 3px;
-  padding: 2px 8px;
-  background: var(--vermelho);
-  color: var(--creme-forte);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+.loja__logo {
+  display: block;
+  width: 84px;
+  height: 84px;
+  margin-top: -42px;
+  position: relative;
+  border-radius: 50%;
+  border: 4px solid var(--fundo);
+  background: var(--fundo);
 }
 
-.topo__nome {
-  margin: 0;
+.loja__nome {
+  margin: 6px 0 0;
   font-family: var(--display);
-  font-size: 25px;
+  font-size: 28px;
   font-weight: 400;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   line-height: 1.05;
 }
 
-.topo__tagline {
-  margin: 3px 0 0;
-  font-size: 12px;
-  color: var(--creme-suave);
-}
+.loja__local { margin: 3px 0 0; font-size: 13px; color: var(--suave); }
 
-.topo__status {
-  display: flex;
+.loja__status {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 5px 11px;
   border-radius: 999px;
-  border: 1px solid var(--borda);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
+  color: var(--marca);
+  background: var(--marca-clara);
 }
 
-.status__bolinha { width: 8px; height: 8px; border-radius: 50%; background: var(--creme-suave); }
+.loja__status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.loja__status--entregando { color: var(--ok); background: var(--ok-clara); }
 
-.topo__status--entregando .status__bolinha { background: var(--verde-zap); box-shadow: 0 0 8px var(--verde-zap); }
-.topo__status--entregando .status__texto { color: var(--verde-zap); }
-.topo__status--reserva .status__bolinha { background: var(--vermelho-claro); }
-.topo__status--reserva .status__texto { color: var(--vermelho-claro); }
-.topo__status--fechado .status__texto { color: var(--creme-suave); }
+.loja__chips { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+
+.chip {
+  font-size: 13px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: var(--entorno);
+}
+
+.chip b {
+  display: block;
+  font-size: 10.5px;
+  color: var(--suave);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.loja__info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 13px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--fundo);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.loja__info:hover { border-color: var(--marca); }
+.loja__info-ver { color: var(--marca); font-weight: 700; white-space: nowrap; }
 
 /* ---------- Navegação de categorias ---------- */
 
 .categorias {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
-  gap: 8px;
+  gap: 4px;
   overflow-x: auto;
-  padding: 0 16px 11px;
-  max-width: var(--largura);
-  margin: 0 auto;
+  padding: 0 10px;
+  background: var(--fundo);
+  border-bottom: 1px solid var(--linha);
   scrollbar-width: none;
 }
 
@@ -138,242 +179,367 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .categorias__link {
   flex-shrink: 0;
-  padding: 6px 13px;
-  border-radius: 999px;
-  background: var(--preto-carta);
-  border: 1px solid var(--borda);
-  color: var(--creme-suave);
-  font-size: 13px;
+  padding: 13px 10px 10px;
+  border-bottom: 3px solid transparent;
+  color: var(--suave);
+  font-size: 14.5px;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.15s;
 }
 
-.categorias__link:hover,
-.categorias__link:focus-visible { color: var(--creme-forte); border-color: var(--vermelho); }
+.categorias__link:hover { color: var(--tinta); }
+.categorias__link--ativa { color: var(--marca); border-color: var(--marca); }
 
-/* ---------- Avisos ---------- */
+/* ---------- Avisos (cardápio fechado à mão) ---------- */
 
-.avisos {
-  max-width: var(--largura);
-  margin: 0 auto;
-  padding: 14px 16px 0;
-  display: grid;
-  gap: 8px;
-}
+.avisos { display: grid; gap: 8px; padding: 12px 16px 0; }
+.avisos:empty { display: none; }
 
 .aviso {
   display: flex;
   gap: 10px;
   padding: 12px 14px;
   border-radius: var(--raio);
-  background: var(--preto-carta);
-  border: 1px solid var(--borda);
   font-size: 13.5px;
+  background: var(--marca-clara);
+  border: 1px solid var(--marca);
 }
 
 .aviso__icone { flex-shrink: 0; }
-
-.aviso--reserva { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.13); }
-.aviso--reserva strong { color: var(--vermelho-claro); }
-.aviso--entregando { border-color: rgba(37, 211, 102, 0.5); background: rgba(37, 211, 102, 0.1); }
-.aviso--entregando strong { color: var(--verde-zap); }
-.aviso--regra { font-size: 12.5px; color: var(--creme-suave); }
-.aviso--regra strong { color: var(--creme-forte); }
-.aviso--loja-fechada { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.18); }
-.aviso--loja-fechada strong { color: var(--vermelho-claro); }
+.aviso--loja-fechada strong { color: var(--marca); }
 
 /* Cardápio fechado manualmente: some com quem levaria a pedir. */
-.loja-fechada .item__add,
-.loja-fechada .barra-carrinho { display: none !important; }
+.loja-fechada .barra-carrinho,
+.loja-fechada .folha__acao { display: none !important; }
+.loja-fechada .item, .loja-fechada .mini, .loja-fechada .banner { pointer-events: none; }
 
-/* Destaque da entrega grátis — o argumento de venda mais forte da casa,
-   com o mesmo peso que ele tem no folder impresso. */
-.destaque-frete {
+/* ---------- Banners ---------- */
+
+.banners {
   display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 15px 17px;
-  border-radius: var(--raio);
-  background: linear-gradient(135deg, var(--vermelho) 0%, #8f0d17 100%);
-  border: 1px solid var(--vermelho-claro);
-  box-shadow: 0 4px 18px rgba(193, 18, 31, 0.35);
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 14px 16px 2px;
+  scrollbar-width: none;
 }
 
-.destaque-frete__icone { font-size: 30px; line-height: 1; flex-shrink: 0; }
+.banners::-webkit-scrollbar { display: none; }
 
-.destaque-frete__texto {
-  margin: 0;
-  color: var(--creme-forte);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.35;
+.banner {
+  flex: 0 0 86%;
+  max-width: 520px;
+  min-height: 156px;
+  scroll-snap-align: start;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  border: 0;
+  border-radius: 16px;
+  background: #2a1810 center / cover no-repeat;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
 }
 
-.destaque-frete__texto strong {
-  display: block;
-  font-family: var(--display);
-  font-size: 25px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
+.banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(20, 8, 4, 0.86) 0%, rgba(20, 8, 4, 0.45) 62%, rgba(20, 8, 4, 0.08) 100%);
+}
+
+.banner > span { position: relative; }
+
+.banner__tag {
+  align-self: flex-start;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--marca);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  line-height: 1.05;
-  margin-top: 2px;
 }
+
+.banner__titulo {
+  max-width: 78%;
+  font-family: var(--display);
+  font-size: 27px;
+  line-height: 1.02;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.banner__texto { max-width: 78%; margin-top: 4px; font-size: 13px; opacity: 0.92; }
+
+.banners__pontos { display: flex; justify-content: center; gap: 5px; padding: 8px 0 0; }
+.banners__pontos span { width: 6px; height: 6px; border-radius: 3px; background: var(--linha); transition: width 0.2s; }
+.banners__pontos span.ativo { width: 16px; background: var(--marca); }
+
+/* ---------- Mais pedidos ---------- */
+
+.mais-pedidos { padding: 18px 0 4px; }
+.mais-pedidos .categoria__titulo { padding: 0 16px; margin-bottom: 10px; }
+
+.vitrine { display: flex; gap: 12px; overflow-x: auto; padding: 0 16px 6px; scrollbar-width: none; }
+.vitrine::-webkit-scrollbar { display: none; }
+
+.mini {
+  flex: 0 0 138px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mini__foto {
+  position: relative;
+  width: 138px;
+  height: 138px;
+  border-radius: 14px;
+  background: var(--entorno) center / cover no-repeat;
+}
+
+.mini__selo {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--fundo);
+  color: var(--marca);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.mini__nome { margin-top: 7px; font-size: 13.5px; font-weight: 600; line-height: 1.25; }
+.mini__de { margin-top: 3px; font-size: 11px; color: var(--suave); }
+.mini__preco { font-size: 15px; font-weight: 800; }
+
+.sem-foto { display: grid; place-items: center; font-size: 34px; background: var(--entorno); }
 
 /* ---------- Cardápio ---------- */
 
-.cardapio { max-width: var(--largura); margin: 0 auto; padding: 8px 16px 32px; }
+.cardapio { padding: 4px 16px 24px; }
 
-.carregando { text-align: center; color: var(--creme-suave); padding: 48px 0; }
+.carregando { text-align: center; color: var(--suave); padding: 48px 0; }
 
-.categoria { margin-top: 30px; scroll-margin-top: 108px; }
+.categoria { padding-top: 22px; scroll-margin-top: 50px; }
 
 .categoria__titulo {
   margin: 0 0 3px;
   font-family: var(--display);
-  font-size: 31px;
+  font-size: 26px;
   font-weight: 400;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
-.categoria__descricao { margin: 0 0 14px; font-size: 14.5px; color: var(--creme-suave); }
+.categoria__descricao { margin: 0 0 6px; font-size: 14px; color: var(--suave); }
 
-/* Banner de destaque dentro de uma seção — hoje só a de Combos usa, mas
-   qualquer categoria pode ganhar um preenchendo `banner` em
-   menu-data.js. Mesmo tratamento visual do destaque de frete grátis:
-   gradiente vermelho, ícone grande e a chamada em caixa alta. */
-.categoria__banner {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  margin: 0 0 16px;
-  padding: 15px 17px;
-  border-radius: var(--raio);
-  background: linear-gradient(135deg, var(--vermelho) 0%, #8f0d17 100%);
-  border: 1px solid var(--vermelho-claro);
-  box-shadow: 0 4px 18px rgba(193, 18, 31, 0.35);
-}
-
-.categoria__banner__icone { font-size: 30px; line-height: 1; flex-shrink: 0; }
-
-.categoria__banner__texto {
-  margin: 0;
-  color: var(--creme-forte);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.categoria__banner__texto strong {
-  display: block;
-  font-family: var(--display);
-  font-size: 25px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  line-height: 1.05;
-  margin-top: 2px;
-}
-
-.itens { display: grid; gap: 10px; }
+.itens { display: grid; }
 
 .item {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 12px;
-  border-radius: var(--raio);
-  background: var(--preto-carta);
-  border: 1px solid var(--borda);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 14px;
+  align-items: start;
+  width: 100%;
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--linha);
+  background: none;
+  text-align: left;
+  cursor: pointer;
 }
 
-.item--destaque { border-color: var(--vermelho); }
-.item--esgotado { opacity: 0.45; }
+.itens .item:first-child { border-top: 0; }
+.item:hover .item__nome { color: var(--marca); }
+.item--esgotado { opacity: 0.5; cursor: default; }
+.item--esgotado:hover .item__nome { color: inherit; }
 
-.item__foto {
-  width: 128px;
-  height: 128px;
-  flex-shrink: 0;
-  border-radius: 9px;
-  object-fit: cover;
-  background: #000;
-}
-
-.item__texto { flex: 1; min-width: 0; }
-
-.item__nome {
-  margin: 0;
-  font-size: 17.5px;
-  font-weight: 700;
-  line-height: 1.25;
-}
+.item__texto { min-width: 0; }
 
 .item__selo {
   display: inline-block;
-  margin-left: 6px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  background: var(--vermelho);
-  color: var(--creme-forte);
-  font-size: 9.5px;
+  margin-bottom: 5px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--marca-clara);
+  color: var(--marca);
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  vertical-align: 2px;
 }
 
-.item__descricao { margin: 4px 0 0; font-size: 13.5px; color: var(--creme-suave); }
+.item__nome { margin: 0; font-size: 16.5px; font-weight: 700; line-height: 1.3; transition: color 0.15s; }
 
-.item__rendimento { margin: 3px 0 0; font-size: 12px; font-weight: 700; color: var(--creme); }
-.item__rendimento::before { content: '🍽️ '; }
-
-.item__preco {
-  margin: 7px 0 0;
-  font-family: var(--display);
-  font-size: 24px;
-  letter-spacing: 0.5px;
-  color: var(--creme-forte);
+.item__descricao {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--suave);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.item__preco-de {
-  font-family: var(--texto);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--creme-suave);
-  text-decoration: line-through;
-  margin-right: 6px;
+.item__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.item__tags span { padding: 3px 8px; border-radius: 6px; background: var(--entorno); font-size: 12px; }
+
+.item__preco { margin-top: 9px; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.item__de { display: block; font-size: 11.5px; font-weight: 500; color: var(--suave); }
+.item__esgotado-txt { margin-top: 9px; font-size: 13px; font-weight: 700; color: var(--suave); }
+
+.item__foto {
+  width: 112px;
+  height: 112px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--entorno);
 }
 
-.item__esgotado-txt { margin: 7px 0 0; font-size: 13px; font-weight: 700; color: var(--creme-suave); }
+.item__foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.item__add {
-  flex-shrink: 0;
-  /* 44px é o mínimo confortável para o toque do dedo no celular. */
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: 10px;
-  background: var(--vermelho);
-  color: #fff;
-  font-size: 24px;
-  font-weight: 300;
+/* ---------- Folha do produto e da loja ---------- */
+
+.folha {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(20, 16, 12, 0.5);
+}
+
+.folha__caixa {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  border-radius: 20px 20px 0 0;
+  background: var(--fundo);
+  animation: sobe-modal 0.22s ease-out;
+}
+
+.folha__foto { position: relative; height: 230px; background: var(--entorno) center / cover no-repeat; }
+
+.folha__fechar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fundo);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  transition: transform 0.12s, background 0.15s;
 }
 
-.item__add:hover { background: var(--vermelho-claro); }
-.item__add:active { transform: scale(0.9); }
+.folha__corpo { padding: 16px 16px 0; }
+.folha__corpo--info { position: relative; padding-top: 20px; }
 
-/* ---------- Rodapé ---------- */
-
-.depoimentos {
-  max-width: var(--largura);
-  margin: 8px auto 0;
-  padding: 20px 16px 0;
+.folha__nome {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.05;
 }
+
+.folha__corpo--info .folha__nome { padding-right: 44px; }
+.folha__desc { margin: 0; font-size: 14px; color: var(--suave); line-height: 1.5; }
+
+.opcoes { margin-top: 16px; border: 1px solid var(--linha); border-radius: 14px; overflow: hidden; }
+
+.opcoes__cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 13px;
+  background: var(--entorno);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.opcoes__cab em {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--tinta);
+  color: var(--fundo);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.opcao-tipo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 13px;
+  border-top: 1px solid var(--linha);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.opcao-tipo:has(input:checked) { background: var(--marca-clara); }
+.opcao-tipo--esgotada { color: var(--suave); cursor: not-allowed; }
+.opcao-tipo__preco { font-weight: 800; font-variant-numeric: tabular-nums; }
+.opcao-tipo input { width: 20px; height: 20px; accent-color: var(--marca); }
+
+.folha__acao { display: flex; gap: 10px; margin-top: 18px; }
+
+.contador--grande { border: 1px solid var(--linha); border-radius: 12px; padding: 0 4px; }
+.contador--grande .contador__botao { width: 38px; height: 48px; border: 0; background: none; color: var(--marca); font-size: 22px; }
+
+.folha__adicionar {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--marca);
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.folha__adicionar:hover { background: var(--marca-escura); }
+
+.info { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; padding: 13px 0; border-top: 1px solid var(--linha); font-size: 14px; }
+.info:first-of-type { border-top: 0; }
+.info b { display: block; margin-bottom: 2px; }
+.info p { margin: 0; color: var(--suave); line-height: 1.45; }
+.info a { color: var(--marca); font-weight: 700; text-decoration: none; }
+
+.horarios { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.horarios td { padding: 3px 0; color: var(--suave); }
+.horarios td:last-child { text-align: right; color: var(--tinta); font-variant-numeric: tabular-nums; }
+
+/* ---------- Depoimentos e rodapé ---------- */
+
+.depoimentos { padding: 22px 16px 0; }
 
 .depoimentos__titulo {
   margin: 0 0 13px;
@@ -382,52 +548,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-weight: 400;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  text-align: center;
-  color: var(--creme-forte);
 }
 
-.depoimentos__lista {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: 1fr;
-}
+.depoimentos__lista { display: grid; gap: 10px; grid-template-columns: 1fr; }
 
-.depoimento {
-  margin: 0;
-  padding: 14px 16px;
-  border-radius: var(--raio);
-  background: var(--preto-carta);
-  border: 1px solid var(--borda);
-}
-
-.depoimento__texto {
-  margin: 0 0 8px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--creme);
-}
-
-.depoimento__autor {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--creme-suave);
-}
+.depoimento { margin: 0; padding: 14px 16px; border-radius: var(--raio); background: var(--cartao); border: 1px solid var(--linha); }
+.depoimento__texto { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: var(--creme); }
+.depoimento__autor { font-size: 12px; font-weight: 700; color: var(--suave); }
 .depoimento__autor::before { content: '— '; }
 
-.rodape {
-  max-width: var(--largura);
-  margin: 0 auto;
-  padding: 30px 16px 8px;
-  border-top: 1px solid var(--borda);
-  text-align: center;
-}
-
+.rodape { margin-top: 28px; padding: 28px 16px 8px; border-top: 1px solid var(--linha); text-align: center; }
 .rodape__selo { width: 74px; height: 74px; margin-bottom: 12px; }
-.rodape__info { margin: 4px 0; font-size: 12.5px; color: var(--creme-suave); }
-.rodape__links { margin: 12px 0 0; font-size: 13.5px; color: var(--creme-suave); }
-.rodape__links a { color: var(--creme-forte); font-weight: 700; text-decoration: none; }
-.rodape__links a:hover { color: var(--vermelho-claro); }
-.rodape__credito { margin: 16px 0 0; font-size: 11px; color: #5c5045; }
+.rodape__info { margin: 4px 0; font-size: 12.5px; color: var(--suave); }
+.rodape__links { margin: 12px 0 0; font-size: 13.5px; color: var(--suave); }
+.rodape__links a { color: var(--tinta); font-weight: 700; text-decoration: none; }
+.rodape__links a:hover { color: var(--marca); }
+.rodape__credito { margin: 16px 0 0; font-size: 11px; color: var(--suave); }
 
 /* ---------- Botão flutuante do WhatsApp ---------- */
 
@@ -443,22 +579,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-radius: 50%;
   background: var(--verde-zap);
   color: #06381a;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   transition: transform 0.15s, bottom 0.2s;
 }
 
 .zap-flutuante svg { width: 30px; height: 30px; }
 .zap-flutuante:hover { transform: scale(1.06); }
-.zap-flutuante:active { transform: scale(0.94); }
 
-/* A barra do carrinho ocupa a base da tela quando há itens; sem isto o
-   botão ficaria por cima dela justamente na hora de fechar o pedido.
-   E com o pedido aberto o WhatsApp só atrapalha, competindo com o botão
-   de pagar.
-
-   As duas situações são marcadas no body pelo JavaScript em vez de
-   `:has()`: o navegador não recalcula `:has()` quando o atributo hidden
-   muda, e o botão ficava por cima da barra até algo forçar o redesenho. */
+/* Marcado no body pelo JavaScript (`:has()` não recalcula quando o
+   atributo hidden muda). */
 body.tem-carrinho .zap-flutuante { bottom: 82px; }
 body.pedido-aberto .zap-flutuante { display: none; }
 
@@ -471,14 +600,14 @@ body.pedido-aberto .zap-flutuante { display: none; }
   transform: translateX(-50%);
   z-index: 30;
   width: calc(100% - 32px);
-  max-width: 480px;
+  max-width: 520px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 15px 18px;
   border: none;
   border-radius: var(--raio);
-  background: var(--vermelho);
+  background: var(--marca);
   color: #fff;
   font-weight: 700;
   font-size: 15px;
@@ -492,7 +621,7 @@ body.pedido-aberto .zap-flutuante { display: none; }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-.barra-carrinho:active { transform: translateX(-50%) scale(0.985); }
+.barra-carrinho:hover { background: var(--marca-escura); }
 
 .barra-carrinho__qtd {
   display: grid;
@@ -501,28 +630,27 @@ body.pedido-aberto .zap-flutuante { display: none; }
   height: 25px;
   padding: 0 6px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.32);
+  background: rgba(0, 0, 0, 0.22);
   font-size: 13px;
 }
 
 .barra-carrinho__label { flex: 1; text-align: left; }
 
-/* ---------- Modal ---------- */
+/* ---------- Modal do pedido ---------- */
 
 .modal { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; }
-.modal__fundo { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); }
+.modal__fundo { position: absolute; inset: 0; background: rgba(20, 16, 12, 0.5); }
 
 .modal__caixa {
   position: relative;
   width: 100%;
-  max-width: var(--largura);
+  max-width: 620px;
   margin: 0 auto;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
-  background: var(--preto);
+  background: var(--fundo);
   border-radius: 18px 18px 0 0;
-  border-top: 3px solid var(--vermelho);
   animation: sobe-modal 0.24s ease-out;
 }
 
@@ -536,26 +664,25 @@ body.pedido-aberto .zap-flutuante { display: none; }
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px 12px;
-  border-bottom: 1px solid var(--borda);
+  border-bottom: 1px solid var(--linha);
 }
 
 .modal__topo h2 {
   margin: 0;
   font-family: var(--display);
-  font-size: 23px;
+  font-size: 24px;
   font-weight: 400;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
 .modal__fechar {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--borda);
-  border-radius: 9px;
-  background: var(--preto-carta);
-  color: var(--creme-forte);
-  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--linha);
+  border-radius: 50%;
+  background: var(--fundo);
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
 }
@@ -564,11 +691,11 @@ body.pedido-aberto .zap-flutuante { display: none; }
 
 .modal__rodape {
   padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--borda);
-  background: var(--preto-carta);
+  border-top: 1px solid var(--linha);
+  background: var(--fundo);
 }
 
-.modal__aviso { margin: 9px 0 0; text-align: center; font-size: 11.5px; color: var(--creme-suave); }
+.modal__aviso { margin: 9px 0 0; text-align: center; font-size: 11.5px; color: var(--suave); }
 
 /* ---------- Lista do pedido ---------- */
 
@@ -579,33 +706,33 @@ body.pedido-aberto .zap-flutuante { display: none; }
   align-items: center;
   gap: 12px;
   padding: 11px 13px;
-  border-radius: 10px;
-  background: var(--preto-carta);
-  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
 }
 
 .linha-pedido__texto { flex: 1; min-width: 0; }
 .linha-pedido__nome { font-size: 14px; font-weight: 700; }
-.linha-pedido__preco { font-size: 12px; color: var(--creme-suave); }
+.linha-pedido__preco { font-size: 12px; color: var(--suave); }
 
 .contador { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 
 .contador__botao {
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--borda);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--creme-forte);
-  font-size: 17px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--linha);
+  border-radius: 50%;
+  background: var(--fundo);
+  color: var(--marca);
+  font-size: 18px;
   line-height: 1;
   cursor: pointer;
 }
 
-.contador__botao:hover { border-color: var(--vermelho); }
+.contador__botao:hover { border-color: var(--marca); }
 .contador__valor { min-width: 24px; text-align: center; font-weight: 800; font-size: 14px; }
 
-.pedido-vazio { text-align: center; color: var(--creme-suave); padding: 28px 0; }
+.pedido-vazio { text-align: center; color: var(--suave); padding: 28px 0; }
 
 /* ---------- Formulário ---------- */
 
@@ -618,7 +745,7 @@ body.pedido-aberto .zap-flutuante { display: none; }
   margin-bottom: 6px;
   font-size: 11.5px;
   font-weight: 800;
-  color: var(--creme-suave);
+  color: var(--suave);
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
@@ -626,22 +753,23 @@ body.pedido-aberto .zap-flutuante { display: none; }
 .campo__opcional { text-transform: none; font-weight: 400; letter-spacing: 0; }
 
 .campo input[type='text'],
+.campo input[type='tel'],
 .campo select,
 .campo textarea {
   width: 100%;
   padding: 12px 13px;
   border-radius: 10px;
-  border: 1px solid var(--borda);
-  background: var(--preto-carta);
+  border: 1px solid var(--linha);
+  background: var(--fundo);
   font-size: 15px;
   resize: vertical;
 }
 
 .campo input:focus,
 .campo select:focus,
-.campo textarea:focus { outline: none; border-color: var(--vermelho); }
+.campo textarea:focus { outline: none; border-color: var(--marca); box-shadow: 0 0 0 3px var(--marca-clara); }
 
-.campo input::placeholder, .campo textarea::placeholder { color: #5c5045; }
+.campo input::placeholder, .campo textarea::placeholder { color: #a39b91; }
 
 .campo--opcoes { display: flex; gap: 9px; flex-wrap: wrap; }
 .campo--opcoes .campo__label { width: 100%; margin-bottom: 0; }
@@ -659,17 +787,17 @@ body.pedido-aberto .zap-flutuante { display: none; }
   gap: 8px;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid var(--borda);
-  background: var(--preto-carta);
+  border: 1px solid var(--linha);
+  background: var(--fundo);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.opcao:has(input:checked) { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.15); }
-.opcao input { accent-color: var(--vermelho); width: 17px; height: 17px; }
+.opcao:has(input:checked) { border-color: var(--marca); background: var(--marca-clara); }
+.opcao input { accent-color: var(--marca); width: 17px; height: 17px; }
 
-/* ---------- Agendamento de horário ---------- */
+/* ---------- Agendamento de horário (desligado hoje) ---------- */
 
 .agendar {
   display: flex;
@@ -677,16 +805,15 @@ body.pedido-aberto .zap-flutuante { display: none; }
   gap: 10px;
   padding: 12px 13px;
   border-radius: 10px;
-  border: 1px solid var(--borda);
-  background: var(--preto-carta);
+  border: 1px solid var(--linha);
   cursor: pointer;
 }
 
-.agendar:has(input:checked) { border-color: var(--vermelho); background: rgba(193, 18, 31, 0.12); }
-.agendar input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--vermelho); flex-shrink: 0; }
+.agendar:has(input:checked) { border-color: var(--marca); background: var(--marca-clara); }
+.agendar input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--marca); flex-shrink: 0; }
 .agendar__texto { display: block; }
 .agendar__texto strong { display: block; font-size: 14px; }
-.agendar__texto small { display: block; margin-top: 3px; font-size: 12px; color: var(--creme-suave); line-height: 1.45; }
+.agendar__texto small { display: block; margin-top: 3px; font-size: 12px; color: var(--suave); line-height: 1.45; }
 
 .campo--hora { margin-top: 10px; }
 
@@ -695,35 +822,29 @@ body.pedido-aberto .zap-flutuante { display: none; }
 .resumo {
   margin: 0;
   padding: 14px 15px;
-  border-radius: 10px;
-  background: var(--preto-carta);
-  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 7px 12px;
   font-size: 14px;
 }
 
-.resumo dt { color: var(--creme-suave); }
+.resumo dt { color: var(--suave); }
 .resumo dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 
-.resumo__total { border-top: 1px solid var(--borda); padding-top: 10px; margin-top: 3px; }
-.resumo dt.resumo__total { font-weight: 800; color: var(--creme-forte); font-size: 16px; }
-
-.resumo dd.resumo__total {
-  font-family: var(--display);
-  font-size: 21px;
-  letter-spacing: 0.5px;
-  color: var(--vermelho-claro);
-}
+.resumo__total { border-top: 1px solid var(--linha); padding-top: 10px; margin-top: 3px; }
+.resumo dt.resumo__total { font-weight: 800; color: var(--tinta); font-size: 16px; }
+.resumo dd.resumo__total { font-size: 19px; font-weight: 800; color: var(--marca); }
 
 .erro-form {
   margin: 14px 0 0;
   padding: 11px 13px;
-  border-radius: 9px;
-  background: rgba(230, 57, 70, 0.14);
-  border: 1px solid var(--vermelho);
-  color: #ff8f88;
+  border-radius: 10px;
+  background: var(--marca-clara);
+  border: 1px solid var(--marca);
+  color: var(--marca-escura);
   font-size: 13.5px;
   font-weight: 600;
 }
@@ -735,44 +856,43 @@ body.pedido-aberto .zap-flutuante { display: none; }
   padding: 15px;
   border: none;
   border-radius: var(--raio);
-  background: var(--verde-zap);
-  color: #06381a;
+  background: var(--marca);
+  color: #fff;
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  transition: filter 0.15s;
 }
 
-.botao-enviar:hover { filter: brightness(1.08); }
-.botao-enviar:active { transform: scale(0.99); }
+.botao-enviar:hover { background: var(--marca-escura); }
 .botao-enviar:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ---------- Acessibilidade e telas maiores ---------- */
 
-:focus-visible { outline: 2px solid var(--vermelho-claro); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
 @media (min-width: 640px) {
-  .topo__selo { width: 66px; height: 66px; }
-  .topo__nome { font-size: 31px; }
+  .loja__capa { height: 220px; border-radius: 0 0 18px 18px; }
+  .loja__logo { width: 104px; height: 104px; margin-top: -52px; }
+  .loja__nome { font-size: 34px; }
+  .banner { flex-basis: 58%; min-height: 190px; }
+  .banner__titulo { font-size: 32px; }
   .modal { align-items: center; }
   .modal__caixa { border-radius: 18px; max-height: 88vh; }
+  .folha { align-items: center; }
+  .folha__caixa { border-radius: 20px; }
   .depoimentos__lista { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Telas de desktop têm espaço de sobra: usa mais largura em vez de
-   deixar o cardápio espremido numa coluna estreita — mas 1 produto por
-   linha, texto maior e mais fácil de ler, não 3 colunas apertadas. */
-@media (min-width: 960px) {
-  :root { --largura: 1080px; }
-  .item__foto { width: 176px; height: 176px; }
-  .categoria__titulo { font-size: 34px; }
-  .categoria__descricao { font-size: 16px; }
-  .item__nome { font-size: 20px; }
-  .item__descricao { font-size: 15px; }
-  .item__rendimento { font-size: 13.5px; }
-  .item__preco { font-size: 26px; }
+/* Desktop: produtos em duas colunas, como nos cardápios de marketplace. */
+@media (min-width: 900px) {
+  :root { --largura: 1040px; }
+  .itens { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+  .itens .item:nth-child(2) { border-top: 0; }
+  .item { grid-template-columns: minmax(0, 1fr) 128px; }
+  .item__foto { width: 128px; height: 128px; }
+  .banner { flex-basis: 42%; }
 }

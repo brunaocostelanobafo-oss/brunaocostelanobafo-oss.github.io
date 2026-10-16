@@ -130,6 +130,25 @@ const Store = (function () {
       base._precisaSalvar = true;
     }
 
+    /* Os produtos ganharam versão com osso e desossada, com nomes novos.
+       A ficha técnica e o custo que já estavam cadastrados no nome antigo
+       valem para a versão com osso — copia uma vez, sem apagar o antigo
+       (as vendas de antes continuam com o nome antigo). A desossada
+       começa sem ficha, porque o custo dela é outro. */
+    if (!base.config.migrouVariantes && typeof itensVendaveis === 'function') {
+      for (const item of itensVendaveis()) {
+        if (!item.legado) continue;
+        if (base.fichas[item.legado] && !base.fichas[item.nome]) {
+          base.fichas[item.nome] = JSON.parse(JSON.stringify(base.fichas[item.legado]));
+        }
+        if (base.custos[item.legado] && !base.custos[item.nome]) {
+          base.custos[item.nome] = base.custos[item.legado];
+        }
+      }
+      base.config.migrouVariantes = true;
+      base._precisaSalvar = true;
+    }
+
     for (const venda of base.vendas) {
       if (!venda.obs) continue;
 
@@ -631,8 +650,8 @@ const Store = (function () {
 
   /** Quantos produtos do cardápio ainda estão sem custo — por ficha ou à mão. */
   function produtosSemCusto() {
-    if (typeof CARDAPIO === 'undefined') return [];
-    return CARDAPIO.flatMap((c) => c.itens)
+    if (typeof itensVendaveis !== 'function') return [];
+    return itensVendaveis()
       .filter((item) => !custoDe(item.nome))
       .map((item) => item.nome);
   }
