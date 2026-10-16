@@ -1290,9 +1290,10 @@
     // sentido perguntar aqui a forma de pagamento nem o troco.
     if (pagamentoOnlineLigado()) {
       document.getElementById('campo-pagamento').hidden = true;
+      document.getElementById('aviso-pagamento').hidden = false;
       document.getElementById('botao-enviar').textContent = 'Pagar e confirmar pedido';
       document.getElementById('modal-aviso').textContent =
-        'Você vai para o pagamento seguro da InfinitePay. Pix ou cartão.';
+        'Depois de pagar, você volta para cá com a confirmação do pedido.';
     }
 
     // Agendamento de horário
