@@ -390,7 +390,7 @@
     alvo.innerHTML = '';
     pontos.innerHTML = '';
     const lista = (typeof BANNERS !== 'undefined' ? BANNERS : []).filter((b) => acharProduto(b.abre));
-    if (!lista.length) { alvo.hidden = true; pontos.hidden = true; return; }
+    if (!lista.length) { document.getElementById('carrossel').hidden = true; pontos.hidden = true; return; }
 
     lista.forEach((b, i) => {
       const botao = document.createElement('button');
@@ -404,16 +404,61 @@
       botao.addEventListener('click', () => abrirProduto(acharProduto(b.abre)));
       alvo.appendChild(botao);
 
-      const ponto = document.createElement('span');
-      if (i === 0) ponto.className = 'ativo';
+      const ponto = document.createElement('button');
+      ponto.type = 'button';
+      ponto.setAttribute('aria-label', `Ver banner ${i + 1}: ${b.titulo}`);
+      ponto.addEventListener('click', () => irParaBanner(i));
       pontos.appendChild(ponto);
     });
 
-    alvo.addEventListener('scroll', () => {
-      const largura = alvo.firstElementChild.offsetWidth + 10;
-      const atual = Math.round(alvo.scrollLeft / largura);
-      [...pontos.children].forEach((p, i) => p.classList.toggle('ativo', i === atual));
-    }, { passive: true });
+    const banners = [...alvo.children];
+    const anterior = document.getElementById('banner-anterior');
+    const proximo = document.getElementById('banner-proximo');
+    const maximo = () => alvo.scrollWidth - alvo.clientWidth;
+    const inicioDe = (i) => Math.min(banners[i].offsetLeft - banners[0].offsetLeft, maximo());
+
+    /* Qual banner está em destaque. No fim da rolagem é sempre o último:
+       em tela larga os últimos nem chegam a encostar na esquerda, e o
+       cálculo pela posição deixava o ponto parado no meio. */
+    function atual() {
+      if (alvo.scrollLeft >= maximo() - 4) return banners.length - 1;
+      let melhor = 0;
+      banners.forEach((_, i) => {
+        if (Math.abs(inicioDe(i) - alvo.scrollLeft) < Math.abs(inicioDe(melhor) - alvo.scrollLeft)) melhor = i;
+      });
+      return melhor;
+    }
+
+    function irParaBanner(i) {
+      const destino = Math.max(0, Math.min(i, banners.length - 1));
+      alvo.scrollTo({ left: inicioDe(destino), behavior: 'smooth' });
+      // Nem todo navegador avisa o fim da rolagem animada; confere depois.
+      setTimeout(marcar, 450);
+    }
+
+    function marcar() {
+      const i = atual();
+      [...pontos.children].forEach((p, n) => {
+        p.classList.toggle('ativo', n === i);
+        p.setAttribute('aria-current', n === i ? 'true' : 'false');
+      });
+      anterior.disabled = alvo.scrollLeft <= 4;
+      proximo.disabled = alvo.scrollLeft >= maximo() - 4;
+    }
+
+    // As setas andam até o próximo ponto onde a rolagem realmente muda.
+    anterior.addEventListener('click', () => {
+      const alvos = banners.map((_, i) => i).filter((i) => inicioDe(i) < alvo.scrollLeft - 4);
+      irParaBanner(alvos.length ? alvos[alvos.length - 1] : 0);
+    });
+    proximo.addEventListener('click', () => {
+      const i = banners.findIndex((_, n) => inicioDe(n) > alvo.scrollLeft + 4);
+      irParaBanner(i === -1 ? banners.length - 1 : i);
+    });
+    alvo.addEventListener('scroll', marcar, { passive: true });
+    alvo.addEventListener('scrollend', marcar);
+    window.addEventListener('resize', marcar);
+    marcar();
   }
 
   function montarVitrine() {

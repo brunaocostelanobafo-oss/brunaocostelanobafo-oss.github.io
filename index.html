@@ -29,42 +29,11 @@
 </head>
 <body>
 
-  <!-- Selo da marca, desenhado em SVG para ficar nítido em qualquer tamanho. -->
-  <svg class="svg-oculto" aria-hidden="true" focusable="false">
-    <symbol id="selo-brunao" viewBox="0 0 200 200">
-      <circle cx="100" cy="100" r="99" fill="#0d0b0a"/>
-      <circle cx="100" cy="100" r="95" fill="none" stroke="#e2d3bb" stroke-width="6"/>
-      <circle cx="100" cy="100" r="83" fill="none" stroke="#e2d3bb" stroke-width="3.5"
-              stroke-dasharray="0.1 9.4" stroke-linecap="round"/>
-      <path id="arco-topo" d="M100,100 m-64,0 a64,64 0 0 1 128,0" fill="none"/>
-      <path id="arco-base" d="M100,100 m62,0 a62,62 0 0 1 -124,0" fill="none"/>
-
-      <text class="selo__arco" fill="#e2d3bb">
-        <textPath href="#arco-topo" startOffset="50%" text-anchor="middle">DELIVERY &amp; RETIRADA</textPath>
-      </text>
-
-      <!-- Chama -->
-      <path fill="#c1121f" d="M100 44c6 8 3 12 6 16 2-3 2-6 2-6 5 6 6 12 6 16 0 10-7 16-14 16s-14-6-14-16c0-7 5-13 8-18 1 4 3 6 4 7-1-6-2-11 2-15z"/>
-      <!-- Espátula e garfo cruzados -->
-      <g stroke="#c1121f" stroke-width="4.5" stroke-linecap="round">
-        <line x1="76" y1="66" x2="120" y2="106"/>
-        <line x1="124" y1="66" x2="80" y2="106"/>
-      </g>
-      <rect x="66" y="58" width="16" height="13" rx="3" transform="rotate(-42 74 64)" fill="#c1121f"/>
-      <path fill="#c1121f" d="M126 56l3 3-4 6 4-2 2 3-5 5-4-4z"/>
-
-      <text class="selo__nome" x="100" y="133" text-anchor="middle" fill="#e2d3bb">BRUNÃO</text>
-      <rect x="14" y="139" width="172" height="24" rx="12" fill="#c1121f"/>
-      <text class="selo__faixa" x="100" y="156" text-anchor="middle" fill="#e2d3bb">COSTELA NO BAFO</text>
-      <text class="selo__desde" x="100" y="177" text-anchor="middle" fill="#e2d3bb">DESDE 2021</text>
-    </symbol>
-  </svg>
-
   <div class="pagina">
     <header class="loja">
       <div class="loja__capa" role="img" aria-label="Costela no bafo embalada para entrega"></div>
       <div class="loja__conteudo">
-        <svg class="loja__logo" role="img" aria-label="Brunão Costela no Bafo"><use href="#selo-brunao"/></svg>
+        <img class="loja__logo" src="assets/logo-oficial.png" alt="Brunão Costela no Bafo" width="104" height="104">
         <h1 class="loja__nome" id="loja-nome"></h1>
         <p class="loja__local" id="loja-local"></p>
         <p class="loja__status" id="status-loja"></p>
@@ -83,8 +52,12 @@
 
     <div class="avisos" id="avisos"></div>
 
-    <div class="banners" id="banners" aria-label="Destaques"></div>
-    <div class="banners__pontos" id="banners-pontos" aria-hidden="true"></div>
+    <div class="carrossel" id="carrossel">
+      <div class="banners" id="banners" aria-label="Destaques"></div>
+      <button type="button" class="carrossel__seta carrossel__seta--ant" id="banner-anterior" aria-label="Banner anterior">‹</button>
+      <button type="button" class="carrossel__seta carrossel__seta--prox" id="banner-proximo" aria-label="Próximo banner">›</button>
+    </div>
+    <div class="banners__pontos" id="banners-pontos"></div>
 
     <section class="mais-pedidos" id="bloco-mais-pedidos" aria-label="Mais pedidos">
       <h2 class="categoria__titulo">Mais pedidos</h2>
@@ -118,7 +91,7 @@
   </section>
 
   <footer class="rodape">
-    <svg class="rodape__selo" aria-hidden="true"><use href="#selo-brunao"/></svg>
+    <img class="rodape__selo" src="assets/logo-oficial.png" alt="" width="84" height="84" loading="lazy">
     <p class="rodape__info" id="rodape-horarios"></p>
     <p class="rodape__info">Tolerância de 15 minutos, para mais ou para menos, no horário de entrega.</p>
     <p class="rodape__info" id="rodape-endereco" hidden></p>
