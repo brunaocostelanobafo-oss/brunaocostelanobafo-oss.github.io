@@ -75,23 +75,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.35));
 }
 
-.loja__conteudo { padding: 0 16px 14px; }
-
-.loja__logo {
-  display: block;
-  width: 84px;
-  height: 84px;
-  margin-top: -42px;
-  position: relative;
-  border-radius: 50%;
-  border: 4px solid var(--fundo);
-  background: var(--fundo);
-  object-fit: contain;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-}
+.loja__conteudo { padding: 16px 16px 14px; }
 
 .loja__nome {
-  margin: 6px 0 0;
+  margin: 0;
   font-family: var(--display);
   font-size: 28px;
   font-weight: 400;
@@ -922,7 +909,6 @@ body.pedido-aberto .zap-flutuante { display: none; }
 
 @media (min-width: 640px) {
   .loja__capa { height: 220px; border-radius: 0 0 18px 18px; }
-  .loja__logo { width: 104px; height: 104px; margin-top: -52px; }
   .loja__nome { font-size: 34px; }
   .banner { flex-basis: 58%; min-height: 190px; }
   .banner__titulo { font-size: 32px; }
