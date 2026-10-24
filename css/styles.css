@@ -891,6 +891,12 @@ body.pedido-aberto .zap-flutuante { display: none; }
 .aviso-pagamento strong { display: block; color: var(--ok); }
 .aviso-pagamento__icone { font-size: 20px; line-height: 1.2; }
 
+/* A conta da InfinitePay é no CPF do Bruno, então o checkout e o banco
+   mostram o nome dele, não o da loja. Avisar antes evita susto e alerta
+   de golpe. */
+.aviso-pagamento__recebedor { display: block; margin-top: 6px; padding-top: 6px; border-top: 1px solid #b9e2c8; color: var(--suave); }
+.aviso-pagamento__recebedor b { color: var(--tinta); }
+
 .erro-form {
   margin: 14px 0 0;
   padding: 11px 13px;
