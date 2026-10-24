@@ -47,22 +47,24 @@ três linhas de exemplo.
 
 ## Passo 4 — Preencher seus dados
 
-Bem no começo do código tem um bloco `CONFIG`. Ajuste três coisas:
-
-```js
-var CONFIG = {
-  HANDLE: 'obrunaocostelanobafo',
-  TOKEN_PAINEL: 'TROQUE-POR-UMA-SENHA-LONGA-SUA',
-  URL_SITE: 'https://brunaocostelanobafo-oss.github.io',
-  ABA: 'Vendas',
-};
-```
+Bem no começo do código tem um bloco `CONFIG`. Confira:
 
 - **HANDLE** — sua InfiniteTag, sem o `$`. Já deixei preenchida; confira se está certa.
-- **TOKEN_PAINEL** — **invente uma senha sua**, longa, tipo `costela-no-bafo-2026-kj38fh`.
-  É o que impede estranhos de lerem seu faturamento.
-  ⚠️ **Não use a senha do seu e-mail, do banco ou da InfinitePay.**
 - **URL_SITE** — já está certo.
+
+A **senha do painel não vai no código**: este arquivo é publicado junto com
+o site, e qualquer pessoa conseguiria lê-la. Ela fica nas propriedades do
+script:
+
+1. No editor, clique na engrenagem (**Configurações do projeto**).
+2. Em **Propriedades do script**, clique em **Editar propriedades do script** →
+   **Adicionar propriedade do script**.
+3. Propriedade: `TOKEN_PAINEL`. Valor: uma senha longa e aleatória, com
+   **20 caracteres ou mais** (senha curta é recusada).
+   ⚠️ **Não use a senha do seu e-mail, do banco ou da InfinitePay.**
+4. Salve as propriedades.
+
+É essa mesma senha que você digita no painel, em Vendas → Configurar conexão.
 
 Salve de novo (`Ctrl` + `S`).
 

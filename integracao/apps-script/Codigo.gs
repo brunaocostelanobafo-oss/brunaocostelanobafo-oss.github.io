@@ -26,11 +26,6 @@ var CONFIG = {
   // Sua InfiniteTag, sem o $ da frente.
   HANDLE: 'obrunaocostelanobafo',
 
-  // Senha que o painel usa para provar que é você ao pedir as vendas.
-  // É a única coisa que impede um estranho de ler seu faturamento.
-  // Quanto mais longa, melhor — o ideal são 20 caracteres ou mais.
-  TOKEN_PAINEL: 'bru261308',
-
   // Endereço do cardápio, para onde o cliente volta depois de pagar.
   URL_SITE: 'https://brunaocostelanobafo-oss.github.io',
 
@@ -44,6 +39,26 @@ var CONFIG = {
 };
 
 var META_GRAPH_VERSAO = 'v23.0';
+
+/**
+ * Senha que o painel usa para provar que é você (ler vendas com nome,
+ * telefone e endereço de clientes; abrir/fechar o cardápio; esgotados).
+ *
+ * Fica em Configurações do projeto > Propriedades do script, com o nome
+ * TOKEN_PAINEL — nunca aqui no código, porque este arquivo é publicado
+ * junto com o site e qualquer um consegue lê-lo.
+ *
+ * Sem a propriedade, nada que exige senha funciona: é melhor travar do
+ * que aceitar qualquer coisa.
+ */
+function tokenPainel() {
+  return PropertiesService.getScriptProperties().getProperty('TOKEN_PAINEL') || '';
+}
+
+function tokenConfere(recebido) {
+  var certo = tokenPainel();
+  return certo.length >= 20 && String(recebido || '') === certo;
+}
 
 var API = 'https://api.checkout.infinitepay.io';
 
@@ -123,7 +138,7 @@ function doGet(e) {
       return json({ ok: true, pedido: lerPedido(p.order_nsu) });
     }
 
-    if (p.token !== CONFIG.TOKEN_PAINEL) {
+    if (!tokenConfere(p.token)) {
       return json({ ok: false, erro: 'Token inválido.' });
     }
 
@@ -607,7 +622,7 @@ function lerStatusLoja() {
 }
 
 function salvarStatusLoja(dados) {
-  if (dados.token !== CONFIG.TOKEN_PAINEL) return { ok: false, erro: 'Token inválido.' };
+  if (!tokenConfere(dados.token)) return { ok: false, erro: 'Token inválido.' };
   PropertiesService.getScriptProperties().setProperty('cardapio_aberto', dados.aberto ? 'true' : 'false');
   return { ok: true, aberto: !!dados.aberto };
 }
@@ -624,7 +639,7 @@ function lerHorarioExtra() {
 }
 
 function salvarHorarioExtra(dados) {
-  if (dados.token !== CONFIG.TOKEN_PAINEL) return { ok: false, erro: 'Token inválido.' };
+  if (!tokenConfere(dados.token)) return { ok: false, erro: 'Token inválido.' };
 
   if (!dados.data || !dados.abre || !dados.fecha) {
     PropertiesService.getScriptProperties().deleteProperty('horario_extra');
@@ -677,7 +692,7 @@ function lerEsgotados() {
  * vendido, e o painel manda sempre o estado inteiro.
  */
 function salvarEsgotados(dados) {
-  if (dados.token !== CONFIG.TOKEN_PAINEL) return { ok: false, erro: 'Token inválido.' };
+  if (!tokenConfere(dados.token)) return { ok: false, erro: 'Token inválido.' };
 
   var lista = (dados.esgotados || []).map(function (n) { return String(n).trim(); })
     .filter(function (n) { return n; });
@@ -827,14 +842,13 @@ function testarConfiguracao() {
   if (!CONFIG.HANDLE || CONFIG.HANDLE.indexOf('$') === 0) {
     problemas.push('HANDLE vazia ou com $ na frente.');
   }
-  if (!CONFIG.TOKEN_PAINEL || CONFIG.TOKEN_PAINEL.indexOf('TROQUE') === 0) {
-    problemas.push('TOKEN_PAINEL ainda é o valor de exemplo — invente uma senha sua.');
+  if (!tokenPainel()) {
+    problemas.push('Falta a propriedade TOKEN_PAINEL (Configurações do projeto > Propriedades do script). Sem ela o painel não consegue ler as vendas.');
   }
 
   // Curto não impede de funcionar, mas facilita muito quem tentar adivinhar.
-  if (CONFIG.TOKEN_PAINEL && CONFIG.TOKEN_PAINEL.length < 20) {
-    avisos.push('TOKEN_PAINEL tem ' + CONFIG.TOKEN_PAINEL.length + ' caracteres. ' +
-      'Funciona, mas 20 ou mais deixa bem mais difícil de adivinhar.');
+  if (tokenPainel() && tokenPainel().length < 20) {
+    problemas.push('TOKEN_PAINEL tem ' + tokenPainel().length + ' caracteres. Use 20 ou mais — senha curta é recusada.');
   }
 
   aba();
