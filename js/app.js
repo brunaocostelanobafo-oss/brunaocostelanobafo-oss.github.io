@@ -386,12 +386,36 @@
     lista.forEach((b, i) => {
       const botao = document.createElement('button');
       botao.type = 'button';
-      botao.className = 'banner';
-      botao.style.backgroundImage = `url("${b.imagem}")`;
-      botao.innerHTML = '<span class="banner__tag"></span><span class="banner__titulo"></span><span class="banner__texto"></span>';
-      botao.querySelector('.banner__tag').textContent = b.tag;
-      botao.querySelector('.banner__titulo').textContent = b.titulo;
-      botao.querySelector('.banner__texto').textContent = b.texto;
+      botao.className = 'banner' + (b.soArte ? ' banner--arte' : '');
+
+      // Arte de computador/tablet e, se houver, uma própria para celular.
+      const imagem = document.createElement('picture');
+      imagem.className = 'banner__imagem';
+      if (b.imagemCelular) {
+        const fonte = document.createElement('source');
+        fonte.media = '(min-width: 640px)';
+        fonte.srcset = b.imagem;
+        imagem.appendChild(fonte);
+      }
+      const img = document.createElement('img');
+      img.src = b.imagemCelular || b.imagem;
+      img.alt = '';
+      if (i > 0) img.loading = 'lazy';
+      imagem.appendChild(img);
+      botao.appendChild(imagem);
+
+      if (b.soArte) {
+        // O texto já está desenhado na arte; o site não escreve por cima.
+        botao.setAttribute('aria-label', `${b.titulo}. ${b.texto || ''}`.trim());
+      } else {
+        for (const [classe, texto] of [['banner__tag', b.tag], ['banner__titulo', b.titulo], ['banner__texto', b.texto]]) {
+          if (!texto) continue;
+          const span = document.createElement('span');
+          span.className = classe;
+          span.textContent = texto;
+          botao.appendChild(span);
+        }
+      }
       botao.addEventListener('click', () => abrirProduto(acharProduto(b.abre)));
       alvo.appendChild(botao);
 
@@ -433,23 +457,50 @@
         p.classList.toggle('ativo', n === i);
         p.setAttribute('aria-current', n === i ? 'true' : 'false');
       });
-      anterior.disabled = alvo.scrollLeft <= 4;
-      proximo.disabled = alvo.scrollLeft >= maximo() - 4;
     }
 
-    // As setas andam até o próximo ponto onde a rolagem realmente muda.
+    // As setas ficam sempre visíveis e dão a volta: do primeiro para o
+    // último e do último para o primeiro, como a passagem automática.
     anterior.addEventListener('click', () => {
-      const alvos = banners.map((_, i) => i).filter((i) => inicioDe(i) < alvo.scrollLeft - 4);
-      irParaBanner(alvos.length ? alvos[alvos.length - 1] : 0);
+      const i = atual();
+      irParaBanner(i <= 0 ? banners.length - 1 : i - 1);
     });
     proximo.addEventListener('click', () => {
-      const i = banners.findIndex((_, n) => inicioDe(n) > alvo.scrollLeft + 4);
-      irParaBanner(i === -1 ? banners.length - 1 : i);
+      const i = atual();
+      irParaBanner(i >= banners.length - 1 ? 0 : i + 1);
     });
     alvo.addEventListener('scroll', marcar, { passive: true });
     alvo.addEventListener('scrollend', marcar);
     window.addEventListener('resize', marcar);
     marcar();
+
+    /* Passa sozinho a cada 5 segundos e volta ao primeiro depois do
+       último. Qualquer toque, clique ou rolagem do cliente reinicia a
+       contagem, para o banner não fugir enquanto ele lê; com o mouse em
+       cima, fica parado. Quem pediu ao aparelho menos animação não vê a
+       troca automática. */
+    const INTERVALO = 5000;
+    const reduzirMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let relogio = null;
+
+    function avancar() {
+      if (document.hidden || !document.getElementById('folha').hidden) return;
+      const i = atual();
+      irParaBanner(i >= banners.length - 1 ? 0 : i + 1);
+    }
+    function pararAuto() { clearInterval(relogio); relogio = null; }
+    function iniciarAuto() {
+      pararAuto();
+      if (reduzirMovimento || banners.length < 2) return;
+      relogio = setInterval(avancar, INTERVALO);
+    }
+
+    const carrossel = document.getElementById('carrossel');
+    carrossel.addEventListener('pointerdown', iniciarAuto);
+    carrossel.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pararAuto(); });
+    carrossel.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') iniciarAuto(); });
+    alvo.addEventListener('touchstart', iniciarAuto, { passive: true });
+    iniciarAuto();
   }
 
   function montarVitrine() {

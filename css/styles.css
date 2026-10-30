@@ -203,10 +203,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .banners::-webkit-scrollbar { display: none; }
 
+/* Um banner por vez, ocupando a largura toda. As proporções são as das
+   artes: celular 1080 × 720 (3:2); tablet e computador 2016 × 736. */
 .banner {
-  flex: 0 0 86%;
-  max-width: 520px;
-  min-height: 156px;
+  flex: 0 0 100%;
+  aspect-ratio: 3 / 2;
   scroll-snap-align: start;
   position: relative;
   overflow: hidden;
@@ -222,14 +223,21 @@ button, input, select, textarea { font: inherit; color: inherit; }
   cursor: pointer;
 }
 
+.banner__imagem { position: absolute; inset: 0; z-index: 0; }
+.banner__imagem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .banner::before {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(90deg, rgba(20, 8, 4, 0.86) 0%, rgba(20, 8, 4, 0.45) 62%, rgba(20, 8, 4, 0.08) 100%);
 }
 
-.banner > span { position: relative; }
+.banner > span { position: relative; z-index: 2; }
+
+/* Arte pronta, com o texto já desenhado: nada por cima dela. */
+.banner--arte::before { display: none; }
 
 .banner__tag {
   align-self: flex-start;
@@ -256,31 +264,38 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .carrossel { position: relative; }
 
+/* Um pouco acima do meio: o texto do banner fica na parte de baixo. */
 .carrossel__seta {
   position: absolute;
-  top: calc(50% + 6px);
+  top: 38%;
   transform: translateY(-50%);
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   padding: 0 0 3px;
   border: 0;
   border-radius: 50%;
-  background: var(--fundo);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--tinta);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  font-size: 26px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  font-size: 28px;
   line-height: 1;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
-.carrossel__seta--ant { left: 6px; }
-.carrossel__seta--prox { right: 6px; }
-.carrossel__seta:hover { color: var(--marca); }
-.carrossel__seta:disabled { opacity: 0; pointer-events: none; }
+/* Dentro da área do banner (o carrossel tem 16 px de margem lateral). */
+.carrossel__seta--ant { left: 26px; }
+.carrossel__seta--prox { right: 26px; }
+.carrossel__seta:hover { background: var(--fundo); color: var(--marca); }
+
+@media (min-width: 640px) {
+  .carrossel__seta { width: 48px; height: 48px; font-size: 34px; }
+  .carrossel__seta--ant { left: 32px; }
+  .carrossel__seta--prox { right: 32px; }
+}
 
 /* Pontos clicáveis: a área de toque é maior que o ponto desenhado. */
 .banners__pontos { display: flex; justify-content: center; gap: 2px; padding: 4px 0 0; }
@@ -936,8 +951,9 @@ body.pedido-aberto .zap-flutuante { display: none; }
 @media (min-width: 640px) {
   .loja__capa { height: 220px; border-radius: 0 0 18px 18px; }
   .loja__nome { font-size: 34px; }
-  .banner { flex-basis: 58%; min-height: 190px; }
-  .banner__titulo { font-size: 32px; }
+  .banner { padding: 24px 28px; aspect-ratio: 2016 / 736; }
+  .banner__titulo { font-size: 38px; }
+  .banner__texto { font-size: 15px; max-width: 60%; }
   .modal { align-items: center; }
   .modal__caixa { border-radius: 18px; max-height: 88vh; }
   .folha { align-items: center; }
@@ -952,5 +968,4 @@ body.pedido-aberto .zap-flutuante { display: none; }
   .itens .item:nth-child(2) { border-top: 0; }
   .item { grid-template-columns: minmax(0, 1fr) 128px; }
   .item__foto { width: 128px; height: 128px; }
-  .banner { flex-basis: 42%; }
 }

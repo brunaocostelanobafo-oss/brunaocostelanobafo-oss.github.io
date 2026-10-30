@@ -257,7 +257,12 @@ const CARDAPIO = [
   },
 ];
 
-/* Banners do topo (carrossel). `abre` é o id do produto que o toque abre. */
+/* Banners do topo (carrossel, passam sozinhos a cada 5 s).
+   `abre`: id do produto que o toque abre.
+   `imagem`: arte de computador e tablet — 2016 × 736 px.
+   `imagemCelular` (opcional): arte de celular — 1080 × 720 px.
+   `soArte: true`: a arte já traz o texto; o site não escreve por cima
+   (o título e o texto continuam servindo para leitores de tela). */
 const BANNERS = [
   { tag: 'Novidade', titulo: 'Costela desossada', texto: 'Em todas as porções e combos. Toque e escolha a sua.', imagem: 'assets/costela-desossada.jpg', abre: 'costela-1kg' },
   { tag: 'Para a família', titulo: 'Combo Família', texto: 'Serve até 6 pessoas. A partir de R$ 249,90.', imagem: 'assets/combo-familia.jpg', abre: 'combo-familia' },
