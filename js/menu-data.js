@@ -156,6 +156,22 @@ const LOJA = {
  * ------------------------------------------------------------------- */
 const CARDAPIO = [
   {
+    id: 'novidades',
+    nome: 'Novidades',
+    descricao: 'Lançamentos da casa, assados na lenha, no bafo.',
+    itens: [
+      {
+        id: 'fraldinha-1kg',
+        nome: 'Fraldinha no Bafo · 1 kg',
+        descricao: 'Fraldinha assada no bafo, na lenha.',
+        tags: ['1 kg', 'Sem osso', 'Serve até 5 pessoas'],
+        selo: 'Lançamento',
+        preco: 14990,
+        imagem: 'assets/fraldinha-1kg.jpg',
+      },
+    ],
+  },
+  {
     id: 'combos',
     nome: 'Combos',
     descricao: 'Porção de costela + acompanhamentos. Escolha com osso ou desossada.',
@@ -264,9 +280,9 @@ const CARDAPIO = [
    `soArte: true`: a arte já traz o texto; o site não escreve por cima
    (o título e o texto continuam servindo para leitores de tela). */
 const BANNERS = [
-  { tag: 'Novidade', titulo: 'Costela desossada', texto: 'Em todas as porções e combos. Toque e escolha a sua.', imagem: 'assets/costela-desossada.jpg', abre: 'costela-1kg' },
-  { tag: 'Para a família', titulo: 'Combo Família', texto: 'Serve até 6 pessoas. A partir de R$ 249,90.', imagem: 'assets/combo-familia.jpg', abre: 'combo-familia' },
-  { tag: 'Para dois', titulo: 'Combo Casal', texto: 'Costela, arroz, mandioca e farofa. A partir de R$ 109,90.', imagem: 'assets/combo-casal.jpg', abre: 'combo-casal' },
+  { titulo: 'Costela no bafo, agora sem osso', texto: 'Desmancha no garfo. Em todas as porções e combos.', imagem: 'assets/banner-desossada-computador.jpg', imagemCelular: 'assets/banner-desossada-celular.jpg', soArte: true, abre: 'costela-1kg' },
+  { titulo: 'Combo Família', texto: 'Costela no bafo com arroz, mandioca, farofa e creme de alho. A mesa inteira servida.', imagem: 'assets/banner-combo-familia-computador.jpg', imagemCelular: 'assets/banner-combo-familia-celular.jpg', soArte: true, abre: 'combo-familia' },
+  { titulo: 'Fraldinha no bafo', texto: 'Novidade da casa: assada na lenha, no bafo, macia de cortar com o garfo.', imagem: 'assets/banner-fraldinha-computador.jpg', imagemCelular: 'assets/banner-fraldinha-celular.jpg', soArte: true, abre: 'fraldinha-1kg' },
 ];
 
 /* Vitrine "Mais pedidos", na ordem em que aparece. O primeiro leva o selo. */
