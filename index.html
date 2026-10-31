@@ -50,6 +50,11 @@
       </div>
     </header>
 
+    <div class="abas" role="tablist" aria-label="Seções do site">
+      <button type="button" class="abas__botao" role="tab" id="aba-cardapio" aria-selected="true" aria-controls="cardapio">Cardápio</button>
+      <button type="button" class="abas__botao" role="tab" id="aba-eventos" aria-selected="false" aria-controls="eventos">Festas &amp; Eventos</button>
+    </div>
+
     <nav class="categorias" id="nav-categorias" aria-label="Categorias do cardápio"></nav>
 
     <div class="avisos" id="avisos"></div>
@@ -64,6 +69,70 @@
     <section class="mais-pedidos" id="bloco-mais-pedidos" aria-label="Mais pedidos">
       <h2 class="categoria__titulo">Mais pedidos</h2>
       <div class="vitrine" id="vitrine"></div>
+    </section>
+
+    <section class="eventos" id="eventos" role="tabpanel" aria-labelledby="aba-eventos" hidden>
+      <h2 class="eventos__titulo" id="eventos-titulo"></h2>
+      <p class="eventos__descricao" id="eventos-descricao"></p>
+      <p class="eventos__aviso" id="eventos-aviso"></p>
+
+      <form class="form-pedido eventos__form" id="form-eventos" novalidate>
+        <label class="campo">
+          <span class="campo__label">Seu nome</span>
+          <input type="text" name="nome" required autocomplete="name" placeholder="Como te chamamos?">
+        </label>
+
+        <label class="campo">
+          <span class="campo__label">Tipo de evento</span>
+          <select name="tipo" id="eventos-tipo" required></select>
+        </label>
+
+        <div class="campo-linha">
+          <label class="campo">
+            <span class="campo__label">Data</span>
+            <input type="date" name="data" id="eventos-data" required>
+          </label>
+          <label class="campo">
+            <span class="campo__label">Horário</span>
+            <input type="time" name="horario" required>
+          </label>
+        </div>
+
+        <label class="campo">
+          <span class="campo__label">Nº de pessoas</span>
+          <input type="number" name="pessoas" min="1" inputmode="numeric" required placeholder="Ex.: 40">
+        </label>
+
+        <div class="campo-linha">
+          <label class="campo">
+            <span class="campo__label">Cidade</span>
+            <input type="text" name="cidade" required autocomplete="address-level2" placeholder="Ex.: Varginha">
+          </label>
+          <label class="campo">
+            <span class="campo__label">Local / bairro</span>
+            <input type="text" name="local" autocomplete="address-line1" placeholder="Endereço ou bairro">
+          </label>
+        </div>
+
+        <fieldset class="campo">
+          <legend class="campo__label">Carnes que te interessam</legend>
+          <div class="escolhas" id="eventos-carnes"></div>
+        </fieldset>
+
+        <fieldset class="campo">
+          <legend class="campo__label">Acompanhamentos</legend>
+          <div class="escolhas" id="eventos-acompanhamentos"></div>
+        </fieldset>
+
+        <label class="campo">
+          <span class="campo__label">Outros itens <span class="campo__opcional">(opcional)</span></span>
+          <textarea name="outros" rows="3" id="eventos-outros"></textarea>
+        </label>
+
+        <p class="erro-form" id="eventos-erro" hidden></p>
+        <button type="submit" class="botao-enviar">Pedir orçamento pelo WhatsApp</button>
+        <p class="modal__aviso">Você confere a mensagem no WhatsApp antes de enviar. Sem compromisso.</p>
+      </form>
     </section>
 
     <main id="cardapio" class="cardapio">
@@ -240,5 +309,6 @@
 
   <script src="js/menu-data.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/eventos.js"></script>
 </body>
 </html>

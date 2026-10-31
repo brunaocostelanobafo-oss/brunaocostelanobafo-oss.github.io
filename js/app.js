@@ -761,6 +761,12 @@
       foto.classList.add('sem-foto');
       foto.textContent = '🍽️';
     }
+    if (produto.seloFoto) { // aparece mesmo esgotado: "sob encomenda" continua valendo
+      const seloFoto = document.createElement('span');
+      seloFoto.className = 'item__selo-foto';
+      seloFoto.textContent = produto.seloFoto;
+      foto.appendChild(seloFoto);
+    }
     cartao.appendChild(foto);
 
     cartao.setAttribute('aria-label', `${produto.nome}, ${esgotado ? 'esgotado' : 'a partir de ' + precoBR(precoInicial(produto))}`);
@@ -815,6 +821,12 @@
     const foto = raiz.querySelector('.folha__foto');
     if (produto.imagem) foto.style.backgroundImage = `url("${produto.imagem}")`;
     else foto.insertAdjacentText('afterbegin', '🍽️');
+    if (produto.seloFoto) {
+      const seloFoto = document.createElement('span');
+      seloFoto.className = 'item__selo-foto item__selo-foto--folha';
+      seloFoto.textContent = produto.seloFoto;
+      foto.appendChild(seloFoto);
+    }
     raiz.querySelector('.folha__nome').textContent = produto.nome;
     raiz.querySelector('.folha__desc').textContent = produto.descricao || '';
     const tags = raiz.querySelector('.item__tags');

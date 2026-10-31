@@ -288,6 +288,50 @@ const BANNERS = [
 /* Vitrine "Mais pedidos", na ordem em que aparece. O primeiro leva o selo. */
 const MAIS_PEDIDOS = ['costela-1kg', 'combo-completo', 'combo-familia', 'costela-15kg', 'combo-casal'];
 
+/* ---------------------------------------------------------------------
+ * FESTAS & EVENTOS — aba de pedido de orçamento
+ *
+ * As abas aparecem sempre, mas o site abre no cardápio. Só o link
+ * .../#eventos (anúncio de eventos) abre direto nesta aba.
+ *
+ * O cliente preenche o formulário e cai no WhatsApp com o pedido de
+ * orçamento pronto. Não tem pagamento nem preço aqui: o orçamento é
+ * feito na conversa, avaliando com o cliente o que ele precisa.
+ *
+ * Para mudar os textos ou as listas, edite abaixo.
+ * ------------------------------------------------------------------- */
+const EVENTOS = {
+  titulo: 'Festas & Eventos',
+  descricao:
+    'Confraternizações, aniversários, réveillon e encontros de família. ' +
+    'Conte como vai ser o seu evento, escolha as carnes e os acompanhamentos ' +
+    'e mande o pedido de orçamento direto para o nosso WhatsApp.',
+  aviso: 'Entregamos em Varginha. Outras cidades sob consulta, conforme o tamanho do evento.',
+
+  tiposEvento: [
+    'Confraternização de empresa',
+    'Aniversário',
+    'Encontro de família ou amigos',
+    'Natal',
+    'Réveillon',
+    'Casamento ou noivado',
+    'Outro',
+  ],
+
+  carnes: [
+    'Costela no Bafo com osso',
+    'Costela no Bafo desossada',
+    'Fraldinha no Bafo',
+    'Pernil Defumado',
+    'Costelinha Defumada',
+  ],
+
+  acompanhamentos: ['Arroz', 'Mandioca', 'Farofa', 'Creme de Alho'],
+
+  // Sugestões que aparecem no campo "Outros itens"
+  outrosExemplo: 'Ex.: maionese, salpicão, massas, vinagrete…',
+};
+
 /**
  * Tudo o que pode ser vendido, já com as variantes abertas: cada uma vira
  * um item com nome e preço próprios. Usado pelo cardápio e pelo painel.
