@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR" class="sem-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ceia de Natal e Ano Novo · Brunão Costela no Bafo</title>
+<meta name="description" content="Costela no bafo, 14 horas na lenha, no centro da sua ceia. Entregas em Varginha em 24, 25, 31/12 e 01/01. Reserve com 50%.">
+<meta property="og:title" content="A ceia que vai ficar na história da sua família">
+<meta property="og:description" content="Costela no bafo, 14 horas na lenha, pronta para a ceia. Varginha, 24, 25, 31/12 e 01/01.">
+<meta property="og:image" content="https://brunaocostelanobafo-oss.github.io/fim-de-ano/img/costela.webp">
+<meta name="theme-color" content="#0e0c0b">
+<link rel="icon" href="../fim-de-ano/img/logo-escuro.webp">
+<link rel="preload" as="image" href="../fim-de-ano/img/costela.webp">
+<link rel="stylesheet" href="../fim-de-ano/pagina.css">
+<script>
+  window.PAGINA = { origem: 'natal', encomendas: 'https://brunaocostelanobafo-oss.github.io/', inicio: '2026-12-05T00:00:00', fim: '2026-12-31', pessoasIniciais: 8 };
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init','4433696376853064'); fbq('track','PageView');
+</script>
+</head>
+<body>
+<header class="topo">
+  <a class="marca" href="https://brunaocostelanobafo-oss.github.io/">Brunão · costela no bafo</a>
+</header>
+
+<main>
+  <div class="filme">
+    <div class="palco" aria-hidden="true">
+      <div class="sombra"></div>
+      <img data-peca="tabua" src="../fim-de-ano/img/tabua.webp" alt="">
+      <img data-peca="costela" src="../fim-de-ano/img/costela.webp" alt="">
+      <img data-peca="arroz" src="../fim-de-ano/img/arroz.webp" alt="">
+      <img data-peca="mandioca" src="../fim-de-ano/img/mandioca.webp" alt="">
+      <img data-peca="farofa" src="../fim-de-ano/img/farofa.webp" alt="">
+      <img data-peca="creme" src="../fim-de-ano/img/creme-alho.webp" alt="">
+    </div>
+
+    <section class="ato ato1" aria-labelledby="t1">
+      <div class="bokeh" data-zona="direita"></div>
+      <div class="quadro">
+        <div class="tx">
+          <h1 id="t1" class="sobe" data-atraso="80">A ceia que vai ficar na história da sua família.</h1>
+          <a class="bt sobe" data-atraso="240" href="#ato2" data-rolar>Saiba mais</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="ato ato2 claro" id="ato2" aria-labelledby="t2">
+      <div class="quadro">
+        <div class="tx">
+          <h2 id="t2">Saia do óbvio e surpreenda até os paladares mais exigentes.</h2>
+          <p class="apoio">Sirva a melhor costela no bafo do Sul de Minas.</p>
+          <div class="tempos">
+            <div><b>Feito na lenha</b>Fogo baixo, +14 h até soltar do osso e desmanchar no garfo.</div>
+            <div><b>Acompanhamentos</b>Arroz, mandioca cremosa, farofa do chef, tudo pronto para servir.</div>
+            <div><b>O toque da casa</b>Creme de alho do Brunão: um toque a mais de sabor em cada prato.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ato ato3" aria-labelledby="t3">
+      <div class="bokeh" data-zona="baixo"></div>
+      <div class="quadro">
+        <div class="tx">
+          <p class="sob">24, 25, 31 e 1º</p>
+          <h2 id="t3">Tudo pronto para servir e surpreender.</h2>
+          <a class="bt" href="#reserva" data-rolar>Custa menos do que você pensa</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="reserva" id="reserva" aria-labelledby="t4">
+    <div class="calc-cartao">
+      <form id="calc" onsubmit="return false">
+        <h2 id="t4" class="selo-calc sobe">Calcule seu pedido</h2>
+        <div class="campo sobe" data-atraso="80">
+          <span id="rot-pessoas">Quantas pessoas na ceia</span>
+          <div class="passo" role="group" aria-labelledby="rot-pessoas">
+            <button type="button" id="menos" aria-label="Menos uma pessoa">−</button>
+            <output id="pessoas" aria-live="polite">0</output>
+            <button type="button" id="mais" aria-label="Mais uma pessoa">+</button>
+          </div>
+        </div>
+        <fieldset class="campo sobe" data-atraso="140">
+          <legend>Costela</legend>
+          <div class="opcoes">
+            <label><input type="radio" name="corte" value="osso" checked><span>Com osso</span></label>
+            <label><input type="radio" name="corte" value="desossada"><span>Desossada</span></label>
+          </div>
+        </fieldset>
+      </form>
+      <div class="pedido sobe" data-atraso="200">
+        <p class="rot">Total</p>
+        <p class="total" id="total" aria-live="polite">R$ 0,00</p>
+        <p class="sinal">Reservas mediante 50% do valor</p>
+        <a class="bt cheio" id="reservar" href="#">Garantir minha reserva</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="prova" aria-labelledby="t5">
+    <h2 id="t5" class="sobe">Quem já provou, conta.</h2>
+    <div class="falas">
+      <blockquote class="sobe">“Estava excelente a costela. Muuuito saborosa, quase nada de gordura. Foi um sucesso.”<footer>Felipe</footer></blockquote>
+      <blockquote class="sobe" data-atraso="80">“Excelente atendimento e pontual, sem contar a experiência incrível de sabor e capricho.”<footer>Ju</footer></blockquote>
+      <blockquote class="sobe" data-atraso="120">“5 estrelas, prático, saboroso, qualidade excelente, recomendo e já estou fazendo propaganda.”<footer>Otávio</footer></blockquote>
+      <blockquote class="sobe" data-atraso="160">“Muito saborosa!”<footer>Iraídes</footer></blockquote>
+    </div>
+  </section>
+
+  <section class="como" aria-labelledby="t6">
+    <h2 id="t6" class="sobe">Prático para você. Inesquecível para eles.</h2>
+    <div class="passos">
+      <div class="sobe"><b>Escolha a ceia</b><p>24 ou 31 a partir das 18h, por ordem de reserva; 25 ou 1º a partir das 11h.</p></div>
+      <div class="sobe" data-atraso="80"><b>Garanta com 50%</b><p>O resto na entrega. Ou tudo de uma vez, se preferir.</p></div>
+      <div class="sobe" data-atraso="160"><b>Sirva e receba os elogios</b><p>Chega pronto, em Varginha, ou você retira.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="rodape">
+  <img src="../fim-de-ano/img/logo-escuro.webp" alt="Brunão Costela no Bafo" width="150" height="150" loading="lazy">
+  <p class="contato">
+    <a href="https://wa.me/5535997667164?text=Ol%C3%A1!%20Quero%20saber%20da%20ceia%20de%20Natal%20e%20Ano%20Novo." target="_blank" rel="noopener">WhatsApp (35) 99766-7164</a><br>
+    <a href="https://instagram.com/brunaocostelanobafo" target="_blank" rel="noopener">@brunaocostelanobafo</a><br>
+    Varginha · MG
+  </p>
+  <p class="legal">Brunão Costela no Bafo · desde 2021 · <a href="https://brunaocostelanobafo-oss.github.io/">ver o cardápio</a></p>
+</footer>
+<a class="zap" href="https://wa.me/5535997667164?text=Ol%C3%A1!%20Quero%20saber%20da%20ceia%20de%20Natal%20e%20Ano%20Novo." target="_blank" rel="noopener" aria-label="Falar com o Brunão no WhatsApp">
+  <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M16 3C9 3 3.3 8.6 3.3 15.6c0 2.3.6 4.5 1.7 6.4L3.2 28.8l7-1.8c1.8 1 3.8 1.5 5.9 1.5 7 0 12.7-5.7 12.7-12.7S23 3 16 3zm0 23.2c-1.9 0-3.8-.5-5.4-1.5l-.4-.2-4.1 1.1 1.1-4-.3-.4a10.4 10.4 0 0 1-1.6-5.6C5.3 9.8 10.1 5.2 16 5.2s10.6 4.7 10.6 10.5S21.9 26.2 16 26.2zm5.8-7.8c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2l-1 1.2c-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.6.3-.5c.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.7s1.2 3.2 1.4 3.4c.2.2 2.4 3.6 5.7 5 .8.4 1.4.6 1.9.7.8.3 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.4.2-1.5-.1-.2-.3-.3-.6-.4z"/></svg>
+</a>
+<script src="../fim-de-ano/motor25d.js"></script>
+</body>
+</html>
