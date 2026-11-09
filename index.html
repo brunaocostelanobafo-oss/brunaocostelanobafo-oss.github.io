@@ -52,6 +52,7 @@
 
     <div class="abas" role="tablist" aria-label="Seções do site">
       <button type="button" class="abas__botao" role="tab" id="aba-cardapio" aria-selected="true" aria-controls="cardapio">Cardápio</button>
+      <button type="button" class="abas__botao" role="tab" id="aba-encomendas" aria-selected="false" aria-controls="encomendas">Encomendas</button>
       <button type="button" class="abas__botao" role="tab" id="aba-eventos" aria-selected="false" aria-controls="eventos">Festas &amp; Eventos</button>
     </div>
 
@@ -69,6 +70,16 @@
     <section class="mais-pedidos" id="bloco-mais-pedidos" aria-label="Mais pedidos">
       <h2 class="categoria__titulo">Mais pedidos</h2>
       <div class="vitrine" id="vitrine"></div>
+    </section>
+
+    <section class="encomendas" id="encomendas" role="tabpanel" aria-labelledby="aba-encomendas" hidden>
+      <h2 class="eventos__titulo" id="encomendas-titulo"></h2>
+      <p class="eventos__descricao" id="encomendas-descricao"></p>
+      <p class="encomendas__montado" id="encomendas-montado" hidden></p>
+      <ul class="encomendas__datas" id="encomendas-datas"></ul>
+      <p class="eventos__aviso" id="encomendas-aviso"></p>
+      <p class="erro-form" id="encomendas-fechada" hidden></p>
+      <h3 class="encomendas__subtitulo">Escolha os itens</h3>
     </section>
 
     <section class="eventos" id="eventos" role="tabpanel" aria-labelledby="aba-eventos" hidden>
@@ -271,6 +282,18 @@
               <select name="hora" id="select-hora"></select>
             </label>
           </div>
+
+          <fieldset class="campo campo--opcoes" id="campo-sinal" hidden>
+            <legend class="campo__label">Quanto pagar agora?</legend>
+            <label class="opcao">
+              <input type="radio" name="sinal" value="50" checked>
+              <span id="rotulo-sinal-50">Sinal de 50%</span>
+            </label>
+            <label class="opcao">
+              <input type="radio" name="sinal" value="100">
+              <span id="rotulo-sinal-100">Pagar 100%</span>
+            </label>
+          </fieldset>
 
           <label class="campo" id="campo-pagamento">
             <span class="campo__label">Pagamento</span>

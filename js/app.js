@@ -238,6 +238,141 @@
     return partes.length ? `${base} (${partes.join(' · ')})` : base;
   }
 
+  // ---------------------------------------------------------------- encomendas
+
+  /** Estamos na aba Encomendas (Natal e Ano Novo)? Quem muda isso é o eventos.js. */
+  function emEncomendas() {
+    return document.body.classList.contains('modo-encomendas') && typeof ENCOMENDAS !== 'undefined';
+  }
+
+  function encomendasAbertas() {
+    return typeof ENCOMENDAS !== 'undefined' && ENCOMENDAS.aberta === true;
+  }
+
+  /** "2026-12-24" -> "Quinta, 24/12" (mesmo formato do cardápio, que o painel entende). */
+  function rotuloCurto(valorIso) {
+    const [a, m, d] = valorIso.split('-').map(Number);
+    return `${DIAS[new Date(a, m - 1, d).getDay()]}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+  }
+
+  /** Datas oferecidas no formulário: as de encomenda ou as do delivery. */
+  function opcoesDeData() {
+    if (emEncomendas()) {
+      const hoje = iso(new Date());
+      return ENCOMENDAS.datas
+        .filter((d) => d.valor >= hoje)
+        .map((d) => ({ valor: rotuloCurto(d.valor), texto: `${d.rotulo} · ${d.info}` }));
+    }
+    return proximasDatasDeEntrega().map((data) => ({ valor: rotuloData(data), texto: rotuloData(data) }));
+  }
+
+  /** 50 (sinal) ou 100 (total). No delivery comum é sempre 100. */
+  function sinalEscolhido() {
+    if (!emEncomendas()) return 100;
+    const marca = document.querySelector('input[name="sinal"]:checked');
+    return marca && marca.value === '100' ? 100 : (ENCOMENDAS.sinalPercentual || 50);
+  }
+
+  /** Quanto o cliente paga agora, em centavos (mesma conta do servidor). */
+  function valorAgora() {
+    return Math.round((totalGeral() * sinalEscolhido()) / 100);
+  }
+
+  /**
+   * Liga/desliga o que muda na aba Encomendas: datas, campo do sinal,
+   * rótulos e o aviso de encomendas encerradas. Pode rodar antes do
+   * cardápio estar montado — por isso confere cada elemento.
+   */
+  function atualizarModoEncomenda() {
+    const enc = emEncomendas();
+    document.body.classList.toggle('encomendas-fechadas', enc && !encomendasAbertas());
+
+    const sinal = document.getElementById('campo-sinal');
+    if (sinal) sinal.hidden = !enc;
+    const rotulo100 = document.getElementById('rotulo-sinal-100');
+    const rotulo50 = document.getElementById('rotulo-sinal-50');
+    if (enc && rotulo50) rotulo50.textContent = `Sinal de ${ENCOMENDAS.sinalPercentual || 50}% agora, o resto na ${ehEntrega() ? 'entrega' : 'retirada'}`;
+    if (enc && rotulo100) rotulo100.textContent = 'Pagar 100% agora';
+
+    const rotulo = document.getElementById('label-data');
+    if (rotulo) rotulo.textContent = enc ? 'Data da encomenda' : (ehEntrega() ? 'Data da entrega' : 'Data da retirada');
+
+    const agendar = document.getElementById('campo-agendar');
+    if (agendar) agendar.hidden = enc || !LOJA.agendamentoHorario.ativo || !ehEntrega();
+
+    if (document.getElementById('cardapio') && document.querySelector('#cardapio .item')) montarCardapio();
+    if (document.getElementById('select-data')) atualizarDatasNoFormulario();
+    if (document.getElementById('resumo-valores')) montarResumo();
+
+    const botao = document.getElementById('botao-enviar');
+    if (botao && pagamentoOnlineLigado()) {
+      botao.textContent = enc ? 'Pagar o sinal e reservar' : 'Pagar e confirmar pedido';
+    }
+  }
+
+  /**
+   * Link vindo das páginas de Natal/Confraternização:
+   * ?origem=natal&pessoas=8&completo=2&casal=1&corte=osso#encomendas
+   * Monta o carrinho com os combos calculados e avisa o cliente.
+   */
+  function montarPedidoDaPagina() {
+    if (!emEncomendas()) return;
+    const p = new URLSearchParams(location.search);
+    const completo = Math.max(0, Math.min(99, parseInt(p.get('completo'), 10) || 0));
+    const casal = Math.max(0, Math.min(99, parseInt(p.get('casal'), 10) || 0));
+    if (!p.get('origem') || (completo === 0 && casal === 0)) return;
+
+    const sufixo = p.get('corte') === 'desossada' ? 'Desossada' : 'Com osso';
+    const novos = {};
+    if (completo) novos[`Combo Completo · ${sufixo}`] = completo;
+    if (casal) novos[`Combo Casal · ${sufixo}`] = casal;
+    if (!Object.keys(novos).every((nome) => acharItem(nome))) return;
+
+    for (const nome of Object.keys(carrinho)) delete carrinho[nome];
+    Object.assign(carrinho, novos);
+    salvarCarrinho();
+    atualizarBarra();
+
+    const pessoas = parseInt(p.get('pessoas'), 10) || 0;
+    const partes = Object.entries(novos).map(([nome, q]) => `${q}x ${nome}`);
+    const aviso = document.getElementById('encomendas-montado');
+    if (aviso) {
+      aviso.textContent = `Montamos seu pedido${pessoas ? ` para ${pessoas} pessoas` : ''}: ${partes.join(' + ')}. Você pode ajustar abaixo e depois tocar em "Ver meu pedido".`;
+      aviso.hidden = false;
+    }
+    // Evita remontar o pedido toda vez que a página é recarregada
+    history.replaceState(null, '', location.pathname + '#encomendas');
+  }
+
+  function montarIntroEncomendas() {
+    if (typeof ENCOMENDAS === 'undefined') return;
+    const texto = (id, valor) => { const e = document.getElementById(id); if (e) e.textContent = valor; };
+    texto('encomendas-titulo', ENCOMENDAS.titulo);
+    texto('encomendas-descricao', ENCOMENDAS.descricao);
+    texto('encomendas-aviso', ENCOMENDAS.aviso);
+
+    const lista = document.getElementById('encomendas-datas');
+    if (lista) {
+      lista.innerHTML = '';
+      for (const d of ENCOMENDAS.datas) {
+        const li = document.createElement('li');
+        const forte = document.createElement('strong');
+        forte.textContent = d.rotulo;
+        const info = document.createElement('span');
+        info.textContent = d.info;
+        li.append(forte, info);
+        lista.appendChild(li);
+      }
+    }
+    const fechada = document.getElementById('encomendas-fechada');
+    if (fechada) {
+      fechada.textContent = ENCOMENDAS.mensagemFechada;
+      fechada.hidden = encomendasAbertas();
+    }
+  }
+
+  document.addEventListener('brunao:aba', atualizarModoEncomenda);
+
   // ------------------------------------------------------------ estado da loja
 
   /**
@@ -294,7 +429,7 @@
   /** Agendar horário certo é opcional e só faz sentido na entrega. */
   function querAgendar() {
     const marca = document.getElementById('check-agendar');
-    return !!(marca && marca.checked && ehEntrega() && LOJA.agendamentoHorario.ativo);
+    return !!(marca && marca.checked && ehEntrega() && LOJA.agendamentoHorario.ativo && !emEncomendas());
   }
 
   function taxaAgendamento() {
@@ -615,10 +750,10 @@
     if (!select) return;
     const valorAtual = select.value;
     select.innerHTML = '';
-    for (const data of proximasDatasDeEntrega()) {
+    for (const d of opcoesDeData()) {
       const opcao = document.createElement('option');
-      opcao.value = rotuloData(data);
-      opcao.textContent = rotuloData(data);
+      opcao.value = d.valor;
+      opcao.textContent = d.texto;
       select.appendChild(opcao);
     }
     // Mantém a escolha do cliente se ela ainda existir na lista nova.
@@ -682,6 +817,8 @@
   }
 
   function estaEsgotado(nome) {
+    // A lista de esgotados é do delivery do fim de semana; encomenda é para outra data.
+    if (emEncomendas()) return false;
     return esgotados.some((e) => e.toLowerCase() === String(nome).toLowerCase());
   }
 
@@ -1041,6 +1178,11 @@
       resumo.appendChild(criarLinhaResumo(rotulo, valor, false));
     }
     resumo.appendChild(criarLinhaResumo('Total', precoBR(totalGeral()), true));
+
+    if (emEncomendas() && sinalEscolhido() < 100) {
+      resumo.appendChild(criarLinhaResumo(`Pagar agora (sinal de ${sinalEscolhido()}%)`, precoBR(valorAgora()), false));
+      resumo.appendChild(criarLinhaResumo(`Restante, na ${ehEntrega() ? 'entrega' : 'retirada'}`, precoBR(totalGeral() - valorAgora()), false));
+    }
   }
 
   function criarLinhaResumo(rotulo, valor, ehTotal) {
@@ -1149,6 +1291,7 @@
       if (campo && form.elements[campo]) form.elements[campo].focus();
     }
 
+    if (emEncomendas() && !encomendasAbertas()) return falhar(ENCOMENDAS.mensagemFechada);
     if (quantidadeTotal() === 0) return falhar('Adicione pelo menos um item ao pedido.');
 
     // Última barreira: item que esgotou depois de entrar no carrinho.
@@ -1239,19 +1382,35 @@
     }
 
     const entrega = dados.entrega === 'entrega';
+    const encomenda = emEncomendas();
+    const sinal = sinalEscolhido();
+    const agora = valorAgora();
+    const total = totalGeral();
+    let observacoes = dados.observacoes || '';
+    let horario = '';
+    if (encomenda) {
+      horario = (ENCOMENDAS.datas.find((d) => rotuloCurto(d.valor) === dados.data) || {}).info || '';
+      const pagto = sinal < 100
+        ? `sinal de ${sinal}% pago (${precoBR(agora)}); restante ${precoBR(total - agora)} na ${entrega ? 'entrega' : 'retirada'}`
+        : 'pago 100%';
+      observacoes = `ENCOMENDA ${dados.data}${horario ? ' (' + horario + ')' : ''} — ${pagto}.${observacoes ? ' ' + observacoes : ''}`;
+    }
 
     // Guardado antes de sair da página: o cliente volta do checkout numa
     // navegação nova, e é daqui que a tela de confirmação lê o pedido.
     const resumoPedido = {
       itens: itens.map((i) => ({ nome: i.description, qtd: i.quantity, preco: i.price })),
-      total: totalGeral(),
+      total: encomenda ? agora : total,
+      totalPedido: total,
+      encomenda,
+      sinal,
       nome: dados.nome,
       telefone: dados.telefone,
       entrega,
       endereco: entrega ? dados.endereco : '',
       data: dados.data,
       hora: querAgendar() ? dados.hora : '',
-      observacoes: dados.observacoes || '',
+      observacoes,
       freteGratis: entrega && temFreteGratis(),
     };
 
@@ -1275,7 +1434,9 @@
         entregaTexto: dados.data,
         horaAgendada: querAgendar() ? dados.hora : '',
         retirada: !entrega,
-        observacoes: dados.observacoes || '',
+        observacoes,
+        // Encomenda: o servidor confere os preços e cobra só o sinal (ou 100%)
+        encomenda: encomenda ? { sinal, horario } : undefined,
       }),
     })
       .then((r) => r.json())
@@ -1337,10 +1498,10 @@
     }
 
     const datas = document.getElementById('select-data');
-    for (const data of proximasDatasDeEntrega()) {
+    for (const d of opcoesDeData()) {
       const opcao = document.createElement('option');
-      opcao.value = rotuloData(data);
-      opcao.textContent = rotuloData(data);
+      opcao.value = d.valor;
+      opcao.textContent = d.texto;
       datas.appendChild(opcao);
     }
 
@@ -1388,9 +1549,7 @@
       radio.addEventListener('change', () => {
         const entrega = ehEntrega();
         document.getElementById('campo-endereco').hidden = !entrega;
-        document.getElementById('label-data').textContent = entrega
-          ? 'Data da entrega'
-          : 'Data da retirada';
+        atualizarModoEncomenda();
 
         /* Ao trocar para retirada o bloco some, mas a escolha continua
            marcada: quem tinha agendado e volta para entrega encontra o
@@ -1413,7 +1572,13 @@
     montarCardapio();
     montarRodape();
     montarFormulario();
+    montarIntroEncomendas();
+    montarPedidoDaPagina();
     atualizarBarra();
+    atualizarModoEncomenda();
+    for (const radio of document.querySelectorAll('input[name="sinal"]')) {
+      radio.addEventListener('change', montarResumo);
+    }
 
     /* O carrinho sobrevive ao fechamento do navegador. Se um item
        esgotou nesse meio-tempo, ele precisa sair já na abertura — não só

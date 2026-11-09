@@ -171,12 +171,37 @@ function criarLink(dados) {
 
   if (!itens.length) return { ok: false, erro: 'Pedido sem itens.' };
 
+  var precoErrado = conferirPrecos(itens);
+  if (precoErrado) {
+    registrarErro('criarLink', 'Preço recusado: ' + precoErrado);
+    return { ok: false, erro: 'O cardápio foi atualizado. Recarregue a página e monte o pedido de novo.' };
+  }
+
   // Número do pedido: data + sequência, para você reconhecer na planilha.
   var orderNsu = dados.order_nsu || gerarOrderNsu();
 
+  /* Encomenda (aba Encomendas): o cliente paga um sinal de 50% ou o total.
+     O pedido completo fica na planilha (itens e valor_centavos); a
+     InfinitePay cobra só o valor de agora, calculado AQUI a partir dos
+     preços já conferidos — nunca o que o navegador diz. */
+  var cobranca = itens;
+  if (dados.encomenda) {
+    var sinal = Number(dados.encomenda.sinal);
+    if (sinal !== 50 && sinal !== 100) {
+      return { ok: false, erro: 'Percentual de sinal inválido.' };
+    }
+    if (sinal === 50) {
+      cobranca = [{
+        quantity: 1,
+        price: Math.round(somar(itens) * 50 / 100),
+        description: 'Sinal de 50% da encomenda',
+      }];
+    }
+  }
+
   var payload = {
     handle: CONFIG.HANDLE,
-    items: itens.map(function (i) {
+    items: cobranca.map(function (i) {
       return {
         quantity: Math.round(i.quantity),
         price: Math.round(i.price),
@@ -229,7 +254,52 @@ function criarLink(dados) {
   // Guarda o pedido como pendente. Se o cliente pagar, o webhook completa.
   gravarPendente(orderNsu, dados, itens);
 
+  // Encomenda: também entra na aba "Encomendas" (não pode derrubar o pagamento).
+  if (dados.encomenda) {
+    try { gravarEncomenda(orderNsu, dados, itens); } catch (erro) { registrarErro('encomenda-gravar', erro); }
+  }
+
   return { ok: true, url: url, order_nsu: orderNsu };
+}
+
+/**
+ * Tabela de preços que o servidor aceita, em centavos.
+ *
+ * O site é público: qualquer um pode mandar um pedido com o preço que
+ * quiser. Por isso cada item é conferido aqui antes de virar link de
+ * pagamento. ATENÇÃO: mudou preço ou produto em js/menu-data.js, mude
+ * aqui também e implante "Nova versão" — senão o pedido é recusado.
+ */
+var PRECOS = {
+  'Fraldinha no Bafo · 1 kg': 14990,
+  'Combo Família · Com osso': 24990,
+  'Combo Família · Desossada': 28740,
+  'Combo Completo · Com osso': 15990,
+  'Combo Completo · Desossada': 18490,
+  'Combo Casal · Com osso': 10990,
+  'Combo Casal · Desossada': 12940,
+  'Costela no Bafo 1,5 kg · Com osso': 14990,
+  'Costela no Bafo 1,5 kg · Desossada': 18740,
+  'Costela no Bafo 1 kg · Com osso': 9990,
+  'Costela no Bafo 1 kg · Desossada': 12490,
+  'Costela no Bafo 500 g · Com osso': 7790,
+  'Costela no Bafo 500 g · Desossada': 9740,
+  'Arroz': 1990,
+  'Mandioca': 1490,
+  'Farofa': 1290,
+  'Creme de Alho': 1290,
+  'Taxa de entrega': 1000,
+};
+var PRECO_AGENDAMENTO = 800; // "Agendamento de horário (HH:MM)"
+
+/** Devolve a descrição do primeiro item com preço fora da tabela, ou ''. */
+function conferirPrecos(itens) {
+  for (var i = 0; i < itens.length; i++) {
+    var nome = String(itens[i].description);
+    var certo = /^Agendamento de horário \(\d\d:\d\d\)$/.test(nome) ? PRECO_AGENDAMENTO : PRECOS[nome];
+    if (certo === undefined || Math.round(itens[i].price) !== certo) return nome + ' = ' + itens[i].price;
+  }
+  return '';
 }
 
 function gerarOrderNsu() {
@@ -273,6 +343,8 @@ function receberWebhook(aviso) {
 
   // O valor que vale é o que a InfinitePay confirmou, não o do aviso.
   registrarVenda(aviso, confere);
+
+  try { atualizarEncomenda(orderNsu, confere); } catch (erro) { registrarErro('encomenda-pagar', erro); }
 
   // Avisar a Meta nunca pode derrubar o registro da venda.
   try {
@@ -494,6 +566,82 @@ function gravarPendente(orderNsu, dados, itens) {
 
   for (var i = 0; i < COLUNAS.length; i++) if (linha[i] === undefined) linha[i] = '';
   aba().appendRow(linha);
+}
+
+// ===========================================================================
+// ABA "ENCOMENDAS" — uma linha por encomenda (Natal, Ano Novo…)
+//
+// Além da aba de vendas (que o painel lê), cada encomenda entra aqui com o
+// total, o que já foi pago (sinal) e o que falta receber na entrega. A aba é
+// criada sozinha na primeira encomenda.
+// ===========================================================================
+
+var ABA_ENCOMENDAS = 'Encomendas';
+var COLUNAS_ENC = [
+  'registrado_em', 'order_nsu', 'status', 'cliente', 'telefone',
+  'data_entrega', 'horario', 'entrega_ou_retirada', 'endereco', 'itens',
+  'total_centavos', 'sinal_percentual', 'pago_centavos', 'restante_centavos',
+  'forma_pagamento', 'observacoes',
+];
+
+function abaEncomendas() {
+  var planilha = SpreadsheetApp.getActiveSpreadsheet();
+  var folha = planilha.getSheetByName(ABA_ENCOMENDAS);
+  if (!folha) {
+    folha = planilha.insertSheet(ABA_ENCOMENDAS);
+    folha.appendRow(COLUNAS_ENC);
+    folha.setFrozenRows(1);
+    folha.getRange(1, 1, 1, COLUNAS_ENC.length).setFontWeight('bold');
+    // Telefone, data e horário são texto: o Sheets converteria sozinho.
+    var colTel = COLUNAS_ENC.indexOf('telefone') + 1;
+    var colData = COLUNAS_ENC.indexOf('data_entrega') + 1;
+    folha.getRange(2, colTel, 1000, 1).setNumberFormat('@');
+    folha.getRange(2, colData, 1000, 2).setNumberFormat('@');
+  }
+  return folha;
+}
+
+function gravarEncomenda(orderNsu, dados, itens) {
+  var cliente = dados.cliente || {};
+  var total = somar(itens);
+  var sinal = Number(dados.encomenda.sinal) || 100;
+  var resumo = itens.map(function (i) { return i.quantity + 'x ' + i.description; }).join('; ');
+  var linha = [];
+  linha[COLUNAS_ENC.indexOf('registrado_em')] = new Date();
+  linha[COLUNAS_ENC.indexOf('order_nsu')] = orderNsu;
+  linha[COLUNAS_ENC.indexOf('status')] = 'aguardando pagamento';
+  linha[COLUNAS_ENC.indexOf('cliente')] = cliente.nome || '';
+  linha[COLUNAS_ENC.indexOf('telefone')] = cliente.telefone || '';
+  linha[COLUNAS_ENC.indexOf('data_entrega')] = dados.entregaTexto || '';
+  linha[COLUNAS_ENC.indexOf('horario')] = dados.encomenda.horario || '';
+  linha[COLUNAS_ENC.indexOf('entrega_ou_retirada')] = dados.retirada ? 'Retirada' : 'Entrega';
+  linha[COLUNAS_ENC.indexOf('endereco')] = dados.enderecoTexto || '';
+  linha[COLUNAS_ENC.indexOf('itens')] = resumo;
+  linha[COLUNAS_ENC.indexOf('total_centavos')] = total;
+  linha[COLUNAS_ENC.indexOf('sinal_percentual')] = sinal;
+  linha[COLUNAS_ENC.indexOf('observacoes')] = dados.observacoes || '';
+  for (var i = 0; i < COLUNAS_ENC.length; i++) if (linha[i] === undefined) linha[i] = '';
+  abaEncomendas().appendRow(linha);
+}
+
+/** Quando o pagamento é confirmado: preenche o que foi pago e o que falta. */
+function atualizarEncomenda(orderNsu, confere) {
+  var folha = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ABA_ENCOMENDAS);
+  if (!folha) return;
+  var valores = folha.getDataRange().getValues();
+  var colOrder = COLUNAS_ENC.indexOf('order_nsu');
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][colOrder]) !== String(orderNsu)) continue;
+    var total = Number(valores[i][COLUNAS_ENC.indexOf('total_centavos')]) || 0;
+    var pago = Number(confere.paid_amount) || 0;
+    var restante = Math.max(0, total - pago);
+    var linha = i + 1;
+    folha.getRange(linha, COLUNAS_ENC.indexOf('pago_centavos') + 1).setValue(pago);
+    folha.getRange(linha, COLUNAS_ENC.indexOf('restante_centavos') + 1).setValue(restante);
+    folha.getRange(linha, COLUNAS_ENC.indexOf('forma_pagamento') + 1).setValue(traduzirMetodo(confere.capture_method));
+    folha.getRange(linha, COLUNAS_ENC.indexOf('status') + 1).setValue(restante > 0 ? 'sinal pago' : 'pago 100%');
+    return;
+  }
 }
 
 /** Completa a linha pendente daquele pedido, ou cria uma nova se não achar. */

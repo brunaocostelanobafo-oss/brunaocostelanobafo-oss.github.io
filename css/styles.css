@@ -1055,3 +1055,38 @@ body.pedido-aberto .zap-flutuante { display: none; }
 
 .escolha:has(input:checked) { border-color: var(--marca); background: var(--marca-clara); color: var(--marca-escura); }
 .escolha input { accent-color: var(--marca); width: 16px; height: 16px; margin: 0; }
+
+/* ---------- Encomendas (Natal e Ano Novo) ---------- */
+
+.encomendas { padding: 18px 16px 4px; }
+.encomendas__subtitulo { margin: 18px 0 0; font-size: 15px; font-weight: 800; color: var(--tinta); }
+.encomendas__montado { margin: 0 0 12px; padding: 11px 13px; border-radius: 10px; background: var(--marca-clara); border: 1px solid var(--marca); color: var(--marca-escura); font-size: 14px; font-weight: 700; line-height: 1.45; }
+.encomendas__datas { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.encomendas__datas li { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--linha); background: var(--cartao); font-size: 13.5px; line-height: 1.35; }
+.encomendas__datas strong { display: block; font-size: 14px; color: var(--tinta); }
+.encomendas__datas span { color: var(--suave); }
+
+/* Na aba de encomendas: sem banners, mais pedidos e avisos de fim de semana */
+.modo-encomendas .avisos,
+.modo-encomendas .carrossel,
+.modo-encomendas .banners__pontos,
+.modo-encomendas .mais-pedidos { display: none !important; }
+
+/* Encomendas encerradas: o cardápio e o carrinho saem de cena */
+.encomendas-fechadas .categorias,
+.encomendas-fechadas .cardapio,
+.encomendas-fechadas .barra-carrinho,
+.encomendas-fechadas .encomendas__subtitulo { display: none !important; }
+
+@media (min-width: 640px) {
+  .encomendas__datas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* O "cardápio fechado" do painel vale para o delivery do fim de semana;
+   as encomendas têm o próprio controle (ENCOMENDAS.aberta). */
+.modo-encomendas.loja-fechada .barra-carrinho:not([hidden]) { display: flex !important; }
+.modo-encomendas.loja-fechada .folha__acao { display: flex !important; }
+.modo-encomendas.loja-fechada .item, .modo-encomendas.loja-fechada .mini { pointer-events: auto; }
+
+/* Ao abrir direto em #encomendas, a barra de categorias (fixa no topo) não cobre o título */
+.encomendas, .eventos { scroll-margin-top: 70px; }

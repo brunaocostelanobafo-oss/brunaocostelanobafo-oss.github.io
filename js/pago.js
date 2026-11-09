@@ -84,7 +84,15 @@
         li.appendChild(valor);
         lista.appendChild(li);
       }
-      document.getElementById('pago-total').textContent = `Total pago: ${precoBR(pedido.total)}`;
+      // Encomenda com sinal: o que foi pago agora é menor que a soma dos itens.
+      const ehEncomenda = /^ENCOMENDA/.test(pedido.observacoes || '');
+      document.getElementById('pago-total').textContent =
+        `${ehEncomenda ? 'Pago agora' : 'Total pago'}: ${precoBR(pedido.total)}`;
+      if (ehEncomenda) {
+        const nota = document.getElementById('pago-agendado');
+        nota.textContent = pedido.observacoes;
+        nota.hidden = false;
+      }
       document.getElementById('bloco-pedido').hidden = false;
     }
 

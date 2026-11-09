@@ -332,6 +332,35 @@ const EVENTOS = {
   outrosExemplo: 'Ex.: maionese, salpicão, massas, vinagrete…',
 };
 
+/* ---------------------------------------------------------------------
+ * ENCOMENDAS — aba de pedidos com data marcada (Natal e Ano Novo)
+ *
+ * Vende os mesmos itens do cardápio, mas a data é uma das listadas aqui
+ * e o cliente paga um sinal (ou o total) na hora de reservar.
+ *
+ * `aberta: false` fecha as encomendas: a aba continua aparecendo, mas o
+ * pedido fica bloqueado com o aviso `mensagemFechada`. Não há limite de
+ * quilos nem de dias: ficam abertas até você encerrar.
+ *
+ * `datas`: valor = AAAA-MM-DD (para ordenar) · rotulo = o que o cliente
+ * vê · info = horário, em texto.
+ * ------------------------------------------------------------------- */
+const ENCOMENDAS = {
+  aberta: true,
+  titulo: 'Encomendas de Natal e Ano Novo',
+  descricao: 'Escolha a data, monte a sua ceia e reserve com um sinal. Assada na lenha, de 14 horas, no bafo.',
+  aviso: 'Reservas por ordem de pagamento do sinal. Produção limitada.',
+  mensagemFechada: 'As encomendas estão encerradas. Chame no WhatsApp se quiser saber de uma vaga.',
+  sinalPercentual: 50, // sinal padrão; o cliente também pode pagar 100%
+  datas: [
+    { valor: '2026-12-24', rotulo: 'Quinta, 24/12 · Véspera de Natal', info: 'a partir das 18h' },
+    { valor: '2026-12-25', rotulo: 'Sexta, 25/12 · Natal', info: 'a partir das 11h' },
+    { valor: '2026-12-31', rotulo: 'Quinta, 31/12 · Ano Novo', info: 'a partir das 18h' },
+    { valor: '2027-01-01', rotulo: 'Sexta, 01/01 · Confraternização', info: 'a partir das 11h' },
+  ],
+  textoEntrega: 'Entrega em Varginha ou retirada, por ordem de reserva. Avisamos pelo WhatsApp quando a rota sair.',
+};
+
 /**
  * Tudo o que pode ser vendido, já com as variantes abertas: cada uma vira
  * um item com nome e preço próprios. Usado pelo cardápio e pelo painel.

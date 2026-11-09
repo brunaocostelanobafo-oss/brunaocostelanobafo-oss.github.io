@@ -15,26 +15,41 @@
 
   const abaCardapio = document.getElementById('aba-cardapio');
   const abaEventos = document.getElementById('aba-eventos');
+  const abaEncomendas = document.getElementById('aba-encomendas');
   const secao = document.getElementById('eventos');
+  const secaoEnc = document.getElementById('encomendas');
   if (!abaCardapio || !abaEventos || !secao || typeof EVENTOS === 'undefined') return;
 
   /* ---------- Abas ---------- */
 
-  function mostrar(eventos, rolar) {
-    document.body.classList.toggle('modo-eventos', eventos);
-    secao.hidden = !eventos;
-    abaCardapio.setAttribute('aria-selected', String(!eventos));
-    abaEventos.setAttribute('aria-selected', String(eventos));
-    const url = location.pathname + location.search + (eventos ? '#eventos' : '');
-    history.replaceState(null, '', url);
+  const HASH = { eventos: '#eventos', encomendas: '#encomendas', cardapio: '' };
+
+  function mostrar(qual, rolar) {
+    if (qual === 'encomendas' && !secaoEnc) qual = 'cardapio';
+    document.body.classList.toggle('modo-eventos', qual === 'eventos');
+    document.body.classList.toggle('modo-encomendas', qual === 'encomendas');
+    secao.hidden = qual !== 'eventos';
+    if (secaoEnc) secaoEnc.hidden = qual !== 'encomendas';
+    abaCardapio.setAttribute('aria-selected', String(qual === 'cardapio'));
+    abaEventos.setAttribute('aria-selected', String(qual === 'eventos'));
+    if (abaEncomendas) abaEncomendas.setAttribute('aria-selected', String(qual === 'encomendas'));
+    /* Mantém os parâmetros da URL (origem, pessoas…) só na aba de encomendas;
+       nas outras abas a URL volta a ficar limpa. */
+    const busca = qual === 'encomendas' ? location.search : '';
+    history.replaceState(null, '', location.pathname + busca + HASH[qual]);
+    document.dispatchEvent(new CustomEvent('brunao:aba', { detail: qual }));
     if (rolar) document.querySelector('.abas').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  abaCardapio.addEventListener('click', () => mostrar(false, true));
-  abaEventos.addEventListener('click', () => mostrar(true, true));
-  // O site sempre abre no cardápio; só o link do anúncio de eventos abre direto nesta aba
-  if (location.hash === '#eventos') mostrar(true, false);
-  window.addEventListener('hashchange', () => { if (location.hash === '#eventos') mostrar(true, true); });
+  abaCardapio.addEventListener('click', () => mostrar('cardapio', true));
+  abaEventos.addEventListener('click', () => mostrar('eventos', true));
+  if (abaEncomendas) abaEncomendas.addEventListener('click', () => mostrar('encomendas', true));
+  // O site sempre abre no cardápio; só o link do anúncio abre direto na aba
+  const inicial = () => (location.hash === '#eventos' ? 'eventos' : location.hash === '#encomendas' ? 'encomendas' : null);
+  /* app.js (carregado antes) já escuta 'brunao:aba' e também lê a classe do
+     body quando monta o cardápio, então a aba inicial vale nos dois casos. */
+  if (inicial()) mostrar(inicial(), false);
+  window.addEventListener('hashchange', () => { if (inicial()) mostrar(inicial(), true); });
 
   /* ---------- Formulário ---------- */
 
