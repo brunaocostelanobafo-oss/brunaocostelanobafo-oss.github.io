@@ -351,6 +351,77 @@
         </div>
         <p class="cartao__texto" id="enc-aviso"></p>
       </div>
+      <details class="cartao enc-manual" id="enc-manual">
+        <summary class="cartao__titulo">➕ Lançar encomenda manualmente</summary>
+        <p class="cartao__texto">
+          Para pedidos combinados por fora (WhatsApp, Pix direto, dinheiro). Assim
+          como no site, <strong>só entra com pagamento</strong>: informe o valor já
+          recebido (sinal ou total).
+        </p>
+        <form id="form-enc-manual" class="form-enc-manual" novalidate>
+          <div class="campo-linha">
+            <label class="campo"><span class="campo__label">Campanha</span>
+              <select id="enc-m-tipo">
+                <option value="natal">Natal e Ano Novo</option>
+                <option value="confraternizacao">Confraternizações</option>
+              </select>
+            </label>
+            <label class="campo"><span class="campo__label">Data da entrega/retirada</span>
+              <input type="date" id="enc-m-data">
+            </label>
+            <label class="campo"><span class="campo__label">Horário</span>
+              <input type="text" id="enc-m-horario" placeholder="ex.: a partir das 18h">
+            </label>
+          </div>
+          <div class="campo-linha">
+            <label class="campo"><span class="campo__label">Cliente</span>
+              <input type="text" id="enc-m-cliente" autocomplete="off">
+            </label>
+            <label class="campo"><span class="campo__label">WhatsApp</span>
+              <input type="tel" id="enc-m-telefone" inputmode="tel" placeholder="(35) 9xxxx-xxxx">
+            </label>
+          </div>
+          <fieldset class="campo campo--opcoes">
+            <legend class="campo__label">Como recebe?</legend>
+            <label class="opcao"><input type="radio" name="enc-m-via" value="entrega" checked><span>Entrega</span></label>
+            <label class="opcao"><input type="radio" name="enc-m-via" value="retirada"><span>Retirada</span></label>
+          </fieldset>
+          <label class="campo" id="enc-m-campo-endereco"><span class="campo__label">Endereço</span>
+            <input type="text" id="enc-m-endereco" placeholder="Rua, número, bairro">
+          </label>
+          <div class="campo-linha">
+            <label class="campo"><span class="campo__label">Item</span>
+              <select id="enc-m-item"></select>
+            </label>
+            <label class="campo"><span class="campo__label">Qtd</span>
+              <input type="number" id="enc-m-qtd" min="1" value="1" inputmode="numeric">
+            </label>
+            <button type="button" class="botao" id="btn-enc-m-add">+ Adicionar</button>
+          </div>
+          <ul class="enc-m-itens" id="enc-m-itens"></ul>
+          <label class="opcao"><input type="checkbox" id="enc-m-taxa"><span id="enc-m-taxa-texto">Cobrar taxa de entrega</span></label>
+          <p class="cartao__texto"><strong id="enc-m-total">Total: R$ 0,00</strong></p>
+          <div class="campo-linha">
+            <label class="campo"><span class="campo__label">Valor já recebido (R$)</span>
+              <input type="text" id="enc-m-pago" inputmode="decimal" placeholder="0,00">
+            </label>
+            <button type="button" class="botao" id="btn-enc-m-50">50% do total</button>
+            <button type="button" class="botao" id="btn-enc-m-100">100% do total</button>
+          </div>
+          <div class="campo-linha">
+            <label class="campo"><span class="campo__label">Forma de pagamento</span>
+              <select id="enc-m-forma">
+                <option>Pix</option><option>Dinheiro</option><option>Cartão de crédito</option><option>Cartão de débito</option><option>Outro</option>
+              </select>
+            </label>
+          </div>
+          <label class="campo"><span class="campo__label">Observações <span class="campo__opcional">(opcional)</span></span>
+            <textarea id="enc-m-obs" rows="2"></textarea>
+          </label>
+          <p class="erro-form" id="enc-m-erro" hidden></p>
+          <button type="submit" class="botao botao--principal" id="btn-enc-m-salvar">Lançar encomenda</button>
+        </form>
+      </details>
       <div class="tiles" id="enc-tiles"></div>
       <div id="enc-lista"></div>
     </section>

@@ -2892,6 +2892,15 @@
           entregue.addEventListener('click', () => marcarEncomenda(e, 'entregue', !e.entregue_em));
           acoes.appendChild(entregue);
         }
+        const excluir = el('button', 'botao botao--perigo', '🗑 Excluir');
+        excluir.type = 'button';
+        excluir.addEventListener('click', () => {
+          if (!confirm(`Excluir a encomenda de ${e.cliente || 'sem nome'} (${reais(e.total)})?\n\nIsso remove do sistema e NÃO desfaz o pagamento na InfinitePay. Não dá para desfazer.`)) return;
+          chamarServidor({ acao: 'encomenda-excluir', order_nsu: e.order_nsu })
+            .then(carregarEncomendas)
+            .catch((erro) => alert(erro.message));
+        });
+        acoes.appendChild(excluir);
         if (e.telefone) {
           const zap = el('a', 'botao', '💬 WhatsApp');
           zap.href = `https://wa.me/${zapInternacional(e.telefone)}`;
@@ -2908,7 +2917,122 @@
     }
   }
 
+
+  /* ----- Lançamento manual de encomenda ----- */
+  let itensManual = []; // [{nome, preco, qtd}]
+
+  function totalManual() {
+    const itens = itensManual.reduce((t, i) => t + i.preco * i.qtd, 0);
+    const taxa = document.getElementById('enc-m-taxa').checked && document.getElementById('enc-m-taxa').disabled === false ? LOJA.taxaEntrega : 0;
+    return itens + taxa;
+  }
+
+  function renderManual() {
+    const lista = document.getElementById('enc-m-itens');
+    lista.innerHTML = '';
+    itensManual.forEach((i, idx) => {
+      const li = el('li');
+      li.appendChild(el('span', null, `${i.qtd}x ${i.nome} — ${reais(i.preco * i.qtd)}`));
+      const rm = el('button', null, '×');
+      rm.type = 'button';
+      rm.setAttribute('aria-label', `Remover ${i.nome}`);
+      rm.addEventListener('click', () => { itensManual.splice(idx, 1); renderManual(); });
+      li.appendChild(rm);
+      lista.appendChild(li);
+    });
+    document.getElementById('enc-m-total').textContent = `Total: ${reais(totalManual())}`;
+  }
+
+  function configurarManual() {
+    const seletor = document.getElementById('enc-m-item');
+    for (const it of itensVendaveis()) {
+      seletor.appendChild(new Option(`${it.nome} — ${reais(it.preco)}`, it.nome));
+    }
+    document.getElementById('enc-m-taxa-texto').textContent = `Cobrar taxa de entrega (${reais(LOJA.taxaEntrega)})`;
+
+    const via = () => (document.querySelector('input[name="enc-m-via"]:checked') || {}).value || 'entrega';
+    const atualizarVia = () => {
+      const entrega = via() === 'entrega';
+      document.getElementById('enc-m-campo-endereco').hidden = !entrega;
+      const taxa = document.getElementById('enc-m-taxa');
+      taxa.disabled = !entrega;
+      if (!entrega) taxa.checked = false;
+      renderManual();
+    };
+    for (const r of document.querySelectorAll('input[name="enc-m-via"]')) r.addEventListener('change', atualizarVia);
+    document.getElementById('enc-m-taxa').addEventListener('change', renderManual);
+
+    document.getElementById('btn-enc-m-add').addEventListener('click', () => {
+      const nome = seletor.value;
+      const qtd = Math.max(1, parseInt(document.getElementById('enc-m-qtd').value, 10) || 1);
+      const item = itensVendaveis().find((x) => x.nome === nome);
+      if (!item) return;
+      const ja = itensManual.find((x) => x.nome === nome);
+      if (ja) ja.qtd += qtd; else itensManual.push({ nome, preco: item.preco, qtd });
+      document.getElementById('enc-m-qtd').value = '1';
+      renderManual();
+    });
+
+    const campoPago = document.getElementById('enc-m-pago');
+    const preencher = (pct) => {
+      campoPago.value = (Math.round(totalManual() * pct / 100) / 100).toFixed(2).replace('.', ',');
+    };
+    document.getElementById('btn-enc-m-50').addEventListener('click', () => preencher(50));
+    document.getElementById('btn-enc-m-100').addEventListener('click', () => preencher(100));
+
+    const erro = document.getElementById('enc-m-erro');
+    const falhar = (m) => { erro.textContent = m; erro.hidden = false; };
+
+    document.getElementById('form-enc-manual').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      erro.hidden = true;
+      const cliente = document.getElementById('enc-m-cliente').value.trim();
+      const dataIso = document.getElementById('enc-m-data').value;
+      const total = totalManual();
+      const pago = paraCentavos(campoPago.value);
+      if (!cliente) return falhar('Informe o nome do cliente.');
+      if (!dataIso) return falhar('Escolha a data da entrega ou retirada.');
+      if (!itensManual.length) return falhar('Adicione pelo menos um item.');
+      if (!(pago > 0)) return falhar('Só entram encomendas com pagamento. Informe o valor já recebido.');
+      if (pago > total) return falhar('O valor recebido não pode ser maior que o total.');
+
+      const entrega = via() === 'entrega';
+      const itens = itensManual.map((i) => `${i.qtd}x ${i.nome}`);
+      if (entrega && document.getElementById('enc-m-taxa').checked) itens.push('1x Taxa de entrega');
+
+      const botao = document.getElementById('btn-enc-m-salvar');
+      botao.disabled = true;
+      chamarServidor({
+        acao: 'encomenda-manual',
+        tipo: document.getElementById('enc-m-tipo').value,
+        data_iso: dataIso,
+        data_entrega: rotuloEntrega(dataIso),
+        horario: document.getElementById('enc-m-horario').value.trim(),
+        cliente,
+        telefone: document.getElementById('enc-m-telefone').value.trim(),
+        retirada: !entrega,
+        endereco: entrega ? document.getElementById('enc-m-endereco').value.trim() : '',
+        itens: itens.join('; '),
+        total,
+        pago,
+        forma: document.getElementById('enc-m-forma').value,
+        observacoes: document.getElementById('enc-m-obs').value.trim(),
+      })
+        .then(() => {
+          itensManual = [];
+          document.getElementById('form-enc-manual').reset();
+          atualizarVia();
+          document.getElementById('enc-manual').open = false;
+          carregarEncomendas();
+        })
+        .catch((e) => falhar(e.message))
+        .finally(() => { botao.disabled = false; });
+    });
+    atualizarVia();
+  }
+
   function configurarEncomendas() {
+    configurarManual();
     document.getElementById('btn-enc-atualizar').addEventListener('click', carregarEncomendas);
     document.getElementById('enc-filtro-tipo').addEventListener('change', renderEncomendas);
     document.getElementById('enc-filtro-situacao').addEventListener('change', renderEncomendas);

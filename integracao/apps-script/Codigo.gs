@@ -68,6 +68,8 @@ var COLUNAS = [
   'metodo', 'recibo', 'status', 'registrado_em',
   // Para o ticket de expedição: quando entregar, não quando compraram.
   'entrega_texto', 'hora_agendada', 'retirada', 'observacoes',
+  // Dados da encomenda (JSON) guardados até o pagamento; só então ela vai para a aba Encomendas.
+  'encomenda',
 ];
 
 // ===========================================================================
@@ -94,6 +96,8 @@ function doPost(e) {
     if (corpo.acao === 'horario') return json(salvarHorarioExtra(corpo));
     if (corpo.acao === 'encomendas-status') return json(salvarStatusEncomendas(corpo));
     if (corpo.acao === 'encomenda-marcar') return json(marcarEncomenda(corpo));
+    if (corpo.acao === 'encomenda-manual') return json(lancarEncomendaManual(corpo));
+    if (corpo.acao === 'encomenda-excluir') return json(excluirEncomenda(corpo));
 
     // Sem 'acao' e com slug de fatura: é a InfinitePay avisando.
     if (corpo.invoice_slug || corpo.transaction_nsu) return json(receberWebhook(corpo));
@@ -262,10 +266,8 @@ function criarLink(dados) {
   // Guarda o pedido como pendente. Se o cliente pagar, o webhook completa.
   gravarPendente(orderNsu, dados, itens);
 
-  // Encomenda: também entra na aba "Encomendas" (não pode derrubar o pagamento).
-  if (dados.encomenda) {
-    try { gravarEncomenda(orderNsu, dados, itens); } catch (erro) { registrarErro('encomenda-gravar', erro); }
-  }
+  /* Encomenda: os dados ficam guardados no pedido pendente. Só entra na aba
+     "Encomendas" quando o pagamento (sinal ou total) for confirmado. */
 
   return { ok: true, url: url, order_nsu: orderNsu };
 }
@@ -364,7 +366,7 @@ function receberWebhook(aviso) {
   // O valor que vale é o que a InfinitePay confirmou, não o do aviso.
   registrarVenda(aviso, confere);
 
-  try { atualizarEncomenda(orderNsu, confere); } catch (erro) { registrarErro('encomenda-pagar', erro); }
+  try { registrarEncomendaPaga(orderNsu, confere); } catch (erro) { registrarErro('encomenda-pagar', erro); }
 
   // Avisar a Meta nunca pode derrubar o registro da venda.
   try {
@@ -554,6 +556,10 @@ function aba() {
     var colTel = indiceDe('telefone') + 1;
     folha.getRange(1, colTel, linhas, 1).setNumberFormat('@');
 
+  // Aba criada antes da coluna "encomenda": completa o cabeçalho.
+  var colEnc = indiceDe('encomenda') + 1;
+  if (folha.getRange(1, colEnc).getValue() !== 'encomenda') folha.getRange(1, colEnc).setValue('encomenda');
+
   return folha;
 }
 
@@ -583,6 +589,14 @@ function gravarPendente(orderNsu, dados, itens) {
   linha[indiceDe('hora_agendada')] = dados.horaAgendada || '';
   linha[indiceDe('retirada')] = dados.retirada ? 'sim' : '';
   linha[indiceDe('observacoes')] = dados.observacoes || '';
+  if (dados.encomenda) {
+    linha[indiceDe('encomenda')] = JSON.stringify({
+      sinal: Number(dados.encomenda.sinal) || 100,
+      horario: dados.encomenda.horario || '',
+      tipo: dados.encomenda.tipo === 'confraternizacao' ? 'confraternizacao' : 'natal',
+      dataIso: dados.encomenda.dataIso || '',
+    });
+  }
 
   for (var i = 0; i < COLUNAS.length; i++) if (linha[i] === undefined) linha[i] = '';
   aba().appendRow(linha);
@@ -633,49 +647,130 @@ function abaEncomendas() {
   return folha;
 }
 
-function gravarEncomenda(orderNsu, dados, itens) {
-  var cliente = dados.cliente || {};
-  var total = somar(itens);
-  var sinal = Number(dados.encomenda.sinal) || 100;
-  var resumo = itens.map(function (i) { return i.quantity + 'x ' + i.description; }).join('; ');
+/** Insere uma linha na aba Encomendas. `c` traz todos os campos já prontos. */
+function inserirEncomenda(c) {
   var linha = [];
   linha[COLUNAS_ENC.indexOf('registrado_em')] = new Date();
-  linha[COLUNAS_ENC.indexOf('order_nsu')] = orderNsu;
-  linha[COLUNAS_ENC.indexOf('status')] = 'aguardando pagamento';
-  linha[COLUNAS_ENC.indexOf('cliente')] = cliente.nome || '';
-  linha[COLUNAS_ENC.indexOf('telefone')] = cliente.telefone || '';
-  linha[COLUNAS_ENC.indexOf('data_entrega')] = dados.entregaTexto || '';
-  linha[COLUNAS_ENC.indexOf('horario')] = dados.encomenda.horario || '';
-  linha[COLUNAS_ENC.indexOf('entrega_ou_retirada')] = dados.retirada ? 'Retirada' : 'Entrega';
-  linha[COLUNAS_ENC.indexOf('endereco')] = dados.enderecoTexto || '';
-  linha[COLUNAS_ENC.indexOf('itens')] = resumo;
-  linha[COLUNAS_ENC.indexOf('total_centavos')] = total;
-  linha[COLUNAS_ENC.indexOf('sinal_percentual')] = sinal;
-  linha[COLUNAS_ENC.indexOf('observacoes')] = dados.observacoes || '';
-  linha[COLUNAS_ENC.indexOf('tipo')] = dados.encomenda.tipo === 'confraternizacao' ? 'confraternizacao' : 'natal';
-  linha[COLUNAS_ENC.indexOf('data_iso')] = /^\d{4}-\d{2}-\d{2}$/.test(dados.encomenda.dataIso || '') ? dados.encomenda.dataIso : '';
+  linha[COLUNAS_ENC.indexOf('order_nsu')] = c.order_nsu;
+  linha[COLUNAS_ENC.indexOf('status')] = c.pago >= c.total ? 'pago 100%' : 'sinal pago';
+  linha[COLUNAS_ENC.indexOf('cliente')] = c.cliente || '';
+  linha[COLUNAS_ENC.indexOf('telefone')] = c.telefone || '';
+  linha[COLUNAS_ENC.indexOf('data_entrega')] = c.data_entrega || '';
+  linha[COLUNAS_ENC.indexOf('horario')] = c.horario || '';
+  linha[COLUNAS_ENC.indexOf('entrega_ou_retirada')] = c.retirada ? 'Retirada' : 'Entrega';
+  linha[COLUNAS_ENC.indexOf('endereco')] = c.endereco || '';
+  linha[COLUNAS_ENC.indexOf('itens')] = c.itens || '';
+  linha[COLUNAS_ENC.indexOf('total_centavos')] = c.total;
+  linha[COLUNAS_ENC.indexOf('sinal_percentual')] = c.sinal;
+  linha[COLUNAS_ENC.indexOf('pago_centavos')] = c.pago;
+  linha[COLUNAS_ENC.indexOf('restante_centavos')] = Math.max(0, c.total - c.pago);
+  linha[COLUNAS_ENC.indexOf('forma_pagamento')] = c.forma || '';
+  linha[COLUNAS_ENC.indexOf('observacoes')] = c.observacoes || '';
+  linha[COLUNAS_ENC.indexOf('tipo')] = c.tipo === 'confraternizacao' ? 'confraternizacao' : 'natal';
+  linha[COLUNAS_ENC.indexOf('data_iso')] = /^\d{4}-\d{2}-\d{2}$/.test(c.data_iso || '') ? c.data_iso : '';
   for (var i = 0; i < COLUNAS_ENC.length; i++) if (linha[i] === undefined) linha[i] = '';
   abaEncomendas().appendRow(linha);
 }
 
-/** Quando o pagamento é confirmado: preenche o que foi pago e o que falta. */
-function atualizarEncomenda(orderNsu, confere) {
+function encomendaExiste(orderNsu) {
   var folha = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ABA_ENCOMENDAS);
-  if (!folha) return;
+  if (!folha) return false;
   var valores = folha.getDataRange().getValues();
-  var colOrder = COLUNAS_ENC.indexOf('order_nsu');
+  var col = COLUNAS_ENC.indexOf('order_nsu');
+  for (var i = 1; i < valores.length; i++) if (String(valores[i][col]) === String(orderNsu)) return true;
+  return false;
+}
+
+/**
+ * Pagamento confirmado: se o pedido era uma encomenda, cria a linha na aba
+ * Encomendas com o que foi pago e o que falta. Tentativas sem pagamento
+ * nunca chegam aqui, então não entram no sistema.
+ */
+function registrarEncomendaPaga(orderNsu, confere) {
+  var valores = aba().getDataRange().getValues();
+  var colOrder = indiceDe('order_nsu');
   for (var i = 1; i < valores.length; i++) {
     if (String(valores[i][colOrder]) !== String(orderNsu)) continue;
-    var total = Number(valores[i][COLUNAS_ENC.indexOf('total_centavos')]) || 0;
-    var pago = Number(confere.paid_amount) || 0;
-    var restante = Math.max(0, total - pago);
-    var linha = i + 1;
-    folha.getRange(linha, COLUNAS_ENC.indexOf('pago_centavos') + 1).setValue(pago);
-    folha.getRange(linha, COLUNAS_ENC.indexOf('restante_centavos') + 1).setValue(restante);
-    folha.getRange(linha, COLUNAS_ENC.indexOf('forma_pagamento') + 1).setValue(traduzirMetodo(confere.capture_method));
-    folha.getRange(linha, COLUNAS_ENC.indexOf('status') + 1).setValue(restante > 0 ? 'sinal pago' : 'pago 100%');
+    var meta = {};
+    try { meta = JSON.parse(valores[i][indiceDe('encomenda')] || '{}'); } catch (ignorado) {}
+    if (!meta.sinal) return; // pedido comum, não é encomenda
+    if (encomendaExiste(orderNsu)) return;
+
+    var itens = [];
+    try { itens = JSON.parse(valores[i][indiceDe('itens')] || '[]'); } catch (ignorado) {}
+    var total = somar(itens);
+    var resumo = itens.map(function (it) { return it.quantity + 'x ' + it.description; }).join('; ');
+    inserirEncomenda({
+      order_nsu: String(orderNsu),
+      cliente: valores[i][indiceDe('cliente')],
+      telefone: String(valores[i][indiceDe('telefone')] || ''),
+      data_entrega: String(valores[i][indiceDe('entrega_texto')] || ''),
+      horario: meta.horario,
+      retirada: valores[i][indiceDe('retirada')] === 'sim',
+      endereco: valores[i][indiceDe('endereco')],
+      itens: resumo,
+      total: total,
+      sinal: meta.sinal,
+      pago: Number(confere.paid_amount) || 0,
+      forma: traduzirMetodo(confere.capture_method),
+      observacoes: valores[i][indiceDe('observacoes')],
+      tipo: meta.tipo,
+      data_iso: meta.dataIso,
+    });
     return;
   }
+}
+
+/**
+ * Lançamento manual (pedido combinado por fora: WhatsApp, Pix direto…).
+ * dados: { token, tipo, data_iso, data_entrega, horario, cliente, telefone,
+ *          retirada, endereco, itens (texto), total, pago, forma, observacoes }
+ * Só entra se houver pagamento (pago > 0), igual aos pedidos do site.
+ */
+function lancarEncomendaManual(dados) {
+  if (!tokenConfere(dados.token)) return { ok: false, erro: 'Token inválido.' };
+  var total = Math.round(Number(dados.total) || 0);
+  var pago = Math.round(Number(dados.pago) || 0);
+  if (!dados.cliente) return { ok: false, erro: 'Informe o nome do cliente.' };
+  if (!dados.itens) return { ok: false, erro: 'Informe os itens.' };
+  if (total <= 0) return { ok: false, erro: 'O total precisa ser maior que zero.' };
+  if (pago <= 0) return { ok: false, erro: 'Só entram encomendas com pagamento (sinal ou total). Informe o valor recebido.' };
+  if (pago > total) return { ok: false, erro: 'O valor recebido não pode ser maior que o total.' };
+  var nsu = 'manual-' + Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyyMMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100);
+  inserirEncomenda({
+    order_nsu: nsu,
+    cliente: String(dados.cliente).slice(0, 120),
+    telefone: String(dados.telefone || ''),
+    data_entrega: String(dados.data_entrega || ''),
+    horario: String(dados.horario || ''),
+    retirada: !!dados.retirada,
+    endereco: String(dados.endereco || ''),
+    itens: String(dados.itens).slice(0, 2000),
+    total: total,
+    sinal: Math.round(pago * 100 / total),
+    pago: pago,
+    forma: String(dados.forma || ''),
+    observacoes: 'LANÇAMENTO MANUAL. ' + String(dados.observacoes || ''),
+    tipo: dados.tipo,
+    data_iso: dados.data_iso,
+  });
+  return { ok: true, order_nsu: nsu };
+}
+
+/** Exclui uma encomenda da aba Encomendas (não desfaz o pagamento na InfinitePay). */
+function excluirEncomenda(dados) {
+  if (!tokenConfere(dados.token)) return { ok: false, erro: 'Token inválido.' };
+  var folha = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ABA_ENCOMENDAS);
+  if (!folha) return { ok: false, erro: 'Não há encomendas.' };
+  var valores = folha.getDataRange().getValues();
+  var col = COLUNAS_ENC.indexOf('order_nsu');
+  for (var i = valores.length - 1; i >= 1; i--) {
+    if (String(valores[i][col]) === String(dados.order_nsu)) {
+      folha.deleteRow(i + 1);
+      return { ok: true };
+    }
+  }
+  return { ok: false, erro: 'Encomenda não encontrada.' };
 }
 
 /** Completa a linha pendente daquele pedido, ou cria uma nova se não achar. */
@@ -828,7 +923,7 @@ function lerEncomendas() {
       var v = coluna === -1 ? '' : valores[i][coluna];
       l[COLUNAS_ENC[c]] = ehData(v) ? Utilities.formatDate(v, 'America/Sao_Paulo', 'yyyy-MM-dd HH:mm') : v;
     }
-    if (!l.order_nsu) continue;
+    if (!l.order_nsu || l.status === 'aguardando pagamento') continue;
     lista.push({
       order_nsu: String(l.order_nsu),
       registrado_em: String(l.registrado_em),

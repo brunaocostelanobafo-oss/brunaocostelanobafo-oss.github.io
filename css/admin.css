@@ -951,3 +951,9 @@
 .enc-status--pago { background: rgba(12, 163, 12, 0.28); }
 .enc-status--aguardando { background: rgba(208, 59, 59, 0.3); }
 .enc-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+.enc-manual summary { cursor: pointer; }
+.form-enc-manual { display: grid; gap: 10px; margin-top: 10px; }
+.enc-m-itens { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.enc-m-itens li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--borda); border-radius: 8px; font-size: 13px; }
+.enc-m-itens button { border: 0; background: none; color: #ff8f88; cursor: pointer; font-size: 16px; }
