@@ -222,7 +222,8 @@ function criarLink(dados) {
 
   if (dados.cliente && dados.cliente.nome) {
     payload.customer = { name: dados.cliente.nome };
-    if (dados.cliente.telefone) payload.customer.phone_number = dados.cliente.telefone;
+    var telCheckout = telefoneCheckout(dados.cliente.telefone);
+    if (telCheckout) payload.customer.phone_number = telCheckout;
     if (dados.cliente.email) payload.customer.email = dados.cliente.email;
   }
 
@@ -307,6 +308,18 @@ function conferirPrecos(itens) {
     if (certo === undefined || Math.round(itens[i].price) !== certo) return nome + ' = ' + itens[i].price;
   }
   return '';
+}
+
+/**
+ * A InfinitePay espera o telefone como "+5535999999999" (DDI +55 e só números).
+ * O cliente digita "(35) 99999-9999"; sem converter, o checkout não consegue
+ * casar o contato na verificação por código.
+ */
+function telefoneCheckout(tel) {
+  var d = String(tel || '').replace(/\D/g, '');
+  if (d.indexOf('55') === 0 && d.length >= 12) d = d.slice(2); // já veio com DDI
+  if (d.length !== 10 && d.length !== 11) return '';           // número incompleto: não manda
+  return '+55' + d;
 }
 
 function gerarOrderNsu() {
