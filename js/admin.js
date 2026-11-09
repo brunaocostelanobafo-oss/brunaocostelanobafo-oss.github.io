@@ -2687,6 +2687,102 @@
     }
   }
 
+  /** Só o que o cliente escreveu: tira do texto o carimbo "ENCOMENDA … sinal … na retirada." */
+  function obsDoCliente(texto) {
+    const t = String(texto || '');
+    if (!/^ENCOMENDA/.test(t)) return t.trim();
+    const m = [...t.matchAll(/(pago 100%|na (?:entrega|retirada))\.\s?/g)].pop();
+    return m ? t.slice(m.index + m[0].length).trim() : '';
+  }
+
+  /** Ticket de uma encomenda, no mesmo padrão do ticket de expedição das vendas. */
+  function montarViaEncomenda(e) {
+    const via = el('div', 'ticket__via');
+    const regua = (forte) => el('div', forte ? 'ticket__regua--forte' : 'ticket__regua');
+    const rotulo = (t) => el('div', 'ticket__rotulo', t);
+    const linha = (esq, dir) => {
+      const l = el('div', 'ticket__linha');
+      l.appendChild(el('span', null, esq));
+      l.appendChild(el('span', null, dir));
+      return l;
+    };
+
+    const selo = document.createElement('img');
+    selo.className = 'ticket__selo';
+    selo.src = 'assets/selo-ticket.png';
+    selo.alt = 'Brunão Costela no Bafo';
+    via.appendChild(selo);
+
+    via.appendChild(el('div', 'ticket__marca', 'BRUNÃO COSTELA NO BAFO'));
+    via.appendChild(regua(true));
+    via.appendChild(el('div', 'ticket__destaque', `ENCOMENDA ${(NOME_TIPO[e.tipo] || e.tipo).toUpperCase()}`));
+    via.appendChild(el('div', null, 'PEDIDO ' + e.order_nsu));
+    via.appendChild(el('div', 'ticket__pequeno', 'Impresso em ' + new Date().toLocaleString('pt-BR')));
+    via.appendChild(regua());
+
+    const retirada = e.entrega_ou_retirada === 'Retirada';
+    via.appendChild(rotulo(retirada ? 'RETIRADA' : 'ENTREGA'));
+    via.appendChild(el('div', 'ticket__destaque', e.data_iso ? rotuloEntrega(e.data_iso) : e.data_entrega));
+    if (e.horario) via.appendChild(el('div', 'ticket__destaque', e.horario.toUpperCase()));
+
+    via.appendChild(regua());
+    via.appendChild(rotulo('CLIENTE'));
+    via.appendChild(el('div', null, e.cliente || 'Não identificado'));
+    if (e.telefone) via.appendChild(el('div', null, e.telefone));
+
+    via.appendChild(regua());
+    via.appendChild(rotulo(retirada ? 'RETIRAR NO LOCAL' : 'ENDEREÇO'));
+    via.appendChild(el('div', null, retirada ? '—' : (e.endereco || 'Endereço não informado')));
+
+    via.appendChild(regua());
+    via.appendChild(rotulo('ITENS'));
+    for (const item of itensDaEncomenda(e.itens)) {
+      if (/^Taxa de entrega/.test(item.nome)) continue;
+      const bloco = el('div', 'ticket__item');
+      bloco.appendChild(el('div', 'ticket__item-nome', `${item.qtd}x ${item.nome}`));
+      via.appendChild(bloco);
+    }
+    if (kgDaEncomenda(e) > 0) via.appendChild(el('div', 'ticket__pequeno', `Carne: ${kgTexto(kgDaEncomenda(e))} (estimativa)`));
+
+    via.appendChild(regua());
+    via.appendChild(linha('Total do pedido', reais(e.total)));
+    via.appendChild(linha('Já pago', reais(e.pago)));
+    via.appendChild(linha('Falta receber', reais(e.restante)));
+
+    // Caixa grande: o que o entregador faz com o dinheiro
+    const receber = e.restante > 0;
+    const situacao = el('div', 'ticket__situacao' + (receber ? ' ticket__situacao--receber' : ''));
+    situacao.textContent = receber ? `RECEBER ${reais(e.restante)}` : 'PAGO — NAO COBRAR';
+    via.appendChild(situacao);
+
+    const obs = obsDoCliente(e.observacoes);
+    if (obs) {
+      const caixa = el('div', 'ticket__obs');
+      caixa.appendChild(el('div', 'ticket__rotulo', 'OBSERVAÇÕES'));
+      caixa.appendChild(el('div', null, obs));
+      via.appendChild(caixa);
+    }
+
+    via.appendChild(regua(true));
+    const rodape = el('div', 'ticket__rodape');
+    rodape.appendChild(el('div', null, 'Obrigado pela preferência!'));
+    rodape.appendChild(el('div', null, LOJA.whatsappVisivel));
+    via.appendChild(rodape);
+    return via;
+  }
+
+  function imprimirEncomendas(lista) {
+    const pagas = lista.filter(encPaga);
+    if (!pagas.length) {
+      alert('Nenhuma encomenda paga para imprimir.');
+      return;
+    }
+    const alvo = document.getElementById('ticket');
+    alvo.innerHTML = '';
+    for (const e of pagas) alvo.appendChild(montarViaEncomenda(e));
+    window.print();
+  }
+
   function marcarEncomenda(e, campo, valor) {
     chamarServidor({ acao: 'encomenda-marcar', order_nsu: e.order_nsu, campo, valor })
       .then(carregarEncomendas)
@@ -2746,6 +2842,11 @@
         `${pagasDia.length} pedido(s) · ${kgTexto(pagasDia.reduce((t, e) => t + kgDaEncomenda(e), 0))} · ` +
         `total ${reais(soma(pagasDia, 'total'))} · a receber ${reais(soma(pagasDia, 'restante'))}`));
       grupo.appendChild(topo);
+      const imprimirDia = el('button', 'botao', '🖨 Imprimir o dia');
+      imprimirDia.type = 'button';
+      imprimirDia.title = 'Imprime o ticket de todas as encomendas pagas deste dia';
+      imprimirDia.addEventListener('click', () => imprimirEncomendas(doDia));
+      grupo.appendChild(imprimirDia);
 
       for (const e of doDia) {
         const linha = el('div', 'registro' + (e.entregue_em ? ' registro--entregue' : ''));
@@ -2782,6 +2883,10 @@
             b.addEventListener('click', () => marcarEncomenda(e, 'quitado', false));
             acoes.appendChild(b);
           }
+          const imprimir = el('button', 'botao', '🖨 Imprimir');
+          imprimir.type = 'button';
+          imprimir.addEventListener('click', () => imprimirEncomendas([e]));
+          acoes.appendChild(imprimir);
           const entregue = el('button', 'botao', e.entregue_em ? '↩ Voltar para a fila' : '✓ Entregue');
           entregue.type = 'button';
           entregue.addEventListener('click', () => marcarEncomenda(e, 'entregue', !e.entregue_em));
