@@ -377,7 +377,7 @@
       aviso.hidden = false;
     }
     // Evita remontar o pedido toda vez que a página é recarregada
-    history.replaceState(null, '', location.pathname + '#encomendas-' + tipoEncomenda());
+    history.replaceState(null, '', location.pathname + '#reservar-' + tipoEncomenda());
   }
 
   function montarIntroEncomendas() {

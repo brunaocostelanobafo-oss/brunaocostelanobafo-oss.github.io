@@ -211,3 +211,6 @@ h2{font-size:clamp(36px,4.6vw,74px)}
 
 .ato h1+.bt,.ato h2+.bt,.ato h1~.bt{margin-top:clamp(36px,6vh,64px)}
 @media (max-width:767px){.sob{font-size:13px}}
+
+/* Dentro do cardápio (aba do site): o cabeçalho do cardápio já existe */
+html.embutida .topo { display: none; }

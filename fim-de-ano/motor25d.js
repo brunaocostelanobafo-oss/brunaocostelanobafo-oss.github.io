@@ -224,6 +224,7 @@
     $('#total').textContent = real(c.total);
     const bt = $('#reservar');
     bt.href = CFG.encomendas + '?' + new URLSearchParams({ origem: CFG.origem, pessoas, completo: c.completo, casal: c.casal, corte }) + '#encomendas';
+    if (window.top !== window.self) bt.target = '_top'; // embutida: abre o pedido na janela do cardápio
     bt.classList.toggle('travado', !pessoas); bt.toggleAttribute('aria-disabled', !pessoas);
     $('#menos').disabled = !pessoas;
   }

@@ -13,9 +13,10 @@
 <link rel="preload" as="image" href="../fim-de-ano/img/costela.webp">
 <link rel="stylesheet" href="../fim-de-ano/pagina.css">
 <script>
+  if (window.top !== window.self) document.documentElement.classList.add("embutida");
   window.PAGINA = { origem: 'natal', encomendas: 'https://brunaocostelanobafo-oss.github.io/', inicio: '2026-12-05T00:00:00', fim: '2026-12-31', pessoasIniciais: 8 };
   !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init','4433696376853064'); fbq('track','PageView');
+  fbq('init','4433696376853064'); if (window.top === window.self) fbq('track','PageView');
 </script>
 </head>
 <body>

@@ -21,57 +21,108 @@
   };
   const secao = document.getElementById('eventos');
   const secaoEnc = document.getElementById('encomendas');
+  const secaoPagina = document.getElementById('pagina-enc');
+  const quadro = document.getElementById('pagina-enc-frame');
+  const barraAbas = document.querySelector('.abas');
   if (!abaCardapio || !abaEventos || !secao || typeof EVENTOS === 'undefined') return;
 
-  /* ---------- Abas ---------- */
+  /* ---------- Abas ----------
+     Modos:
+       cardapio                      o cardápio de sempre
+       eventos                       Festas & Eventos
+       natal | confraternizacao      a PÁGINA DE VENDAS da campanha, dentro do cardápio
+       reservar-natal | reservar-confraternizacao
+                                     o passo do pedido (datas, sinal, pagamento),
+                                     que a página abre pelo botão "Garantir minha reserva"
+  */
 
-  const HASH = { eventos: '#eventos', natal: '#encomendas-natal', confraternizacao: '#encomendas-confraternizacao', cardapio: '' };
-  const ehEncomenda = (qual) => qual === 'natal' || qual === 'confraternizacao';
+  const HASH = {
+    cardapio: '', eventos: '#eventos',
+    natal: '#encomendas-natal', confraternizacao: '#encomendas-confraternizacao',
+    'reservar-natal': '#reservar-natal', 'reservar-confraternizacao': '#reservar-confraternizacao',
+  };
+  const PAGINAS = { natal: 'natal/', confraternizacao: 'confraternizacao/' };
+  const tipoDe = (qual) => qual.replace('reservar-', '');
+  const ehPagina = (qual) => qual === 'natal' || qual === 'confraternizacao';
+  const ehReserva = (qual) => qual === 'reservar-natal' || qual === 'reservar-confraternizacao';
+
+  function ajustarAltura() {
+    if (barraAbas) document.documentElement.style.setProperty('--h-abas', barraAbas.offsetHeight + 'px');
+  }
+  window.addEventListener('resize', ajustarAltura);
 
   function mostrar(qual, rolar) {
-    if (ehEncomenda(qual) && (!secaoEnc || !abasEnc[qual])) qual = 'cardapio';
-    const enc = ehEncomenda(qual);
+    if ((ehPagina(qual) || ehReserva(qual)) && !abasEnc[tipoDe(qual)]) qual = 'cardapio';
+    const pagina = ehPagina(qual);
+    const reserva = ehReserva(qual);
+    const tipo = pagina || reserva ? tipoDe(qual) : null;
+
     document.body.classList.toggle('modo-eventos', qual === 'eventos');
-    document.body.classList.toggle('modo-encomendas', enc);
-    if (enc) document.body.dataset.enc = qual; else delete document.body.dataset.enc;
+    document.body.classList.toggle('modo-pagina', pagina);
+    document.body.classList.toggle('modo-encomendas', reserva);
+    if (tipo) document.body.dataset.enc = tipo; else delete document.body.dataset.enc;
+
     secao.hidden = qual !== 'eventos';
-    if (secaoEnc) secaoEnc.hidden = !enc;
+    if (secaoEnc) secaoEnc.hidden = !reserva;
+    if (secaoPagina) secaoPagina.hidden = !pagina;
     abaCardapio.setAttribute('aria-selected', String(qual === 'cardapio'));
     abaEventos.setAttribute('aria-selected', String(qual === 'eventos'));
-    for (const tipo of Object.keys(abasEnc)) {
-      if (abasEnc[tipo]) abasEnc[tipo].setAttribute('aria-selected', String(qual === tipo));
+    for (const t of Object.keys(abasEnc)) {
+      if (abasEnc[t]) abasEnc[t].setAttribute('aria-selected', String(t === tipo));
     }
-    /* Mantém os parâmetros da URL (origem, pessoas…) só nas abas de encomenda;
+
+    if (pagina && quadro) {
+      ajustarAltura();
+      const destino = PAGINAS[tipo];
+      // Carrega a página uma vez (e de novo só se trocar de campanha)
+      if (quadro.dataset.tipo !== tipo) {
+        quadro.dataset.tipo = tipo;
+        quadro.src = destino;
+      }
+      window.scrollTo(0, 0);
+    }
+    const voltar = document.getElementById('encomendas-voltar');
+    if (voltar && tipo) voltar.href = HASH[tipo];
+
+    /* Mantém os parâmetros da URL (origem, pessoas…) só no passo do pedido;
        nas outras abas a URL volta a ficar limpa. */
-    const busca = enc ? location.search : '';
+    const busca = reserva ? location.search : '';
     history.replaceState(null, '', location.pathname + busca + HASH[qual]);
     document.dispatchEvent(new CustomEvent('brunao:aba', { detail: qual }));
-    if (rolar) document.querySelector('.abas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (rolar && !pagina) barraAbas.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   abaCardapio.addEventListener('click', () => mostrar('cardapio', true));
   abaEventos.addEventListener('click', () => mostrar('eventos', true));
-  for (const tipo of Object.keys(abasEnc)) {
-    if (abasEnc[tipo]) abasEnc[tipo].addEventListener('click', () => mostrar(tipo, true));
+  for (const t of Object.keys(abasEnc)) {
+    if (abasEnc[t]) abasEnc[t].addEventListener('click', () => mostrar(t, true));
   }
 
   /* O site sempre abre no cardápio; só o link do anúncio abre direto na aba.
-     O link antigo #encomendas (páginas de Natal e Confraternização) escolhe
-     a aba pelo parâmetro ?origem=. */
+     O link antigo #encomendas (botão das páginas de vendas) leva ao passo do
+     pedido, escolhendo a campanha pelo parâmetro ?origem=. */
   function inicial() {
     const h = location.hash;
     if (h === '#eventos') return 'eventos';
     if (h === '#encomendas-natal') return 'natal';
     if (h === '#encomendas-confraternizacao') return 'confraternizacao';
+    if (h === '#reservar-natal') return 'reservar-natal';
+    if (h === '#reservar-confraternizacao') return 'reservar-confraternizacao';
     if (h === '#encomendas') {
-      return new URLSearchParams(location.search).get('origem') === 'confraternizacao' ? 'confraternizacao' : 'natal';
+      return new URLSearchParams(location.search).get('origem') === 'confraternizacao' ? 'reservar-confraternizacao' : 'reservar-natal';
     }
     return null;
   }
   /* app.js (carregado antes) já escuta 'brunao:aba' e também lê a classe do
      body quando monta o cardápio, então a aba inicial vale nos dois casos. */
   if (inicial()) mostrar(inicial(), false);
-  window.addEventListener('hashchange', () => { if (inicial()) mostrar(inicial(), true); });
+  window.addEventListener('hashchange', () => { if (inicial() && inicial() !== atual()) mostrar(inicial(), true); });
+
+  function atual() {
+    if (document.body.classList.contains('modo-pagina')) return document.body.dataset.enc;
+    if (document.body.classList.contains('modo-encomendas')) return 'reservar-' + document.body.dataset.enc;
+    return document.body.classList.contains('modo-eventos') ? 'eventos' : 'cardapio';
+  }
 
   /* ---------- Formulário ---------- */
 

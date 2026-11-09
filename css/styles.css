@@ -1091,3 +1091,28 @@ body.pedido-aberto .zap-flutuante { display: none; }
 
 /* Ao abrir direto em #encomendas, a barra de categorias (fixa no topo) não cobre o título */
 .encomendas, .eventos { scroll-margin-top: 70px; }
+
+
+/* ---------- Abas "Encomendas de Natal / Confraternizações": a página de vendas dentro do cardápio ---------- */
+
+.encomendas__voltar { display: inline-block; margin: 0 0 8px; font-size: 14px; font-weight: 800; color: var(--marca); text-decoration: none; }
+
+.pagina-enc { padding: 0; }
+.pagina-enc__frame { display: block; width: 100%; height: calc(100dvh - var(--h-abas, 120px)); border: 0; background: #0e0c0b; }
+
+/* Aberta uma dessas abas, só ficam as abas e a página (que rola por dentro) */
+.modo-pagina { overflow: hidden; }
+.modo-pagina .loja,
+.modo-pagina .categorias,
+.modo-pagina .avisos,
+.modo-pagina .carrossel,
+.modo-pagina .banners__pontos,
+.modo-pagina .mais-pedidos,
+.modo-pagina .cardapio,
+.modo-pagina .depoimentos,
+.modo-pagina .rodape,
+.modo-pagina .barra-carrinho,
+.modo-pagina .zap-flutuante,
+.modo-pagina .encomendas,
+.modo-pagina .eventos { display: none !important; }
+.modo-pagina .abas { position: sticky; top: 0; z-index: 20; padding-bottom: 8px; }
