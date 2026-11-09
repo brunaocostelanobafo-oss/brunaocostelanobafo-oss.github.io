@@ -388,19 +388,6 @@
     texto('encomendas-descricao', cfg.descricao);
     texto('encomendas-aviso', cfg.aviso);
 
-    const lista = document.getElementById('encomendas-datas');
-    if (lista) {
-      lista.innerHTML = '';
-      for (const d of cfg.datas) {
-        const li = document.createElement('li');
-        const forte = document.createElement('strong');
-        forte.textContent = d.rotulo;
-        const info = document.createElement('span');
-        info.textContent = d.info;
-        li.append(forte, info);
-        lista.appendChild(li);
-      }
-    }
     const fechada = document.getElementById('encomendas-fechada');
     if (fechada) {
       fechada.textContent = cfg.mensagemFechada;
