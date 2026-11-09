@@ -990,13 +990,14 @@ body.pedido-aberto .zap-flutuante { display: none; }
 
 .abas {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 12px 16px 4px;
   background: var(--fundo);
 }
 
 .abas__botao {
-  flex: 1;
+  flex: 1 1 calc(50% - 8px);
   padding: 11px 10px;
   border-radius: 999px;
   border: 1px solid var(--linha);

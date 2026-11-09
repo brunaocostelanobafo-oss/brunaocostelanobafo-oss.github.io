@@ -15,27 +15,35 @@
 
   const abaCardapio = document.getElementById('aba-cardapio');
   const abaEventos = document.getElementById('aba-eventos');
-  const abaEncomendas = document.getElementById('aba-encomendas');
+  const abasEnc = {
+    natal: document.getElementById('aba-enc-natal'),
+    confraternizacao: document.getElementById('aba-enc-confraternizacao'),
+  };
   const secao = document.getElementById('eventos');
   const secaoEnc = document.getElementById('encomendas');
   if (!abaCardapio || !abaEventos || !secao || typeof EVENTOS === 'undefined') return;
 
   /* ---------- Abas ---------- */
 
-  const HASH = { eventos: '#eventos', encomendas: '#encomendas', cardapio: '' };
+  const HASH = { eventos: '#eventos', natal: '#encomendas-natal', confraternizacao: '#encomendas-confraternizacao', cardapio: '' };
+  const ehEncomenda = (qual) => qual === 'natal' || qual === 'confraternizacao';
 
   function mostrar(qual, rolar) {
-    if (qual === 'encomendas' && !secaoEnc) qual = 'cardapio';
+    if (ehEncomenda(qual) && (!secaoEnc || !abasEnc[qual])) qual = 'cardapio';
+    const enc = ehEncomenda(qual);
     document.body.classList.toggle('modo-eventos', qual === 'eventos');
-    document.body.classList.toggle('modo-encomendas', qual === 'encomendas');
+    document.body.classList.toggle('modo-encomendas', enc);
+    if (enc) document.body.dataset.enc = qual; else delete document.body.dataset.enc;
     secao.hidden = qual !== 'eventos';
-    if (secaoEnc) secaoEnc.hidden = qual !== 'encomendas';
+    if (secaoEnc) secaoEnc.hidden = !enc;
     abaCardapio.setAttribute('aria-selected', String(qual === 'cardapio'));
     abaEventos.setAttribute('aria-selected', String(qual === 'eventos'));
-    if (abaEncomendas) abaEncomendas.setAttribute('aria-selected', String(qual === 'encomendas'));
-    /* Mantém os parâmetros da URL (origem, pessoas…) só na aba de encomendas;
+    for (const tipo of Object.keys(abasEnc)) {
+      if (abasEnc[tipo]) abasEnc[tipo].setAttribute('aria-selected', String(qual === tipo));
+    }
+    /* Mantém os parâmetros da URL (origem, pessoas…) só nas abas de encomenda;
        nas outras abas a URL volta a ficar limpa. */
-    const busca = qual === 'encomendas' ? location.search : '';
+    const busca = enc ? location.search : '';
     history.replaceState(null, '', location.pathname + busca + HASH[qual]);
     document.dispatchEvent(new CustomEvent('brunao:aba', { detail: qual }));
     if (rolar) document.querySelector('.abas').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -43,9 +51,23 @@
 
   abaCardapio.addEventListener('click', () => mostrar('cardapio', true));
   abaEventos.addEventListener('click', () => mostrar('eventos', true));
-  if (abaEncomendas) abaEncomendas.addEventListener('click', () => mostrar('encomendas', true));
-  // O site sempre abre no cardápio; só o link do anúncio abre direto na aba
-  const inicial = () => (location.hash === '#eventos' ? 'eventos' : location.hash === '#encomendas' ? 'encomendas' : null);
+  for (const tipo of Object.keys(abasEnc)) {
+    if (abasEnc[tipo]) abasEnc[tipo].addEventListener('click', () => mostrar(tipo, true));
+  }
+
+  /* O site sempre abre no cardápio; só o link do anúncio abre direto na aba.
+     O link antigo #encomendas (páginas de Natal e Confraternização) escolhe
+     a aba pelo parâmetro ?origem=. */
+  function inicial() {
+    const h = location.hash;
+    if (h === '#eventos') return 'eventos';
+    if (h === '#encomendas-natal') return 'natal';
+    if (h === '#encomendas-confraternizacao') return 'confraternizacao';
+    if (h === '#encomendas') {
+      return new URLSearchParams(location.search).get('origem') === 'confraternizacao' ? 'confraternizacao' : 'natal';
+    }
+    return null;
+  }
   /* app.js (carregado antes) já escuta 'brunao:aba' e também lê a classe do
      body quando monta o cardápio, então a aba inicial vale nos dois casos. */
   if (inicial()) mostrar(inicial(), false);

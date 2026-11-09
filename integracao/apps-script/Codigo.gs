@@ -92,6 +92,8 @@ function doPost(e) {
     if (corpo.acao === 'esgotar') return json(salvarEsgotados(corpo));
     if (corpo.acao === 'status') return json(salvarStatusLoja(corpo));
     if (corpo.acao === 'horario') return json(salvarHorarioExtra(corpo));
+    if (corpo.acao === 'encomendas-status') return json(salvarStatusEncomendas(corpo));
+    if (corpo.acao === 'encomenda-marcar') return json(marcarEncomenda(corpo));
 
     // Sem 'acao' e com slug de fatura: é a InfinitePay avisando.
     if (corpo.invoice_slug || corpo.transaction_nsu) return json(receberWebhook(corpo));
@@ -116,6 +118,10 @@ function doGet(e) {
        sem deixá-lo à vista. Também não há o que proteger: é a mesma
        informação que qualquer cliente vê na tela. */
     if (p.acao === 'esgotados') return json({ ok: true, esgotados: lerEsgotados() });
+
+    /* Encomendas abertas ou encerradas (Natal e Confraternizações):
+       também é informação que o cliente já vê na tela. */
+    if (p.acao === 'encomendas-status') return json({ ok: true, status: lerStatusEncomendas() });
 
     /* Se o cardápio está aceitando pedido agora — controle manual do
        dono, independente do dia/horário programado. Pública pelo mesmo
@@ -143,6 +149,7 @@ function doGet(e) {
     }
 
     if (p.acao === 'vendas') return json({ ok: true, vendas: lerVendas(p.desde) });
+    if (p.acao === 'encomendas') return json({ ok: true, encomendas: lerEncomendas(), status: lerStatusEncomendas() });
     if (p.acao === 'ping') return json({ ok: true, mensagem: 'Integração no ar.' });
     if (p.acao === 'diagnostico') return json({ ok: true, diagnostico: diagnostico() });
 
@@ -582,6 +589,8 @@ var COLUNAS_ENC = [
   'data_entrega', 'horario', 'entrega_ou_retirada', 'endereco', 'itens',
   'total_centavos', 'sinal_percentual', 'pago_centavos', 'restante_centavos',
   'forma_pagamento', 'observacoes',
+  // Colunas acrescentadas depois (ficam no fim para não mexer nas linhas já gravadas)
+  'tipo', 'data_iso', 'quitado_em', 'entregue_em',
 ];
 
 function abaEncomendas() {
@@ -597,6 +606,16 @@ function abaEncomendas() {
     var colData = COLUNAS_ENC.indexOf('data_entrega') + 1;
     folha.getRange(2, colTel, 1000, 1).setNumberFormat('@');
     folha.getRange(2, colData, 1000, 2).setNumberFormat('@');
+  }
+  // Aba criada antes das colunas novas: completa o cabeçalho.
+  var cab = folha.getRange(1, 1, 1, COLUNAS_ENC.length).getValues()[0];
+  for (var c = 0; c < COLUNAS_ENC.length; c++) {
+    if (cab[c] !== COLUNAS_ENC[c]) {
+      folha.getRange(1, c + 1).setValue(COLUNAS_ENC[c]).setFontWeight('bold');
+      if (COLUNAS_ENC[c] === 'data_iso' || COLUNAS_ENC[c] === 'quitado_em' || COLUNAS_ENC[c] === 'entregue_em') {
+        folha.getRange(2, c + 1, 1000, 1).setNumberFormat('@'); // texto: o Sheets não vira data sozinho
+      }
+    }
   }
   return folha;
 }
@@ -620,6 +639,8 @@ function gravarEncomenda(orderNsu, dados, itens) {
   linha[COLUNAS_ENC.indexOf('total_centavos')] = total;
   linha[COLUNAS_ENC.indexOf('sinal_percentual')] = sinal;
   linha[COLUNAS_ENC.indexOf('observacoes')] = dados.observacoes || '';
+  linha[COLUNAS_ENC.indexOf('tipo')] = dados.encomenda.tipo === 'confraternizacao' ? 'confraternizacao' : 'natal';
+  linha[COLUNAS_ENC.indexOf('data_iso')] = /^\d{4}-\d{2}-\d{2}$/.test(dados.encomenda.dataIso || '') ? dados.encomenda.dataIso : '';
   for (var i = 0; i < COLUNAS_ENC.length; i++) if (linha[i] === undefined) linha[i] = '';
   abaEncomendas().appendRow(linha);
 }
@@ -692,6 +713,9 @@ function lerVendas(desde) {
 
     if (linha.status !== 'pago') continue;
 
+    // Encomenda tem espaço próprio (aba Encomendas); não entra em Vendas nem no faturamento do dia a dia.
+    if (/^ENCOMENDA/.test(String(linha.observacoes || ''))) continue;
+
     /* `linha.data` às vezes chega como Date de verdade (o Sheets converte
        sozinho, e essa coluna não está protegida como texto). Comparando
        direto contra `desde` — uma string 'AAAA-MM-DD' — o filtro nunca
@@ -752,6 +776,107 @@ function lerPedido(orderNsu) {
     };
   }
   return null;
+}
+
+// ===========================================================================
+// ENCOMENDAS — lista para o painel, abrir/fechar e marcar recebido/entregue
+// ===========================================================================
+
+var TIPOS_ENCOMENDA = ['natal', 'confraternizacao'];
+
+/** Aberta por padrão; a Tati fecha pelo painel (ou pelo ENCOMENDAS no site). */
+function lerStatusEncomendas() {
+  var props = PropertiesService.getScriptProperties();
+  var r = {};
+  for (var i = 0; i < TIPOS_ENCOMENDA.length; i++) {
+    r[TIPOS_ENCOMENDA[i]] = props.getProperty('encomendas_' + TIPOS_ENCOMENDA[i]) !== 'false';
+  }
+  return r;
+}
+
+function salvarStatusEncomendas(dados) {
+  if (!tokenConfere(dados.token)) return { ok: false, erro: 'Token inválido.' };
+  if (TIPOS_ENCOMENDA.indexOf(dados.tipo) === -1) return { ok: false, erro: 'Tipo de encomenda inválido.' };
+  PropertiesService.getScriptProperties().setProperty('encomendas_' + dados.tipo, dados.aberta === false ? 'false' : 'true');
+  return { ok: true, status: lerStatusEncomendas() };
+}
+
+/** Todas as encomendas, com os números em centavos, para o painel. */
+function lerEncomendas() {
+  var folha = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ABA_ENCOMENDAS);
+  if (!folha) return [];
+  var valores = folha.getDataRange().getValues();
+  var cab = valores[0];
+  var lista = [];
+  for (var i = 1; i < valores.length; i++) {
+    var l = {};
+    for (var c = 0; c < COLUNAS_ENC.length; c++) {
+      var coluna = cab.indexOf(COLUNAS_ENC[c]);
+      var v = coluna === -1 ? '' : valores[i][coluna];
+      l[COLUNAS_ENC[c]] = ehData(v) ? Utilities.formatDate(v, 'America/Sao_Paulo', 'yyyy-MM-dd HH:mm') : v;
+    }
+    if (!l.order_nsu) continue;
+    lista.push({
+      order_nsu: String(l.order_nsu),
+      registrado_em: String(l.registrado_em),
+      status: String(l.status),
+      cliente: String(l.cliente),
+      telefone: String(l.telefone),
+      data_entrega: String(l.data_entrega),
+      data_iso: String(l.data_iso).slice(0, 10),
+      horario: String(l.horario),
+      entrega_ou_retirada: String(l.entrega_ou_retirada),
+      endereco: String(l.endereco),
+      itens: String(l.itens),
+      total: Number(l.total_centavos) || 0,
+      sinal_percentual: Number(l.sinal_percentual) || 0,
+      pago: Number(l.pago_centavos) || 0,
+      restante: Number(l.restante_centavos) || 0,
+      forma_pagamento: String(l.forma_pagamento),
+      observacoes: String(l.observacoes),
+      tipo: String(l.tipo) || 'natal',
+      quitado_em: String(l.quitado_em).slice(0, 10),
+      entregue_em: String(l.entregue_em).slice(0, 10),
+    });
+  }
+  return lista;
+}
+
+/**
+ * Marca uma encomenda como "restante recebido" ou "entregue" (ou desfaz).
+ * dados: { token, order_nsu, campo: 'quitado'|'entregue', valor: true|false }
+ */
+function marcarEncomenda(dados) {
+  if (!tokenConfere(dados.token)) return { ok: false, erro: 'Token inválido.' };
+  if (dados.campo !== 'quitado' && dados.campo !== 'entregue') return { ok: false, erro: 'Campo inválido.' };
+  var folha = abaEncomendas();
+  var valores = folha.getDataRange().getValues();
+  var colOrder = COLUNAS_ENC.indexOf('order_nsu');
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][colOrder]) !== String(dados.order_nsu)) continue;
+    var linha = i + 1;
+    var hoje = hojeISO();
+    var total = Number(valores[i][COLUNAS_ENC.indexOf('total_centavos')]) || 0;
+    if (dados.campo === 'entregue') {
+      folha.getRange(linha, COLUNAS_ENC.indexOf('entregue_em') + 1).setValue(dados.valor ? hoje : '');
+    } else if (dados.valor) {
+      // Restante recebido na entrega: o pago passa a ser o total.
+      folha.getRange(linha, COLUNAS_ENC.indexOf('pago_centavos') + 1).setValue(total);
+      folha.getRange(linha, COLUNAS_ENC.indexOf('restante_centavos') + 1).setValue(0);
+      folha.getRange(linha, COLUNAS_ENC.indexOf('quitado_em') + 1).setValue(hoje);
+      folha.getRange(linha, COLUNAS_ENC.indexOf('status') + 1).setValue('quitado');
+    } else {
+      // Desfazer: volta ao que o pagamento online registrou (sinal).
+      var sinalPct = Number(valores[i][COLUNAS_ENC.indexOf('sinal_percentual')]) || 100;
+      var pagoOnline = Math.round(total * sinalPct / 100);
+      folha.getRange(linha, COLUNAS_ENC.indexOf('pago_centavos') + 1).setValue(pagoOnline);
+      folha.getRange(linha, COLUNAS_ENC.indexOf('restante_centavos') + 1).setValue(Math.max(0, total - pagoOnline));
+      folha.getRange(linha, COLUNAS_ENC.indexOf('quitado_em') + 1).setValue('');
+      folha.getRange(linha, COLUNAS_ENC.indexOf('status') + 1).setValue(sinalPct < 100 ? 'sinal pago' : 'pago 100%');
+    }
+    return { ok: true };
+  }
+  return { ok: false, erro: 'Encomenda não encontrada.' };
 }
 
 // ===========================================================================

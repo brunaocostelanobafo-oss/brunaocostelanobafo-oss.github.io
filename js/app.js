@@ -240,13 +240,44 @@
 
   // ---------------------------------------------------------------- encomendas
 
-  /** Estamos na aba Encomendas (Natal e Ano Novo)? Quem muda isso é o eventos.js. */
+  /** Estamos numa aba de Encomendas (Natal ou Confraternizações)? Quem muda isso é o eventos.js. */
   function emEncomendas() {
     return document.body.classList.contains('modo-encomendas') && typeof ENCOMENDAS !== 'undefined';
   }
 
+  /** 'natal' ou 'confraternizacao' (a aba aberta agora). */
+  function tipoEncomenda() {
+    return document.body.dataset.enc === 'confraternizacao' ? 'confraternizacao' : 'natal';
+  }
+
+  function configEncomenda() {
+    return ENCOMENDAS.tipos[tipoEncomenda()];
+  }
+
+  /* Situação vinda do servidor (botão do painel). Enquanto não chega,
+     vale o `aberta` do menu-data.js. */
+  let statusEncomendas = null;
+
   function encomendasAbertas() {
-    return typeof ENCOMENDAS !== 'undefined' && ENCOMENDAS.aberta === true;
+    if (typeof ENCOMENDAS === 'undefined') return false;
+    const tipo = tipoEncomenda();
+    if (statusEncomendas && typeof statusEncomendas[tipo] === 'boolean') return statusEncomendas[tipo];
+    return configEncomenda().aberta === true;
+  }
+
+  function buscarStatusEncomendas() {
+    if (!pagamentoOnlineLigado()) return;
+    fetch(`${LOJA.pagamentoOnline.urlScript}?acao=encomendas-status`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) return;
+        const r = JSON.parse(texto);
+        if (r.ok && r.status) {
+          statusEncomendas = r.status;
+          atualizarModoEncomenda();
+        }
+      })
+      .catch(() => { /* sem conexão: vale o padrão do menu-data.js */ });
   }
 
   /** "2026-12-24" -> "Quinta, 24/12" (mesmo formato do cardápio, que o painel entende). */
@@ -255,12 +286,15 @@
     return `${DIAS[new Date(a, m - 1, d).getDay()]}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
   }
 
-  /** Datas oferecidas no formulário: as de encomenda ou as do delivery. */
+  /** Datas oferecidas no formulário: as da aba de encomenda aberta ou as do delivery. */
   function opcoesDeData() {
     if (emEncomendas()) {
-      const hoje = iso(new Date());
-      return ENCOMENDAS.datas
-        .filter((d) => d.valor >= hoje)
+      const cfg = configEncomenda();
+      const limite = new Date();
+      limite.setDate(limite.getDate() + (cfg.antecedenciaDias || 0));
+      const minimo = iso(limite);
+      return cfg.datas
+        .filter((d) => d.valor >= minimo)
         .map((d) => ({ valor: rotuloCurto(d.valor), texto: `${d.rotulo} · ${d.info}` }));
     }
     return proximasDatasDeEntrega().map((data) => ({ valor: rotuloData(data), texto: rotuloData(data) }));
@@ -286,6 +320,7 @@
   function atualizarModoEncomenda() {
     const enc = emEncomendas();
     document.body.classList.toggle('encomendas-fechadas', enc && !encomendasAbertas());
+    montarIntroEncomendas();
 
     const sinal = document.getElementById('campo-sinal');
     if (sinal) sinal.hidden = !enc;
@@ -338,23 +373,25 @@
     const aviso = document.getElementById('encomendas-montado');
     if (aviso) {
       aviso.textContent = `Montamos seu pedido${pessoas ? ` para ${pessoas} pessoas` : ''}: ${partes.join(' + ')}. Você pode ajustar abaixo e depois tocar em "Ver meu pedido".`;
+      aviso.dataset.tipo = tipoEncomenda();
       aviso.hidden = false;
     }
     // Evita remontar o pedido toda vez que a página é recarregada
-    history.replaceState(null, '', location.pathname + '#encomendas');
+    history.replaceState(null, '', location.pathname + '#encomendas-' + tipoEncomenda());
   }
 
   function montarIntroEncomendas() {
-    if (typeof ENCOMENDAS === 'undefined') return;
+    if (typeof ENCOMENDAS === 'undefined' || !emEncomendas()) return;
+    const cfg = configEncomenda();
     const texto = (id, valor) => { const e = document.getElementById(id); if (e) e.textContent = valor; };
-    texto('encomendas-titulo', ENCOMENDAS.titulo);
-    texto('encomendas-descricao', ENCOMENDAS.descricao);
-    texto('encomendas-aviso', ENCOMENDAS.aviso);
+    texto('encomendas-titulo', cfg.titulo);
+    texto('encomendas-descricao', cfg.descricao);
+    texto('encomendas-aviso', cfg.aviso);
 
     const lista = document.getElementById('encomendas-datas');
     if (lista) {
       lista.innerHTML = '';
-      for (const d of ENCOMENDAS.datas) {
+      for (const d of cfg.datas) {
         const li = document.createElement('li');
         const forte = document.createElement('strong');
         forte.textContent = d.rotulo;
@@ -366,9 +403,12 @@
     }
     const fechada = document.getElementById('encomendas-fechada');
     if (fechada) {
-      fechada.textContent = ENCOMENDAS.mensagemFechada;
+      fechada.textContent = cfg.mensagemFechada;
       fechada.hidden = encomendasAbertas();
     }
+    // Aviso de "montamos seu pedido" só vale na aba de onde o cliente veio
+    const montado = document.getElementById('encomendas-montado');
+    if (montado && montado.dataset.tipo && montado.dataset.tipo !== tipoEncomenda()) montado.hidden = true;
   }
 
   document.addEventListener('brunao:aba', atualizarModoEncomenda);
@@ -1291,7 +1331,7 @@
       if (campo && form.elements[campo]) form.elements[campo].focus();
     }
 
-    if (emEncomendas() && !encomendasAbertas()) return falhar(ENCOMENDAS.mensagemFechada);
+    if (emEncomendas() && !encomendasAbertas()) return falhar(configEncomenda().mensagemFechada);
     if (quantidadeTotal() === 0) return falhar('Adicione pelo menos um item ao pedido.');
 
     // Última barreira: item que esgotou depois de entrar no carrinho.
@@ -1388,12 +1428,16 @@
     const total = totalGeral();
     let observacoes = dados.observacoes || '';
     let horario = '';
+    let dataIso = '';
     if (encomenda) {
-      horario = (ENCOMENDAS.datas.find((d) => rotuloCurto(d.valor) === dados.data) || {}).info || '';
+      const cfg = configEncomenda();
+      const escolhida = cfg.datas.find((d) => rotuloCurto(d.valor) === dados.data) || {};
+      horario = escolhida.info || '';
+      dataIso = escolhida.valor || '';
       const pagto = sinal < 100
         ? `sinal de ${sinal}% pago (${precoBR(agora)}); restante ${precoBR(total - agora)} na ${entrega ? 'entrega' : 'retirada'}`
         : 'pago 100%';
-      observacoes = `ENCOMENDA ${dados.data}${horario ? ' (' + horario + ')' : ''} — ${pagto}.${observacoes ? ' ' + observacoes : ''}`;
+      observacoes = `ENCOMENDA ${cfg.nome.toUpperCase()} ${dados.data}${horario ? ' (' + horario + ')' : ''} — ${pagto}.${observacoes ? ' ' + observacoes : ''}`;
     }
 
     // Guardado antes de sair da página: o cliente volta do checkout numa
@@ -1436,7 +1480,7 @@
         retirada: !entrega,
         observacoes,
         // Encomenda: o servidor confere os preços e cobra só o sinal (ou 100%)
-        encomenda: encomenda ? { sinal, horario } : undefined,
+        encomenda: encomenda ? { sinal, horario, tipo: tipoEncomenda(), dataIso } : undefined,
       }),
     })
       .then((r) => r.json())
@@ -1604,6 +1648,7 @@
     });
 
     buscarEsgotados();
+    buscarStatusEncomendas();
     buscarStatusLoja();
     buscarHorarioExtra();
   }

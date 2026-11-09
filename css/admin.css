@@ -936,3 +936,18 @@
   .tiles { grid-template-columns: 1fr 1fr; }
   .tile__valor { font-size: 22px; }
 }
+
+
+/* ---------- Encomendas ---------- */
+.enc-abertura { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.enc-abertura__item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--borda); border-radius: 10px; }
+.enc-filtros { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 8px 0; }
+.enc-filtros label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--creme-suave); }
+.enc-grupo { margin-top: 16px; }
+.enc-grupo__topo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; padding: 8px 2px; border-bottom: 2px solid var(--borda); font-weight: 800; }
+.enc-grupo__topo small { font-weight: 600; color: var(--creme-suave); }
+.enc-status { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; background: var(--borda); }
+.enc-status--sinal { background: rgba(250, 178, 25, 0.25); }
+.enc-status--pago { background: rgba(12, 163, 12, 0.28); }
+.enc-status--aguardando { background: rgba(208, 59, 59, 0.3); }
+.enc-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }

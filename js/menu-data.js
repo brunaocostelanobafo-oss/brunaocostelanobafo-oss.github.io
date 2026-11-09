@@ -333,32 +333,65 @@ const EVENTOS = {
 };
 
 /* ---------------------------------------------------------------------
- * ENCOMENDAS — aba de pedidos com data marcada (Natal e Ano Novo)
+ * ENCOMENDAS — duas abas de pedidos com data marcada:
+ *   natal             -> "Encomendas de Natal" (24/12, 25/12, 31/12 e 01/01)
+ *   confraternizacao  -> "Encomendas Confraternizações" (empresas e grupos)
  *
- * Vende os mesmos itens do cardápio, mas a data é uma das listadas aqui
- * e o cliente paga um sinal (ou o total) na hora de reservar.
+ * Vendem os mesmos itens do cardápio, mas a data é uma das listadas aqui
+ * e o cliente paga um sinal (ou o total) na hora de reservar. Cada aba
+ * tem o próprio link de anúncio: /#encomendas-natal e
+ * /#encomendas-confraternizacao.
  *
- * `aberta: false` fecha as encomendas: a aba continua aparecendo, mas o
- * pedido fica bloqueado com o aviso `mensagemFechada`. Não há limite de
- * quilos nem de dias: ficam abertas até você encerrar.
+ * `aberta`: valor de partida. Quem manda de verdade é o botão
+ * "Abrir/Fechar encomendas" do painel (aba Encomendas); este valor só vale
+ * se o servidor estiver fora do ar. Fechada, a aba continua aparecendo,
+ * mas o pedido fica bloqueado com `mensagemFechada`.
  *
- * `datas`: valor = AAAA-MM-DD (para ordenar) · rotulo = o que o cliente
- * vê · info = horário, em texto.
+ * `datas`: valor = AAAA-MM-DD · rotulo = o que o cliente vê · info = horário.
+ * `antecedenciaDias`: a data só aparece se faltar pelo menos isso.
  * ------------------------------------------------------------------- */
 const ENCOMENDAS = {
-  aberta: true,
-  titulo: 'Encomendas de Natal e Ano Novo',
-  descricao: 'Escolha a data, monte a sua ceia e reserve com um sinal. Assada na lenha, de 14 horas, no bafo.',
-  aviso: 'Reservas por ordem de pagamento do sinal. Produção limitada.',
-  mensagemFechada: 'As encomendas estão encerradas. Chame no WhatsApp se quiser saber de uma vaga.',
   sinalPercentual: 50, // sinal padrão; o cliente também pode pagar 100%
-  datas: [
-    { valor: '2026-12-24', rotulo: 'Quinta, 24/12 · Véspera de Natal', info: 'a partir das 18h' },
-    { valor: '2026-12-25', rotulo: 'Sexta, 25/12 · Natal', info: 'a partir das 11h' },
-    { valor: '2026-12-31', rotulo: 'Quinta, 31/12 · Ano Novo', info: 'a partir das 18h' },
-    { valor: '2027-01-01', rotulo: 'Sexta, 01/01 · Confraternização', info: 'a partir das 11h' },
-  ],
-  textoEntrega: 'Entrega em Varginha ou retirada, por ordem de reserva. Avisamos pelo WhatsApp quando a rota sair.',
+  tipos: {
+    natal: {
+      aberta: true,
+      abaRotulo: 'Encomendas de Natal',
+      nome: 'Natal',
+      titulo: 'Encomendas de Natal e Ano Novo',
+      descricao: 'Escolha a data, monte a sua ceia e reserve com um sinal. Assada na lenha, de 14 horas, no bafo.',
+      aviso: 'Reservas por ordem de pagamento do sinal. Produção limitada.',
+      mensagemFechada: 'As encomendas de Natal estão encerradas. Chame no WhatsApp se quiser saber de uma vaga.',
+      antecedenciaDias: 0,
+      datas: [
+        { valor: '2026-12-24', rotulo: 'Quinta, 24/12 · Véspera de Natal', info: 'a partir das 18h' },
+        { valor: '2026-12-25', rotulo: 'Sexta, 25/12 · Natal', info: 'a partir das 11h' },
+        { valor: '2026-12-31', rotulo: 'Quinta, 31/12 · Ano Novo', info: 'a partir das 18h' },
+        { valor: '2027-01-01', rotulo: 'Sexta, 01/01 · Confraternização', info: 'a partir das 11h' },
+      ],
+    },
+    confraternizacao: {
+      aberta: true,
+      abaRotulo: 'Encomendas Confraternizações',
+      nome: 'Confraternização',
+      titulo: 'Encomendas para Confraternizações',
+      descricao: 'A confraternização da sua empresa ou do seu grupo, com costela assada na lenha. Escolha o dia, monte o pedido e reserve com um sinal.',
+      aviso: 'Entregas para empresas só em Varginha, com horário a combinar. Pedidos com 2 dias de antecedência.',
+      mensagemFechada: 'As encomendas para confraternizações estão encerradas. Chame no WhatsApp se quiser saber de uma vaga.',
+      antecedenciaDias: 2,
+      datas: [
+        { valor: '2026-12-05', rotulo: 'Sábado, 05/12', info: 'horário a combinar' },
+        { valor: '2026-12-06', rotulo: 'Domingo, 06/12', info: 'horário a combinar' },
+        { valor: '2026-12-10', rotulo: 'Quinta, 10/12', info: 'horário a combinar' },
+        { valor: '2026-12-11', rotulo: 'Sexta, 11/12', info: 'horário a combinar' },
+        { valor: '2026-12-12', rotulo: 'Sábado, 12/12', info: 'horário a combinar' },
+        { valor: '2026-12-13', rotulo: 'Domingo, 13/12', info: 'horário a combinar' },
+        { valor: '2026-12-17', rotulo: 'Quinta, 17/12', info: 'horário a combinar' },
+        { valor: '2026-12-18', rotulo: 'Sexta, 18/12', info: 'horário a combinar' },
+        { valor: '2026-12-19', rotulo: 'Sábado, 19/12', info: 'horário a combinar' },
+        { valor: '2026-12-20', rotulo: 'Domingo, 20/12', info: 'horário a combinar' },
+      ],
+    },
+  },
 };
 
 /**

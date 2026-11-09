@@ -2585,6 +2585,230 @@
     });
   }
 
+
+  // ------------------------------------------------------------ encomendas
+
+  /* Lista vinda do servidor (aba "Encomendas" da planilha). Fica fora do
+     armazenamento local do painel de propósito: é uma consulta ao vivo,
+     separada das vendas do delivery. */
+  let encomendas = [];
+  let statusEncomendas = { natal: true, confraternizacao: true };
+  const NOME_TIPO = { natal: 'Natal', confraternizacao: 'Confraternização' };
+
+  /** kg de carne de um item do pedido (estimativa pelo nome; acompanhamento = 0). */
+  function kgDoItem(nome) {
+    if (/Combo Família/.test(nome)) return 1.5;
+    if (/Combo Completo/.test(nome)) return 1;
+    if (/Combo Casal/.test(nome)) return 0.5;
+    const kg = nome.match(/(\d+(?:,\d+)?)\s*kg/i);
+    if (kg) return Number(kg[1].replace(',', '.'));
+    if (/500\s*g/i.test(nome)) return 0.5;
+    return 0;
+  }
+
+  /** "2x Combo Completo · Com osso; 1x Taxa de entrega" -> [{qtd, nome}] */
+  function itensDaEncomenda(texto) {
+    return String(texto || '').split(';').map((p) => p.trim()).filter(Boolean).map((p) => {
+      const m = p.match(/^(\d+)x\s+(.+)$/);
+      return m ? { qtd: Number(m[1]), nome: m[2] } : { qtd: 1, nome: p };
+    });
+  }
+
+  function kgDaEncomenda(e) {
+    return itensDaEncomenda(e.itens).reduce((soma, i) => soma + kgDoItem(i.nome) * i.qtd, 0);
+  }
+
+  const kgTexto = (kg) => `${(Math.round(kg * 10) / 10).toString().replace('.', ',')} kg`;
+
+  /** Só conta como pedido de verdade quem já pagou o sinal (ou o total). */
+  const encPaga = (e) => e.status !== 'aguardando pagamento';
+
+  function chamarServidor(corpo) {
+    const { url, token } = lerIntegracao();
+    if (!url || !token) {
+      alert('Configure a conexão na aba Vendas antes de usar as encomendas.');
+      return Promise.reject(new Error('sem conexão configurada'));
+    }
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ ...corpo, token }),
+    })
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) throw new Error('O Google não respondeu direito agora. Tente de novo.');
+        const r = JSON.parse(texto);
+        if (!r.ok) throw new Error(r.erro || 'Não deu para fazer agora.');
+        return r;
+      });
+  }
+
+  function carregarEncomendas() {
+    const { url, token } = lerIntegracao();
+    const aviso = document.getElementById('enc-aviso');
+    if (!url || !token) {
+      aviso.textContent = 'Configure a conexão na aba Vendas para ver as encomendas.';
+      return;
+    }
+    aviso.textContent = 'Carregando…';
+    fetch(`${url}?acao=encomendas&token=${encodeURIComponent(token)}`)
+      .then((r) => r.text())
+      .then((texto) => {
+        if (!texto.trim().startsWith('{')) throw new Error('O Google não respondeu direito agora. Tente de novo.');
+        const r = JSON.parse(texto);
+        if (!r.ok) throw new Error(r.erro || 'Não foi possível carregar.');
+        encomendas = r.encomendas || [];
+        if (r.status) statusEncomendas = r.status;
+        aviso.textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`;
+        renderEncomendas();
+      })
+      .catch((erro) => { aviso.textContent = erro.message; });
+  }
+
+  function renderAberturas() {
+    const alvo = document.getElementById('enc-aberturas');
+    alvo.innerHTML = '';
+    for (const tipo of ['natal', 'confraternizacao']) {
+      const aberta = statusEncomendas[tipo] !== false;
+      const caixa = el('div', 'enc-abertura__item');
+      caixa.appendChild(el('span', null, `Encomendas de ${NOME_TIPO[tipo]}: ${aberta ? 'abertas' : 'encerradas'}`));
+      const botao = el('button', 'botao ' + (aberta ? 'botao--perigo' : 'botao--principal'), aberta ? 'Encerrar' : 'Reabrir');
+      botao.type = 'button';
+      botao.addEventListener('click', () => {
+        if (aberta && !confirm(`Encerrar as encomendas de ${NOME_TIPO[tipo]}? O cliente passa a ver o aviso de encerrado.`)) return;
+        botao.disabled = true;
+        chamarServidor({ acao: 'encomendas-status', tipo, aberta: !aberta })
+          .then((r) => { statusEncomendas = r.status; })
+          .catch((erro) => alert(erro.message))
+          .finally(renderEncomendas);
+      });
+      caixa.appendChild(botao);
+      alvo.appendChild(caixa);
+    }
+  }
+
+  function marcarEncomenda(e, campo, valor) {
+    chamarServidor({ acao: 'encomenda-marcar', order_nsu: e.order_nsu, campo, valor })
+      .then(carregarEncomendas)
+      .catch((erro) => alert(erro.message));
+  }
+
+  function renderEncomendas() {
+    renderAberturas();
+    const tipo = document.getElementById('enc-filtro-tipo').value;
+    const situacao = document.getElementById('enc-filtro-situacao').value;
+
+    const todas = encomendas.filter((e) => tipo === 'todos' || e.tipo === tipo);
+    const pagas = todas.filter(encPaga);
+    const soma = (lista, campo) => lista.reduce((t, e) => t + (e[campo] || 0), 0);
+    const kg = pagas.reduce((t, e) => t + kgDaEncomenda(e), 0);
+    const aguardando = todas.length - pagas.length;
+
+    const tiles = document.getElementById('enc-tiles');
+    tiles.innerHTML = '';
+    tiles.appendChild(tile('Encomendas', String(pagas.length), aguardando ? `${aguardando} aguardando pagamento` : 'com sinal ou total pago'));
+    tiles.appendChild(tile('Contratado', reais(soma(pagas, 'total')), 'soma dos pedidos'));
+    tiles.appendChild(tile('Já recebido', reais(soma(pagas, 'pago')), 'sinais + restantes', 'bom'));
+    tiles.appendChild(tile('A receber', reais(soma(pagas, 'restante')), 'na entrega ou retirada', soma(pagas, 'restante') > 0 ? 'ruim' : ''));
+    tiles.appendChild(tile('Carne', kgTexto(kg), 'estimativa pelos combos e porções'));
+
+    const filtradas = todas.filter((e) => {
+      if (situacao === 'receber') return encPaga(e) && e.restante > 0;
+      if (situacao === 'entregar') return encPaga(e) && !e.entregue_em;
+      if (situacao === 'aguardando') return !encPaga(e);
+      return true;
+    });
+
+    const lista = document.getElementById('enc-lista');
+    lista.innerHTML = '';
+    if (!filtradas.length) {
+      lista.appendChild(vazio(encomendas.length ? 'Nenhuma encomenda neste filtro.' : 'Nenhuma encomenda ainda. Elas aparecem aqui assim que o primeiro cliente reservar.'));
+      return;
+    }
+
+    // Agrupa por dia de entrega (data ISO; sem ela, pelo texto)
+    const grupos = new Map();
+    for (const e of filtradas) {
+      const chave = e.data_iso || e.data_entrega || 'sem data';
+      if (!grupos.has(chave)) grupos.set(chave, []);
+      grupos.get(chave).push(e);
+    }
+    const chaves = [...grupos.keys()].sort();
+
+    for (const chave of chaves) {
+      const doDia = grupos.get(chave);
+      const pagasDia = doDia.filter(encPaga);
+      const grupo = el('section', 'enc-grupo');
+      const topo = el('div', 'enc-grupo__topo');
+      const rotulo = /^\d{4}-\d{2}-\d{2}$/.test(chave) ? rotuloEntrega(chave) : chave;
+      topo.appendChild(el('span', null, rotulo));
+      topo.appendChild(el('small', null,
+        `${pagasDia.length} pedido(s) · ${kgTexto(pagasDia.reduce((t, e) => t + kgDaEncomenda(e), 0))} · ` +
+        `total ${reais(soma(pagasDia, 'total'))} · a receber ${reais(soma(pagasDia, 'restante'))}`));
+      grupo.appendChild(topo);
+
+      for (const e of doDia) {
+        const linha = el('div', 'registro' + (e.entregue_em ? ' registro--entregue' : ''));
+        const texto = el('div', 'registro__texto');
+        texto.appendChild(el('div', 'registro__titulo', `${e.cliente || 'Sem nome'} · ${NOME_TIPO[e.tipo] || e.tipo}`));
+
+        const onde = e.entrega_ou_retirada === 'Retirada' ? '📦 Retirada' : `🚚 Entrega${e.endereco ? ' — ' + e.endereco : ''}`;
+        texto.appendChild(el('div', 'registro__entrega', `${onde}${e.horario ? ' · ' + e.horario : ''}`));
+
+        const itens = itensDaEncomenda(e.itens).filter((i) => !/^Taxa de entrega/.test(i.nome))
+          .map((i) => `${i.qtd}x ${i.nome}`).join(', ');
+        texto.appendChild(el('div', 'registro__detalhe', `${itens} · ${kgTexto(kgDaEncomenda(e))}`));
+
+        const dinheiro = el('div', 'registro__detalhe');
+        const sit = e.status === 'aguardando pagamento' ? 'aguardando' : (e.restante > 0 ? 'sinal' : 'pago');
+        dinheiro.appendChild(el('span', `enc-status enc-status--${sit}`, e.status));
+        dinheiro.appendChild(document.createTextNode(
+          ` Total ${reais(e.total)} · pago ${reais(e.pago)}${e.restante > 0 && encPaga(e) ? ` · falta ${reais(e.restante)}` : ''}` +
+          `${e.forma_pagamento ? ' · ' + e.forma_pagamento : ''}`));
+        texto.appendChild(dinheiro);
+
+        const acoes = el('div', 'enc-acoes');
+        if (encPaga(e)) {
+          if (e.restante > 0) {
+            const b = el('button', 'botao botao--principal', '💰 Restante recebido');
+            b.type = 'button';
+            b.addEventListener('click', () => {
+              if (confirm(`Confirmar que ${e.cliente || 'o cliente'} pagou o restante de ${reais(e.restante)}?`)) marcarEncomenda(e, 'quitado', true);
+            });
+            acoes.appendChild(b);
+          } else if (e.quitado_em) {
+            const b = el('button', 'botao', '↩ Desfazer recebimento');
+            b.type = 'button';
+            b.addEventListener('click', () => marcarEncomenda(e, 'quitado', false));
+            acoes.appendChild(b);
+          }
+          const entregue = el('button', 'botao', e.entregue_em ? '↩ Voltar para a fila' : '✓ Entregue');
+          entregue.type = 'button';
+          entregue.addEventListener('click', () => marcarEncomenda(e, 'entregue', !e.entregue_em));
+          acoes.appendChild(entregue);
+        }
+        if (e.telefone) {
+          const zap = el('a', 'botao', '💬 WhatsApp');
+          zap.href = `https://wa.me/${zapInternacional(e.telefone)}`;
+          zap.target = '_blank';
+          zap.rel = 'noopener';
+          acoes.appendChild(zap);
+        }
+        texto.appendChild(acoes);
+        linha.appendChild(texto);
+        linha.appendChild(el('strong', 'registro__valor', reais(e.total)));
+        grupo.appendChild(linha);
+      }
+      lista.appendChild(grupo);
+    }
+  }
+
+  function configurarEncomendas() {
+    document.getElementById('btn-enc-atualizar').addEventListener('click', carregarEncomendas);
+    document.getElementById('enc-filtro-tipo').addEventListener('change', renderEncomendas);
+    document.getElementById('enc-filtro-situacao').addEventListener('change', renderEncomendas);
+  }
+
   // ------------------------------------------------------------------ abas
 
   function configurarAbas() {
@@ -2595,6 +2819,7 @@
         botao.classList.add('aba--ativa');
         document.getElementById('secao-' + botao.dataset.aba).classList.add('secao--ativa');
         if (botao.dataset.aba === 'painel') renderPainel();
+        if (botao.dataset.aba === 'encomendas') carregarEncomendas();
       });
     }
   }
@@ -2615,6 +2840,7 @@
     montarItensVenda();
     renderCategorias();
     configurarAbas();
+    configurarEncomendas();
     configurarFormularios();
     configurarColar();
     configurarRelatorio();

@@ -26,6 +26,7 @@
   <nav class="abas" id="abas" aria-label="Seções do painel">
     <button class="aba aba--ativa" data-aba="painel">Painel</button>
     <button class="aba" data-aba="vendas">Vendas</button>
+    <button class="aba" data-aba="encomendas">Encomendas</button>
     <button class="aba" data-aba="clientes">Clientes</button>
     <button class="aba" data-aba="caixa">Caixa</button>
     <button class="aba" data-aba="estoque">Estoque</button>
@@ -317,6 +318,41 @@
         <p class="cartao__texto">Use o 🖨 para imprimir o ticket de um pedido só.</p>
         <div id="lista-vendas"></div>
       </div>
+    </section>
+
+    <!-- ========================== ENCOMENDAS ========================== -->
+    <section class="secao" id="secao-encomendas">
+      <div class="cartao">
+        <h2 class="cartao__titulo">📦 Encomendas de fim de ano</h2>
+        <p class="cartao__texto">
+          Espaço separado das vendas do delivery: pedidos com data marcada
+          (Natal e Confraternizações), com sinal, restante a receber e kg por
+          dia de entrega. Eles <strong>não entram</strong> em Vendas nem no
+          faturamento do Painel.
+        </p>
+        <div class="enc-abertura" id="enc-aberturas"></div>
+        <div class="enc-filtros">
+          <label>Mostrar
+            <select id="enc-filtro-tipo">
+              <option value="todos">Natal e Confraternizações</option>
+              <option value="natal">Só Natal</option>
+              <option value="confraternizacao">Só Confraternizações</option>
+            </select>
+          </label>
+          <label>Situação
+            <select id="enc-filtro-situacao">
+              <option value="todas">Todas</option>
+              <option value="receber">Com restante a receber</option>
+              <option value="entregar">Ainda não entregues</option>
+              <option value="aguardando">Aguardando pagamento</option>
+            </select>
+          </label>
+          <button type="button" class="botao" id="btn-enc-atualizar">↻ Atualizar</button>
+        </div>
+        <p class="cartao__texto" id="enc-aviso"></p>
+      </div>
+      <div class="tiles" id="enc-tiles"></div>
+      <div id="enc-lista"></div>
     </section>
 
     <!-- =========================== CLIENTES =========================== -->
